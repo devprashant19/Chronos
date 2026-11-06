@@ -47,3 +47,7 @@ tmp/
 
 # console deps
 console/node_modules/
+
+# design sources live in design/; these were the originals at the repo root
+/Chronos Console.html
+/Chronos Console.md
