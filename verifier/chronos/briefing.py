@@ -21,7 +21,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .llm import LLMClient, ModelUnavailable
 from .models import BriefLine, BriefRequest, BriefResponse, VerifyRequest
@@ -69,7 +69,7 @@ class BriefingService:
 
     async def brief(self, req: BriefRequest) -> BriefResponse:
         subject = req.subject.strip()
-        today = datetime.now(timezone.utc).date().isoformat()
+        today = datetime.now(UTC).date().isoformat()
 
         degraded = False
         reason: str | None = None
@@ -98,7 +98,7 @@ class BriefingService:
             )
 
         results: list[dict] = []
-        for angle, outcome in zip([a[0] for a in SEARCH_ANGLES], searches):
+        for angle, outcome in zip([a[0] for a in SEARCH_ANGLES], searches, strict=False):
             if isinstance(outcome, BudgetExhausted):
                 degraded = True
                 reason = str(outcome)
@@ -152,7 +152,7 @@ class BriefingService:
             return_exceptions=True,
         )
 
-        for line, report in zip(lines, reports):
+        for line, report in zip(lines, reports, strict=False):
             if isinstance(report, BaseException):
                 unconfirmed.append(
                     BriefLine(
@@ -174,10 +174,25 @@ class BriefingService:
                 publish_date=claim.publish_date if claim else None,
             )
 
-            if report.score >= self.settings.current_threshold and report.verdict == "current":
+            # A line with no extractable claim must NOT be presented as
+            # verified. It scores 100 and reports "current" only because there
+            # was nothing in it to check — the same silent-approval failure
+            # that makes a staleness detector dangerous. "Nothing to check" is
+            # unconfirmed, and the reason says so.
+            confirmed = (
+                report.verdict == "current"
+                and report.score >= self.settings.current_threshold
+                and report.claim_count > 0
+            )
+
+            if confirmed:
                 verified.append(entry)
             else:
-                entry.reason = self._why(report)
+                entry.reason = (
+                    "no checkable claim in this line, so nothing was confirmed"
+                    if report.claim_count == 0
+                    else self._why(report)
+                )
                 unconfirmed.append(entry)
 
             for c in report.claims:
@@ -187,11 +202,15 @@ class BriefingService:
                         f"but {c.source_url or 'a source'} says {c.current_value}. Which is right?"
                     )
 
+        # Every unconfirmed line becomes something to ask, not just the ones
+        # that failed verification outright. A line nobody could check is
+        # exactly the line to raise in the room, and leaving it out of this
+        # section is how a brief ends up looking more certain than it is.
         for entry in unconfirmed:
-            if entry.verdict == "unverifiable":
-                open_questions.append(
-                    f"Could not confirm: {entry.text.rstrip('.')}. Worth asking directly."
-                )
+            text = entry.text.rstrip(".")
+            if entry.verdict == "outdated":
+                continue  # already covered by the contradiction questions above
+            open_questions.append(f"Could not confirm: {text}. Worth asking directly.")
 
         # Keep the questions distinct and bounded.
         seen: set[str] = set()
@@ -287,13 +306,46 @@ def _draft_offline(subject: str, results: list[dict]) -> list[str]:
     offline.
     """
     lines: list[str] = []
-    for r in results[:8]:
-        title = (r.get("title") or "").strip().rstrip(".")
-        if not title:
+    seen: set[str] = set()
+
+    for r in results[:12]:
+        title = _clean_title(r.get("title") or "")
+        if not title or len(title) < 20:
             continue
+        key = title.lower()[:50]
+        if key in seen:
+            continue
+        seen.add(key)
+
         published = r.get("published_date")
         when = f" (reported {published})" if published else ""
         lines.append(f"{title}{when}.")
+        if len(lines) >= 8:
+            break
+
     if not lines:
         lines.append(f"No recent coverage of {subject} was found in the search window.")
     return lines
+
+
+def _clean_title(title: str) -> str:
+    """Trim the site furniture search results carry.
+
+    Titles arrive as "Real headline | Site Name" or with social-post noise
+    appended. Left alone they make brief lines that read like scraped markup,
+    and they give the extractor nothing to work with.
+    """
+    text = title.strip()
+
+    # Drop a trailing " | Publisher" or " - Publisher" segment.
+    for separator in (" | ", " — ", " – ", " - "):
+        if separator in text:
+            head, _, tail = text.rpartition(separator)
+            if head and len(head) >= 20 and len(tail) <= 40:
+                text = head
+
+    # Social-post scaffolding that is never part of a claim.
+    text = re.sub(
+        r"\s*\|\s*(posted on the topic|LinkedIn|X \(formerly Twitter\)).*$", "", text, flags=re.I
+    )
+    return text.strip().rstrip(".").strip()
