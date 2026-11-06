@@ -21,6 +21,7 @@ import json
 import logging
 from typing import Any
 
+from .pacer import TokenPacer, estimate_tokens
 from .settings import Settings, get_settings
 
 logger = logging.getLogger("chronos.llm")
@@ -28,7 +29,17 @@ logger = logging.getLogger("chronos.llm")
 #: Raised when the model layer cannot produce a usable answer. Callers treat
 #: this as "unverifiable", never as a server error.
 class ModelUnavailable(RuntimeError):
-    pass
+    """A model call did not produce a usable answer.
+
+    `rate_limited` matters to callers: retrying a validation failure is often
+    worth it, retrying a rate-limited call immediately is actively harmful. On
+    a free tier the limit is tokens per MINUTE, so an immediate retry spends
+    budget that is already exhausted and pushes the reset further out.
+    """
+
+    def __init__(self, message: str, *, rate_limited: bool = False) -> None:
+        super().__init__(message)
+        self.rate_limited = rate_limited
 
 
 def _split_model(ref: str) -> tuple[str, str]:
@@ -45,6 +56,7 @@ class LLMClient:
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
         self._client: Any | None = None
+        self.pacer = TokenPacer(self.settings.model_tpm)
 
     def _ensure_client(self) -> Any:
         if self._client is not None:
@@ -133,6 +145,12 @@ class LLMClient:
         fallbacks = self._fallbacks()
         if fallbacks:
             extra_body["fallbacks"] = fallbacks
+        if self.settings.reasoning_effort:
+            # Reasoning models charge their chain of thought against the same
+            # token budget. Chronos fills a fixed JSON schema, which does not
+            # need deliberation. See Settings.reasoning_effort for the measured
+            # difference.
+            extra_body["reasoning_effort"] = self.settings.reasoning_effort
 
         extra_headers: dict[str, str] = {}
         if cache_key:
@@ -157,6 +175,12 @@ class LLMClient:
         if extra_headers:
             kwargs["extra_headers"] = extra_headers
 
+        # Stay inside the model's tokens-per-minute budget rather than
+        # discovering it with a 429. See pacer.py.
+        await self.pacer.acquire(
+            target, estimate_tokens(system, user, max_output=max_tokens)
+        )
+
         try:
             resp = await client.chat.completions.create(**kwargs)
         except Exception as exc:
@@ -166,17 +190,28 @@ class LLMClient:
             # JSON and _parse_json_object copes with a fenced or prose-wrapped
             # reply. This is what keeps a free-tier model that lacks JSON mode
             # usable instead of silently dropping to the rule engine.
-            if json_mode and _is_response_format_error(exc):
-                logger.info("%s rejected response_format; retrying without JSON mode", target)
+            if _is_unsupported_param_error(exc) and (
+                json_mode or "reasoning_effort" in extra_body
+            ):
+                logger.info("%s rejected an optional parameter; retrying without it", target)
                 kwargs.pop("response_format", None)
+                body = kwargs.get("extra_body")
+                if isinstance(body, dict):
+                    body.pop("reasoning_effort", None)
+                    if not body:
+                        kwargs.pop("extra_body", None)
                 try:
                     resp = await client.chat.completions.create(**kwargs)
                 except Exception as retry_exc:
                     raise ModelUnavailable(
-                        f"model call failed ({target}): {retry_exc}"
+                        f"model call failed ({target}): {retry_exc}",
+                        rate_limited=_is_rate_limit(retry_exc),
                     ) from retry_exc
             else:
-                raise ModelUnavailable(f"model call failed ({target}): {exc}") from exc
+                raise ModelUnavailable(
+                    f"model call failed ({target}): {exc}",
+                    rate_limited=_is_rate_limit(exc),
+                ) from exc
 
         try:
             content = resp.choices[0].message.content or ""
@@ -194,30 +229,45 @@ class LLMClient:
             self._client = None
 
 
-#: Phrases providers use when they reject response_format. Matched loosely,
-#: because each provider words it differently and none of them use a code.
-_RESPONSE_FORMAT_REJECTIONS = (
+#: Phrases providers use when they reject an optional parameter. Matched
+#: loosely, because every provider words it differently and none use a code.
+_UNSUPPORTED_PARAM_REJECTIONS = (
     "response_format",
     "json_object",
     "json mode",
     "structured output",
+    "reasoning_effort",
     "unsupported parameter",
     "unknown parameter",
+    "unrecognized",
     "not supported",
+    "must be one of",
 )
 
 
-def _is_response_format_error(exc: Exception) -> bool:
-    """Whether this failure looks like "I do not support response_format".
+def _is_rate_limit(exc: Exception) -> bool:
+    """Whether this failure is a quota or rate-limit refusal."""
+    message = str(exc).lower()
+    return any(
+        token in message
+        for token in ("rate_limit", "rate limit", "429", "too many requests", "quota")
+    )
 
-    Deliberately conservative about what it does NOT match: a 429 or an auth
-    failure must fall straight through, because retrying those without JSON
-    mode would just burn a second request against the same wall.
+
+def _is_unsupported_param_error(exc: Exception) -> bool:
+    """Whether this failure looks like "I do not support that parameter".
+
+    Deliberately conservative about what it does NOT match: a rate limit or an
+    auth failure falls straight through, because retrying those with fewer
+    parameters just burns a second request against the same wall.
     """
     message = str(exc).lower()
-    if any(token in message for token in ("rate limit", "429", "quota", "unauthor", "401", "403")):
+    if any(
+        token in message
+        for token in ("rate limit", "rate_limit", "429", "quota", "unauthor", "401", "403")
+    ):
         return False
-    return any(token in message for token in _RESPONSE_FORMAT_REJECTIONS)
+    return any(token in message for token in _UNSUPPORTED_PARAM_REJECTIONS)
 
 
 def _parse_json_object(raw: str) -> dict[str, Any]:

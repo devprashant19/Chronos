@@ -157,14 +157,23 @@ class Settings:
         default_factory=lambda: os.getenv("BIFROST_SETUP_TOKEN", "")
     )
 
-    # Free, open-weights by default. Llama 3.3 70B on Groq handles the strict
-    # JSON contract and the judging reliably, and Groq's free tier needs no
-    # card. Swap in openai/gpt-4o-mini or groq/openai/gpt-oss-120b by env.
+    # Free and open-weights by default: OpenAI's gpt-oss-120b, served by Groq,
+    # whose free tier needs no card. Apache-2.0 weights, a 131k context and
+    # strict structured outputs, which is what the claim schema needs.
+    #
+    # The model ids here were read from Groq's live /v1/models list, not from
+    # documentation: the Llama chat models that most guides still recommend
+    # (llama-3.3-70b-versatile, llama-3.1-8b-instant) now return 404.
     extract_model: str = field(
-        default_factory=lambda: os.getenv("CHRONOS_EXTRACT_MODEL", "groq/llama-3.3-70b-versatile")
+        default_factory=lambda: os.getenv("CHRONOS_EXTRACT_MODEL", "groq/openai/gpt-oss-120b")
     )
+    # Judging runs on a DIFFERENT model from extraction on purpose. Groq meters
+    # tokens per minute per model, so splitting the two jobs gives each its own
+    # budget instead of having them compete for one. Judging is also the more
+    # frequent call (once per claim-cache miss, against once per answer), so it
+    # gets the cheaper model.
     judge_model: str = field(
-        default_factory=lambda: os.getenv("CHRONOS_JUDGE_MODEL", "groq/llama-3.3-70b-versatile")
+        default_factory=lambda: os.getenv("CHRONOS_JUDGE_MODEL", "groq/openai/gpt-oss-20b")
     )
     #: Comma-separated provider/model pairs Bifrost should fall back to.
     fallback_models: tuple[str, ...] = field(
@@ -172,10 +181,11 @@ class Settings:
             m.strip()
             for m in os.getenv(
                 "CHRONOS_FALLBACK_MODELS",
-                # 8b has the large daily allowance, so it catches a spent 70b
-                # quota; ollama is local and unmetered, so it catches a spent
-                # Groq account entirely.
-                "groq/llama-3.1-8b-instant,ollama/llama3.1",
+                # 20b is the same family at lower cost per call, qwen is a
+                # different vendor in case the gpt-oss family is rate-limited
+                # as a group, and ollama is local and unmetered, so it catches
+                # a spent Groq account entirely.
+                "groq/openai/gpt-oss-20b,groq/qwen/qwen3.8-27b,ollama/llama3.1",
             ).split(",")
             if m.strip()
         )
@@ -190,10 +200,55 @@ class Settings:
     )
 
     # --- concurrency / limits ---
-    claim_concurrency: int = field(default_factory=lambda: _env_int("CHRONOS_CLAIM_CONCURRENCY", 4))
+    # Low by default: on a free tier the limit is tokens per minute, so a wide
+    # fan-out just converts into 429s and a slower answer overall.
+    claim_concurrency: int = field(default_factory=lambda: _env_int("CHRONOS_CLAIM_CONCURRENCY", 2))
     tavily_concurrency: int = field(default_factory=lambda: _env_int("CHRONOS_TAVILY_CONCURRENCY", 3))
     max_claims_per_answer: int = field(default_factory=lambda: _env_int("CHRONOS_MAX_CLAIMS", 12))
-    verify_deadline_s: float = field(default_factory=lambda: _env_float("CHRONOS_VERIFY_DEADLINE_S", 20.0))
+
+    # --- token budget -----------------------------------------------------
+    # Free tiers meter TOKENS PER MINUTE, not requests, and that is the limit
+    # Chronos actually hits. Measured on a Groq free key: 1,000 requests/day
+    # but only 8,000 tokens/minute, so a judge prompt carrying five sources at
+    # 1,200 characters each exhausts the minute in two calls and everything
+    # after it waits on a 429.
+    #
+    # Trimming the evidence is nearly free in quality terms: the judge needs
+    # the sentence containing the value, not the whole page.
+    # Reasoning models (OpenAI's gpt-oss family, and others) emit a chain of
+    # thought that Chronos never reads, and it is charged against the same
+    # tokens-per-minute budget as the answer. Measured on gpt-oss-120b for one
+    # extraction call:
+    #
+    #   default effort   ~2,400 tokens   12-24 s
+    #   effort "low"        192 tokens    1.6 s
+    #
+    # Chronos asks for structured JSON against a fixed schema, which is not a
+    # task that benefits from deliberation, so "low" costs nothing in quality
+    # and turns ~3 calls per minute into ~40. Set empty to omit the parameter
+    # for models that reject it.
+    # Tokens-per-minute budget Chronos paces itself against, PER MODEL.
+    # 8,000 matches a Groq free key. Set 0 to disable pacing (useful on a paid
+    # tier, where the limit is high enough not to bind). Chronos predicts and
+    # waits rather than discovering the limit via 429s: a refused call costs
+    # the round trip and returns nothing.
+    model_tpm: int = field(default_factory=lambda: _env_int("CHRONOS_MODEL_TPM", 8000))
+
+    reasoning_effort: str = field(
+        default_factory=lambda: os.getenv("CHRONOS_REASONING_EFFORT", "low").strip()
+    )
+
+    judge_snippet_chars: int = field(
+        default_factory=lambda: _env_int("CHRONOS_JUDGE_SNIPPET_CHARS", 800)
+    )
+    judge_max_sources: int = field(
+        default_factory=lambda: _env_int("CHRONOS_JUDGE_MAX_SOURCES", 4)
+    )
+    # Generous, because pacing means waiting on purpose. This bounds the
+    # verifier's own work; the PLUGIN's inline deadline is separate and much
+    # shorter, so a paced verification delays a background report rather than
+    # a user's response.
+    verify_deadline_s: float = field(default_factory=lambda: _env_float("CHRONOS_VERIFY_DEADLINE_S", 90.0))
 
     # --- scoring thresholds ---
     current_threshold: float = field(default_factory=lambda: _env_float("CHRONOS_CURRENT_THRESHOLD", 80.0))
