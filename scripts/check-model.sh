@@ -24,10 +24,13 @@ ENDPOINT="$GATEWAY/v1/chat/completions"
 
 # Free, open-weights candidates. Groq needs a key (no card); ollama needs the
 # local service and a pulled model.
+# Open-weights chat models Groq actually serves. Verified against
+# https://api.groq.com/openai/v1/models — the Llama chat models that older
+# guides recommend (llama-3.3-70b-versatile, llama-3.1-8b-instant) now 404.
 CANDIDATES=(
-  "groq/llama-3.3-70b-versatile"
-  "groq/llama-3.1-8b-instant"
   "groq/openai/gpt-oss-120b"
+  "groq/openai/gpt-oss-20b"
+  "groq/qwen/qwen3.8-27b"
   "ollama/llama3.1"
 )
 
@@ -81,9 +84,12 @@ PY
 }
 
 parses_as_json() {
-  python - <<'PY' 2>/dev/null
+  # The content comes in as argv, NOT on stdin: a `python - <<'PY'` heredoc
+  # *is* stdin, so sys.stdin.read() here would read the script itself and
+  # every model would be reported as "not JSON".
+  python - "$1" <<'PY' 2>/dev/null
 import json, sys
-raw = sys.stdin.read().strip()
+raw = sys.argv[1].strip()
 if raw.startswith("```"):
     raw = "\n".join(l for l in raw.splitlines() if not l.strip().startswith("```")).strip()
 try:
@@ -126,7 +132,7 @@ check_one() {
     return 1
   fi
 
-  if printf '%s' "$content" | parses_as_json; then
+  if parses_as_json "$content"; then
     printf '  %sOK%s    json_mode=%s  json=yes\n' "$c_green" "$c_reset" "$json_mode"
     printf '        %s%s%s\n' "$c_dim" "$(printf '%s' "$content" | tr -d '\n' | cut -c1-90)" "$c_reset"
     return 0
@@ -160,7 +166,7 @@ if [ "${1:-}" = "--all" ]; then
   exit 0
 fi
 
-MODEL="${1:-${CHRONOS_EXTRACT_MODEL:-groq/llama-3.3-70b-versatile}}"
+MODEL="${1:-${CHRONOS_EXTRACT_MODEL:-groq/openai/gpt-oss-120b}}"
 check_one "$MODEL"
 status=$?
 

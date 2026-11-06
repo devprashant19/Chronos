@@ -407,6 +407,15 @@ with urllib.request.urlopen(req, timeout=60) as resp:
     assert resp.status == 200, resp.status
 PY
 
+check "model pacing is reported in stats" python - <<'PY'
+import json, urllib.request
+
+d = json.load(urllib.request.urlopen("http://localhost:8000/v1/stats", timeout=20))
+pacing = d.get("model_pacing")
+assert pacing is not None, "model_pacing missing from /v1/stats"
+assert "tokens_per_minute" in pacing, pacing
+PY
+
 # --- the degrade path: Chronos must never break the gateway ---------------
 printf '  testing the degrade path (verifier stopped)\n'
 (cd deploy && docker compose stop verifier >/dev/null 2>&1)
