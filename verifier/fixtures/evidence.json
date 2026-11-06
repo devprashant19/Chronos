@@ -1,0 +1,176 @@
+{
+  "_README": [
+    "RECORDED EVIDENCE for offline mode (CHRONOS_OFFLINE_DEMO=1) and for CI.",
+    "",
+    "What this file is: synthetic search results, written by hand, that let the",
+    "whole verification path — extraction, judging, scoring, eviction — run with",
+    "no Tavily key and no network. The SCORES produced from it are computed by",
+    "the real scoring code in chronos/score.py. The EVIDENCE is not real: these",
+    "are not actual pages and the URLs are illustrative.",
+    "",
+    "A deliberate constraint on how it is written: each entry asserts only that",
+    "the claim it matches is OUT OF DATE, and points at where the current value",
+    "lives. It does not invent a specific replacement figure. That keeps the",
+    "fixtures from quietly becoming a second source of stale facts, and it is",
+    "why `current_value` reads like 'see the live quote' rather than a number.",
+    "",
+    "`published_date` may be written as 'T-3', meaning three days before now, so",
+    "the recency term stays meaningful however long after writing this is run.",
+    "",
+    "With a TAVILY_API_KEY and CHRONOS_OFFLINE_DEMO=0, none of this is used."
+  ],
+
+  "queries": [
+    {
+      "id": "gpt4o-pricing",
+      "keywords": ["openai", "gpt-4o", "price", "pricing", "token", "input", "output"],
+      "match": ["gpt-?4o.*(pric|cost|token)", "openai.*(pric|rate card)"],
+      "results": [
+        {
+          "url": "https://openai.com/api/pricing/",
+          "title": "API Pricing — OpenAI",
+          "published_date": "T-5",
+          "call": "contradicts",
+          "current_value": "see OpenAI's current pricing page — the $5.00 / 1M input figure is from an earlier rate card",
+          "quote": "Prices on this page are current and have been revised since the rate card that quoted $5.00 per million input tokens for GPT-4o.",
+          "content": "API Pricing. Per-model prices are listed per million tokens and are revised periodically. The figures published here supersede any earlier rate card. GPT-4o and GPT-4o mini pricing has changed since the 2024 launch pricing.",
+          "raw_content": "OpenAI API Pricing. This page lists current per-million-token prices for each model and supersedes earlier rate cards. GPT-4o pricing has been revised since launch; the launch figure of $5.00 per million input tokens is no longer the current price. Always read the price from this page rather than from a cached answer."
+        },
+        {
+          "url": "https://platform.openai.com/docs/pricing",
+          "title": "Pricing — OpenAI Platform docs",
+          "published_date": "T-12",
+          "call": "contradicts",
+          "quote": "The pricing table in the platform documentation is generated from current prices, not historical ones.",
+          "content": "Pricing is listed per million tokens and updated when prices change. Historical prices are not shown.",
+          "raw_content": "Pricing. The platform documentation pricing table reflects current prices per million tokens. Prices have been reduced more than once since the models were introduced, so any figure quoted from memory should be re-checked here."
+        }
+      ]
+    },
+
+    {
+      "id": "twitter-ceo",
+      "keywords": ["twitter", "x", "ceo", "chief", "executive", "role", "holder", "dorsey"],
+      "match": ["(twitter|x corp).*(ceo|chief exec)", "ceo.*(twitter|x corp)", "dorsey"],
+      "results": [
+        {
+          "url": "https://about.x.com/en/who-we-are/our-company",
+          "title": "Our company — X",
+          "published_date": "T-20",
+          "call": "contradicts",
+          "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+          "quote": "Jack Dorsey stepped down as chief executive in November 2021 and left the board in 2022; the company has since been renamed X.",
+          "content": "Company information for X, formerly Twitter. Jack Dorsey stepped down as chief executive in November 2021. The company was acquired in October 2022, taken private, and subsequently renamed X. The chief executive role has changed hands since Dorsey's departure.",
+          "raw_content": "Our company. X was formerly known as Twitter. Jack Dorsey co-founded Twitter and served two terms as its chief executive, stepping down for the second time in November 2021. He left the board in May 2022. The company was taken private in October 2022 and is no longer listed on the New York Stock Exchange. The chief executive role has changed hands more than once since 2021, so any statement that Dorsey currently leads the company is out of date."
+        },
+        {
+          "url": "https://www.reuters.com/technology/",
+          "title": "Technology news — Reuters",
+          "published_date": "T-8",
+          "call": "contradicts",
+          "quote": "Dorsey has not been chief executive of the company since 2021.",
+          "content": "Coverage of X Corp leadership. Dorsey has not held the chief executive role since 2021.",
+          "raw_content": "Technology. Reuters coverage of X Corp notes that Jack Dorsey has not been the company's chief executive since November 2021, and that the company is privately held following its 2022 acquisition."
+        }
+      ]
+    },
+
+    {
+      "id": "python-latest-version",
+      "keywords": ["python", "latest", "version", "release", "stable", "3.11"],
+      "match": ["python.*(latest|version|release|stable)", "(latest|newest).*python"],
+      "results": [
+        {
+          "url": "https://www.python.org/downloads/",
+          "title": "Download Python | python.org",
+          "published_date": "T-3",
+          "call": "contradicts",
+          "current_value": "a later 3.x release — 3.11 (October 2022) is several feature releases behind",
+          "quote": "Python 3.11 was released in October 2022; multiple feature releases have shipped since, and the current stable release is listed at the top of this page.",
+          "content": "Download the latest version of Python. Python follows an annual release cadence, with a new feature release each October. Python 3.11 was released in October 2022. The current stable release is shown at the top of this page.",
+          "raw_content": "Download Python. The current stable release is listed at the top of this page. Python ships a new feature release every October under PEP 602, so 3.11 (released October 2022) is several feature releases behind the current version. Each release is supported for five years, and 3.11 has moved from active bugfix support into security-only maintenance."
+        },
+        {
+          "url": "https://devguide.python.org/versions/",
+          "title": "Status of Python versions",
+          "published_date": "T-10",
+          "call": "contradicts",
+          "quote": "Python 3.11 is no longer the newest feature release and has moved out of active bugfix support.",
+          "content": "A table of Python versions with their release dates, end-of-support dates and current status.",
+          "raw_content": "Status of Python versions. This table lists every Python version with its first release date, its end-of-life date, and whether it is in feature, bugfix or security-only status. Python 3.11 was first released in October 2022 and is not the newest feature release."
+        }
+      ]
+    },
+
+    {
+      "id": "bitcoin-price",
+      "keywords": ["bitcoin", "btc", "price", "spot", "trading", "market", "cap"],
+      "match": ["bitcoin.*(price|trading|worth|market cap)", "btc.*price"],
+      "results": [
+        {
+          "url": "https://www.coinbase.com/price/bitcoin",
+          "title": "Bitcoin price — Coinbase",
+          "published_date": "T-0",
+          "call": "contradicts",
+          "current_value": "see the live quote — a spot price quoted at any earlier time is not the current one",
+          "quote": "This price updates continuously; any figure quoted from an earlier moment is out of date by the time it is read.",
+          "content": "Live Bitcoin price. The quote on this page updates continuously throughout the day.",
+          "raw_content": "Bitcoin price. The price shown here updates continuously and moves throughout the day. A spot price quoted in a cached answer reflects the moment it was written, not the present, which is why a quoted figure cannot be confirmed as current without re-reading the live quote."
+        },
+        {
+          "url": "https://www.reuters.com/markets/currencies/",
+          "title": "Currencies and crypto markets — Reuters",
+          "published_date": "T-1",
+          "call": "contradicts",
+          "quote": "Cryptocurrency prices move continuously, so a quoted spot figure is specific to the moment it was taken.",
+          "content": "Market coverage of cryptocurrency prices, which move throughout each trading day.",
+          "raw_content": "Currencies. Cryptocurrency prices move continuously throughout each day. A spot price or market capitalisation quoted without a timestamp cannot be treated as current."
+        }
+      ]
+    },
+
+    {
+      "id": "eu-ai-act",
+      "keywords": ["eu", "ai", "act", "european", "regulation", "force", "effect", "legal", "status"],
+      "match": ["eu ai act", "ai act.*(force|effect|status|proposal)", "european.*ai.*regulat"],
+      "results": [
+        {
+          "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+          "title": "Regulation (EU) 2024/1689 — Artificial Intelligence Act",
+          "published_date": "T-30",
+          "call": "contradicts",
+          "current_value": "adopted and in force — it is a published Regulation, not a pending proposal, with obligations phasing in on a timetable",
+          "quote": "The Artificial Intelligence Act was adopted and published in the Official Journal as Regulation (EU) 2024/1689, and entered into force in August 2024.",
+          "content": "Regulation (EU) 2024/1689 of the European Parliament and of the Council laying down harmonised rules on artificial intelligence. Published in the Official Journal; entered into force August 2024, with provisions applying on a staged timetable.",
+          "raw_content": "Regulation (EU) 2024/1689 — the Artificial Intelligence Act. The Regulation was adopted, published in the Official Journal of the European Union, and entered into force in August 2024. Its obligations apply on a staged timetable rather than all at once. Statements describing the Act as a proposal still under trilogue negotiation, with no agreed text and no application dates, are out of date."
+        },
+        {
+          "url": "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
+          "title": "AI Act — European Commission",
+          "published_date": "T-15",
+          "call": "contradicts",
+          "quote": "The AI Act is in force, and the Commission publishes the timetable on which its obligations begin to apply.",
+          "content": "The regulatory framework for AI in the EU, including the timetable on which obligations begin to apply.",
+          "raw_content": "Regulatory framework for AI. The AI Act has entered into force. The Commission publishes the dates on which each set of obligations begins to apply, so the Act is no longer a proposal awaiting agreement."
+        }
+      ]
+    },
+
+    {
+      "id": "kestrel-robotics-demo",
+      "keywords": ["kestrel", "robotics", "funding", "hires", "launches", "news"],
+      "match": ["kestrel robotics"],
+      "results": [
+        {
+          "url": "https://example.com/chronos-demo/kestrel-note",
+          "title": "Kestrel Robotics is a fictional company used in the Chronos demo",
+          "published_date": "T-2",
+          "call": "insufficient",
+          "quote": "",
+          "content": "Kestrel Robotics does not exist. It appears in the Chronos console's briefing demo as a placeholder subject so the layout can be shown without naming a real company. Replace it with a real subject before presenting.",
+          "raw_content": "Kestrel Robotics is a fictional company. It is used only as a placeholder subject in the Chronos briefing demo so that the briefing layout can be demonstrated without making claims about a real organisation. Briefing mode against this subject will correctly report that nothing can be confirmed."
+        }
+      ]
+    }
+  ]
+}
