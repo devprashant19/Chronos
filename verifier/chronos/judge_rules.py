@@ -37,7 +37,9 @@ from .models import Claim, Evidence
 MONEY = re.compile(r"[$€£]\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|m|bn|billion|million|trillion))?", re.I)
 VERSION = re.compile(r"\bv?\d+(?:\.\d+)+\b")
 BARE_NUMBER = re.compile(r"\b\d+(?:\.\d+)?\b")
-PERCENT = re.compile(r"\b\d+(?:\.\d+)?\s?(?:%|percent)\b", re.I)
+# No trailing \b: "%" is not a word character, so \b cannot match after it at
+# the end of a string, and "7.25%" fell through to the version pattern.
+PERCENT = re.compile(r"\b\d+(?:\.\d+)?\s?(?:%|percent\b)", re.I)
 NAME = re.compile(r"^[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+){0,3}$")
 
 #: Predicates whose value is a version even when written as a bare integer,
@@ -238,6 +240,16 @@ def _looks_like_org(phrase: str) -> bool:
     return bool(_ORG_HINT.search(phrase))
 
 
+def _version_tuple(value: str) -> tuple[int, ...]:
+    """Parse a version into comparable integer components.
+
+    Pads nothing: (3,) < (3, 15) under tuple comparison, which is the ordering
+    we want — "3" is not newer than "3.15".
+    """
+    parts = re.findall(r"\d+", value or "")
+    return tuple(int(p) for p in parts[:4]) if parts else (0,)
+
+
 def _versions_compatible(stated: str, found: str) -> bool:
     """Whether two version strings describe the same line.
 
@@ -401,6 +413,20 @@ def _judge_one(claim: Claim, e: Evidence, kind: str) -> tuple[str, str, str]:
         candidates = extract_values(text, kind, claim.predicate)
         if not candidates:
             return "insufficient", "", ""
+
+        # A "latest version" claim is a claim about the MAXIMUM, so the page's
+        # highest version is the candidate current value — not merely any
+        # version it happens to mention. Matching on mere presence counted
+        # "Python 3.11 reached end of life" as support for "3.11 is the latest
+        # release", which is the opposite of what the page says.
+        if kind == "version" and VERSIONISH_PREDICATE.search(claim.predicate):
+            highest = max(candidates, key=_version_tuple)
+            stated_t = _version_tuple(claim.stated_value)
+            highest_t = _version_tuple(highest)
+
+            if stated_t >= highest_t or _versions_compatible(claim.stated_value, highest):
+                return "supports", _sentence_with(text, highest), highest
+            return "contradicts", _sentence_with(text, highest), highest
 
         for cand in candidates:
             if values_agree(claim.stated_value, cand):
