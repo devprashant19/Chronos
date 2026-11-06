@@ -1,0 +1,161 @@
+# syntax=docker/dockerfile:1
+#
+# Chronos — Bifrost gateway + chronos.so, built together in one image.
+#
+# Go's plugin loader refuses any .so whose Go toolchain, build flags or shared
+# dependency versions differ from the host binary's. Rather than hoping two
+# module graphs resolve identically, we build the plugin AS A PACKAGE OF
+# BIFROST'S OWN `transports` MODULE: same go.mod, same go.sum, same toolchain,
+# same flags, same libc. That makes an ABI mismatch structurally impossible.
+#
+# The repo keeps plugin/ as a standalone Go module too, so `go test ./...` and
+# `go vet` work normally for development and CI.
+#
+#   docker build -f deploy/Dockerfile.bifrost -t chronos/bifrost .
+#
+ARG GO_VERSION=1.27.3
+ARG BIFROST_REF=transports/v2.4.0
+
+# --------------------------------------------------------------------------
+# Stage 1 — fetch a pinned Bifrost source tree
+#
+# A source tarball, not `git clone`: the repository is ~1.2 GB with history,
+# while the tagged tree is ~86 MB. On a slow link that is the difference
+# between minutes and hours.
+#
+# If deploy/vendor/bifrost.tar.gz exists it is used as-is, so the image can be
+# rebuilt with no network at all. Otherwise the tag is downloaded.
+# --------------------------------------------------------------------------
+FROM golang:${GO_VERSION}-bookworm AS bifrost-src
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+ARG BIFROST_REF
+WORKDIR /src
+
+# Always present (the directory is committed with a .gitkeep), optionally
+# holding a pre-downloaded tarball.
+COPY deploy/vendor/ /vendor/
+
+#   A vendored tarball is *verified* before use, not trusted: a truncated
+#   download (easy to produce on a slow link) would otherwise fail the build
+#   with a confusing tar error instead of just fetching a good copy.
+RUN set -eu; \
+    url="https://codeload.github.com/maximhq/bifrost/tar.gz/refs/tags/${BIFROST_REF}"; \
+    if [ -f /vendor/bifrost.tar.gz ] && gzip -t /vendor/bifrost.tar.gz 2>/dev/null; then \
+        echo "using vendored deploy/vendor/bifrost.tar.gz"; \
+        cp /vendor/bifrost.tar.gz /tmp/bifrost.tar.gz; \
+    else \
+        if [ -f /vendor/bifrost.tar.gz ]; then \
+            echo "vendored tarball is incomplete; downloading a fresh copy"; \
+        fi; \
+        echo "downloading ${url}"; \
+        curl -fL --retry 5 --retry-delay 5 --retry-all-errors \
+             --connect-timeout 30 -C - "${url}" -o /tmp/bifrost.tar.gz; \
+        gzip -t /tmp/bifrost.tar.gz || (echo "FATAL: downloaded tarball is corrupt" && exit 1); \
+    fi; \
+    tar -xzf /tmp/bifrost.tar.gz --strip-components=1 -C /src; \
+    rm -f /tmp/bifrost.tar.gz; \
+    echo "${BIFROST_REF}" > /src/.bifrost-commit; \
+    test -f /src/transports/go.mod || (echo "FATAL: unexpected source layout" && exit 1)
+
+# --------------------------------------------------------------------------
+# Stage 2 — build the gateway (DYNAMICALLY linked) and chronos.so together
+# --------------------------------------------------------------------------
+FROM golang:${GO_VERSION}-bookworm AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc libc6-dev libsqlite3-dev ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# CGO stays on (sqlite + plugin support). GOWORK=off mirrors upstream's build.
+ENV CGO_ENABLED=1 GOOS=linux GOWORK=off
+WORKDIR /app
+
+COPY --from=bifrost-src /src/transports/ ./
+COPY --from=bifrost-src /src/.bifrost-commit /out/.bifrost-commit
+RUN go mod download
+
+# bifrost-http carries `//go:embed all:ui`, so the directory must exist and be
+# non-empty or the build fails. Chronos ships its own console, so we stub it.
+RUN mkdir -p ./bifrost-http/ui \
+    && printf '%s\n' \
+       '<!doctype html><html><head><meta charset="utf-8">' \
+       '<title>Bifrost</title></head><body style="font-family:system-ui;padding:2rem">' \
+       '<h1>Bifrost gateway</h1><p>API is up. The Chronos console is served on port 5173.</p>' \
+       '<p>This build stubs Bifrost&rsquo;s own UI to keep the image small; the HTTP API is complete.</p>' \
+       '</body></html>' > ./bifrost-http/ui/index.html
+
+# --- the gateway: NO -extldflags '-static' and NO sqlite_static tag, which is
+#     what makes the binary able to dlopen a Go plugin at all.
+ARG VERSION=chronos-dev
+RUN go build \
+        -ldflags="-w -s -X main.Version=v${VERSION}" \
+        -a -trimpath \
+        -o /out/bifrost-http \
+        ./bifrost-http \
+    && test -f /out/bifrost-http
+
+# Fail loudly if we accidentally produced a static binary: it would start fine
+# and then refuse every plugin at runtime, which is a miserable thing to debug.
+RUN ldd /out/bifrost-http > /out/ldd.txt 2>&1 || true; \
+    cat /out/ldd.txt; \
+    if grep -qi "not a dynamic executable\|statically linked" /out/ldd.txt; then \
+        echo "FATAL: bifrost-http is statically linked and cannot load plugins"; exit 1; \
+    fi
+
+# --- chronos.so, compiled as a package of this very module ---
+COPY plugin/ ./chronosplugin/
+RUN rm -f ./chronosplugin/go.mod ./chronosplugin/go.sum ./chronosplugin/*_test.go \
+    && rm -rf ./chronosplugin/testdata
+RUN go build \
+        -buildmode=plugin \
+        -a -trimpath \
+        -o /out/chronos.so \
+        ./chronosplugin \
+    && test -f /out/chronos.so
+
+# Record the exact versions we built against, for the README and for debugging.
+# ARG is per-stage, so it has to be re-declared here to be readable.
+ARG BIFROST_REF
+RUN { echo "bifrost_ref=${BIFROST_REF}"; \
+      echo "bifrost_source=$(cat /out/.bifrost-commit)"; \
+      echo "go=$(go version)"; \
+      echo "core=$(go list -m github.com/maximhq/bifrost/core | awk '{print $2}')"; \
+      echo "framework=$(go list -m github.com/maximhq/bifrost/framework | awk '{print $2}')"; \
+      echo "semanticcache=$(go list -m github.com/maximhq/bifrost/plugins/semanticcache | awk '{print $2}')"; \
+    } > /out/BUILDINFO && cat /out/BUILDINFO
+
+# --------------------------------------------------------------------------
+# Stage 3 — runtime (glibc, matching the builder's libc exactly)
+# --------------------------------------------------------------------------
+FROM debian:bookworm-slim
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libc6 ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# The upstream entrypoint execs /app/main with its own flags and ignores CMD,
+# so the binary has to carry that name.
+COPY --from=builder /out/bifrost-http       /app/main
+COPY --from=builder /out/chronos.so         /app/plugins/chronos.so
+COPY --from=builder /out/BUILDINFO          /app/BUILDINFO
+COPY --from=bifrost-src /src/transports/docker-entrypoint.sh /app/docker-entrypoint.sh
+
+ENV APP_PORT=8080 \
+    APP_HOST=0.0.0.0 \
+    LOG_LEVEL=info \
+    LOG_STYLE=json \
+    APP_DIR=/app/data
+
+RUN mkdir -p "$APP_DIR/logs" \
+    && useradd -m -s /bin/sh appuser \
+    && chown -R appuser:appuser /app \
+    && chmod +x /app/docker-entrypoint.sh
+USER appuser
+
+EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=12 \
+    CMD curl -fsS "http://127.0.0.1:${APP_PORT}/health" > /dev/null || exit 1
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["/app/main"]
