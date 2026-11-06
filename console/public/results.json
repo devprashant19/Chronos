@@ -1,0 +1,330 @@
+{
+  "benchmark": "StaleBench",
+  "dataset_version": "1.0.0",
+  "dataset_date": "2026-11-06",
+  "run": {
+    "started_at": "2026-11-06T16:59:58.238988+00:00",
+    "finished_at": "2026-11-06T17:00:22.952136+00:00",
+    "duration_s": 24.7,
+    "claims": 30,
+    "concurrency": 3,
+    "verifier": "http://verifier:8000"
+  },
+  "configuration": {
+    "offline_demo": false,
+    "tavily_configured": true,
+    "claim_cache_backend": "redis",
+    "evidence_source": "tavily",
+    "note": "Numbers measured with this configuration only. An offline run uses recorded evidence, so its precision reflects the fixtures, not the live web."
+  },
+  "modes": {
+    "annotate": {
+      "mode": "annotate",
+      "label": "cold",
+      "n": 30,
+      "usable": 30,
+      "errors": 0,
+      "wall_seconds": 9.0,
+      "outdated_detection": {
+        "precision": 0.4,
+        "recall": 0.2,
+        "f1": 0.2667,
+        "tp": 2,
+        "fp": 3,
+        "fn": 8,
+        "tn": 17,
+        "accuracy": 0.6333
+      },
+      "per_class": {
+        "leadership": {
+          "precision": 0.4,
+          "recall": 0.2,
+          "f1": 0.2667,
+          "tp": 2,
+          "fp": 3,
+          "fn": 8,
+          "n": 20
+        }
+      },
+      "timeless": {
+        "n": 10,
+        "skipped_without_credits": 10,
+        "skip_rate": 1.0
+      },
+      "latency_ms": {
+        "p50": 841.1,
+        "p95": 4317.5,
+        "mean": 845.5,
+        "max": 5285.7
+      },
+      "tavily_credits": {
+        "total": 90,
+        "per_1000_answers": 3000.0
+      },
+      "claim_cache_hits": 2,
+      "unverifiable": 11,
+      "degraded_responses": 0
+    }
+  },
+  "claim_cache_effect": {
+    "cold_credits_per_1000_answers": 3000.0,
+    "warm_credits_per_1000_answers": 1833.3,
+    "credit_saving_fraction": 0.3889,
+    "measured": true,
+    "note": "Cold is a first pass against an empty claim cache; warm repeats the same claims. The saving is the share of Tavily credits the claim cache avoided."
+  },
+  "replay": {
+    "replayed_cache_hits": 10,
+    "stale_hits_prevented": 2,
+    "prevention_rate": 0.2
+  },
+  "service_counters": {
+    "before": {
+      "answers_checked": 511,
+      "claims_checked": 454,
+      "claims_skipped": 81,
+      "stale_claims": 165,
+      "outdated_answers": 165,
+      "cache_evictions": 1,
+      "stale_hits_prevented": 1,
+      "tavily_credits_used": 1163,
+      "verify_p50_ms": 3181.0,
+      "verify_p95_ms": 9133.0,
+      "claim_cache": {
+        "backend": "redis",
+        "hits": 2,
+        "misses": 28,
+        "hit_rate": 0.0667,
+        "entries_in_memory": 0
+      },
+      "tavily": {
+        "limit": 400,
+        "used": 140,
+        "remaining": 260,
+        "configured": true,
+        "live": true
+      },
+      "evictor": {
+        "cleared": 0,
+        "failed": 0
+      },
+      "sweeper": {
+        "runs": 1,
+        "last_run": 1793984324.0450537,
+        "reverified": 0,
+        "evicted": 0,
+        "interval_s": 600,
+        "enabled": true
+      },
+      "stream_subscribers": 0,
+      "mode": {
+        "offline_demo": false,
+        "extract_model": null,
+        "judge_model": null
+      },
+      "thresholds": {
+        "current": 80.0,
+        "check": 50.0
+      },
+      "uptime_s": 104.4
+    },
+    "after": {
+      "answers_checked": 581,
+      "claims_checked": 524,
+      "claims_skipped": 81,
+      "stale_claims": 177,
+      "outdated_answers": 177,
+      "cache_evictions": 3,
+      "stale_hits_prevented": 3,
+      "tavily_credits_used": 1343,
+      "verify_p50_ms": 2808.0,
+      "verify_p95_ms": 8880.0,
+      "claim_cache": {
+        "backend": "redis",
+        "hits": 16,
+        "misses": 64,
+        "hit_rate": 0.2,
+        "entries_in_memory": 0
+      },
+      "tavily": {
+        "limit": 400,
+        "used": 320,
+        "remaining": 80,
+        "configured": true,
+        "live": true
+      },
+      "evictor": {
+        "cleared": 2,
+        "failed": 0
+      },
+      "sweeper": {
+        "runs": 1,
+        "last_run": 1793984324.0450537,
+        "reverified": 0,
+        "evicted": 0,
+        "interval_s": 600,
+        "enabled": true
+      },
+      "stream_subscribers": 0,
+      "mode": {
+        "offline_demo": false,
+        "extract_model": null,
+        "judge_model": null
+      },
+      "thresholds": {
+        "current": 80.0,
+        "check": 50.0
+      },
+      "uptime_s": 129.0
+    }
+  },
+  "label_disagreements": {
+    "count": 11,
+    "note": "A disagreement on a `current`-group claim may be a stale LABEL rather than a system error; check label_confidence and the source.",
+    "items": [
+      {
+        "id": "current-001",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Satya Nadella is the CEO of Microsoft.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 31.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "Satya Nadella",
+        "source_url": "https://www.seattletimes.com/business/microsoft-ceo-nadella-calls-for-emergency-brake-on-advanced-ai"
+      },
+      {
+        "id": "current-002",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Tim Cook is the CEO of Apple.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 26.5,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "John Ternus",
+        "source_url": "https://fortune.com/2026/11/02/new-apple-ceo-john-ternus-chalks-up-some-early-wins-but-the-honeymoon-is-over"
+      },
+      {
+        "id": "current-005",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Andy Jassy is the CEO of Amazon.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 31.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "Andy Jassy",
+        "source_url": "https://fortune.com/2026/10/29/amazon-ceo-says-shopping-agents-like-metas-muse-not-great"
+      },
+      {
+        "id": "stale-001",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Jack Dorsey is the CEO of Twitter.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Dorsey stepped down as CEO in November 2021.",
+        "current_value": "Jack Dorsey",
+        "source_url": "https://x.com/LayoffAI/status/2115871654366642624"
+      },
+      {
+        "id": "stale-002",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Twitter is a publicly traded company on the New York Stock Exchange.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Taken private after the October 2022 acquisition.",
+        "current_value": "a publicly traded company on the New York Stock Exchange",
+        "source_url": "https://devcommunity.x.com"
+      },
+      {
+        "id": "stale-003",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "The company is called Facebook, Inc.",
+        "expected": "outdated",
+        "actual": "check",
+        "score": 66.0,
+        "label_confidence": "high",
+        "label_basis": "Renamed Meta Platforms, Inc. in October 2021.",
+        "current_value": "Facebook, Inc",
+        "source_url": "https://www.androidcentral.com/facebook-company-name-change"
+      },
+      {
+        "id": "stale-004",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Larry Page is the CEO of Google.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Sundar Pichai became Google CEO in 2015 and Alphabet CEO in 2019.",
+        "current_value": "Larry Page",
+        "source_url": "https://cloud.google.com/events/sovereign-ai-summit-26?hl=de"
+      },
+      {
+        "id": "stale-006",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Boris Johnson is the Prime Minister of the United Kingdom.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Resigned as PM in September 2022; the office has changed hands since.",
+        "current_value": "Boris Johnson",
+        "source_url": "https://www.justsecurity.org/163369/early-edition-november-4-2026"
+      },
+      {
+        "id": "stale-007",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Elizabeth II is the reigning monarch of the United Kingdom.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Queen Elizabeth II died in September 2022; Charles III acceded.",
+        "current_value": "Elizabeth II",
+        "source_url": "https://www.economist.com/britain/2026/11/02/how-is-king-charles-iii-doing"
+      },
+      {
+        "id": "stale-008",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Angela Merkel is the Chancellor of Germany.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Left office in December 2021.",
+        "current_value": "Angela Merkel",
+        "source_url": "https://www.britannica.com/biography/Olaf-Scholz"
+      },
+      {
+        "id": "stale-010",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Bob Iger has retired and is no longer involved with Disney.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Iger returned as CEO in November 2022.",
+        "current_value": "has retired and is no longer involved with Disney",
+        "source_url": "https://sports.yahoo.com/articles/lakers-incoming-owner-bob-iger-215740311.html"
+      }
+    ]
+  }
+}

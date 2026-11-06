@@ -44,3 +44,6 @@ deploy/vendor/*.tar.gz
 
 # local test artifacts
 tmp/
+
+# console deps
+console/node_modules/
