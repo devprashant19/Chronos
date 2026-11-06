@@ -486,7 +486,48 @@ func HTTPTransportResponseHeadersHook(ctx *schemas.BifrostContext, req *schemas.
 	if res.LatencyMS > 0 {
 		resp.SetHeader(hdrLatency, strconv.FormatInt(res.LatencyMS, 10))
 	}
+
+	exposeChronosHeaders(resp)
 	return nil
+}
+
+// chronosHeaders is every header Chronos may set, in the order a reader would
+// want them.
+var chronosHeaders = []string{
+	hdrVerdict, hdrScore, hdrClaims, hdrStale, hdrTTL, hdrReport, hdrClass, hdrMode, hdrLatency,
+}
+
+// exposeChronosHeaders appends Chronos's headers to Access-Control-Expose-Headers.
+//
+// Without this a browser cannot read them. The gateway publishes its own
+// x-bifrost-* headers on that list, but it has no way to know about a
+// plugin's, so a plugin that wants its headers read from a page has to add
+// them itself. Chronos does want that: the console's playground shows the raw
+// headers precisely to demonstrate that the check happened in the gateway and
+// not in the page.
+//
+// Existing entries are preserved and duplicates avoided, because clobbering
+// the gateway's list would break every other client reading x-bifrost-*.
+func exposeChronosHeaders(resp *schemas.HTTPResponseMetadata) {
+	const key = "Access-Control-Expose-Headers"
+
+	existing := resp.Header(key)
+	if existing == "" {
+		resp.SetHeader(key, strings.Join(chronosHeaders, ", "))
+		return
+	}
+
+	lower := strings.ToLower(existing)
+	missing := make([]string, 0, len(chronosHeaders))
+	for _, h := range chronosHeaders {
+		if !strings.Contains(lower, h) {
+			missing = append(missing, h)
+		}
+	}
+	if len(missing) == 0 {
+		return
+	}
+	resp.SetHeader(key, existing+", "+strings.Join(missing, ", "))
 }
 
 // Cleanup waits briefly for background verifications to drain so that a
