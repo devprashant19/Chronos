@@ -125,6 +125,66 @@ judging goes back out through Bifrost, rather than direct to a provider.
 
 ---
 
+## Models: free and open-weights by default
+
+Chronos needs a model for two jobs — pulling claims out of an answer, and
+judging evidence. Both default to **Groq serving open-weights Llama**, because
+Groq is the only provider still offering a genuinely free allowance with no
+credit card, and it is fast enough that inline verification stays inside its
+deadline. (Cerebras moved its free tier behind a card during 2026.)
+
+```bash
+# 1. free key, no card:  https://console.groq.com/keys
+echo 'GROQ_API_KEY=gsk_...' >> deploy/.env
+echo 'CHRONOS_LIVE_MODELS=1' >> deploy/.env
+
+# 2. restart and check the model actually answers with JSON
+cd deploy && docker compose up -d bifrost verifier
+./scripts/check-model.sh --all
+```
+
+| Model | Why |
+|---|---|
+| `groq/llama-3.3-70b-versatile` | **default.** Open weights, JSON mode, handles the strict claim schema |
+| `groq/llama-3.1-8b-instant` | **fallback.** Much larger daily allowance, catches a spent 70B quota |
+| `groq/openai/gpt-oss-120b` | Open weights with *strict* structured outputs; best quality if the allowance suits |
+| `ollama/llama3.1` | **last resort.** Fully local, no key, no quota: `docker compose --profile local up -d ollama` |
+
+Free-tier allowances reported by third parties in 2026 — indicative only,
+since Groq has changed them and the sources disagree: roughly **30 req/min and
+~14,400 req/day** for the 8B model, and **~1,000 req/day** for 70B. Limits are
+per *organisation*, so extra keys add no headroom. Check
+[your own limits page](https://console.groq.com/settings/limits).
+
+Those allowances go further than they look, because Chronos makes **one
+extraction call per answer and one judge call per claim-cache *miss***. Once
+the claim cache is warm, repeated questions cost nothing — measured at a 39%
+credit saving on a repeat pass.
+
+The fallback chain is a real one, not decoration: Bifrost retries on a 429, so
+a spent 70B allowance degrades to the 8B model, and a spent Groq account
+degrades to a local Ollama model, before Chronos ever drops to its rule engine.
+
+### Two things worth knowing
+
+**`fallbacks` is a list of strings on the wire.** Bifrost's Go `Fallback`
+struct has `provider` and `model` fields, which makes
+`[{"provider": "groq", "model": "..."}]` the obvious guess — and the
+OpenAI-compatible route answers `400 Invalid request payload`. It wants
+`["groq/llama-3.1-8b-instant"]`. Getting this wrong is quiet in the worst way:
+every model call 400s, the verifier silently falls back to its rule engine, and
+the only symptom is that quality is worse than it should be. Chronos now
+reports which extractor ran in `report.extractor`, so that failure is visible.
+
+**Not every model accepts `response_format`.** Support varies by provider and
+by model within a provider. Chronos retries once without JSON mode when a model
+rejects it — the prompt already demands strict JSON and the parser copes with
+fences — so a model without JSON mode stays usable. A 429 or an auth failure
+deliberately does *not* trigger that retry, since it would just hit the same
+wall twice.
+
+---
+
 ## Measured results
 
 From `bench/results.json`, produced by `bench/runner.py` against **live
@@ -322,8 +382,14 @@ Credentials unlock the real paths rather than changing them:
 | Variable | Effect |
 |---|---|
 | `TAVILY_API_KEY` | Evidence comes from the live web |
-| `OPENAI_API_KEY` (+ `CHRONOS_LIVE_MODELS=1`) | Model-based extraction and judging — the designed path |
+| `GROQ_API_KEY` (+ `CHRONOS_LIVE_MODELS=1`) | Model-based extraction and judging — the designed path, free |
 | neither | Rule-based extraction and judging over recorded evidence |
+
+`mockllm` also answers Chronos's *own* extraction and judge prompts with valid
+strict JSON (`deploy/mockllm/jsonmode.py`). That is what lets the model path —
+the JSON contract, Pydantic validation, span repair, per-source judging feeding
+the score — be exercised and verified with no key at all. Only the judgement
+quality depends on a real model; the plumbing is tested either way.
 
 `CHRONOS_LIVE_MODELS` is separate from `CHRONOS_OFFLINE_DEMO` on purpose: a
 Tavily key and a model key rarely arrive together, and live-evidence +
