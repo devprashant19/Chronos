@@ -71,6 +71,7 @@ services:
       # the offline demo routes to mockllm instead.
       OPENAI_API_KEY: "${OPENAI_API_KEY:-sk-unset-offline-demo}"
       GROQ_API_KEY: "${GROQ_API_KEY:-gsk-unset-offline-demo}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
       BIFROST_ENCRYPTION_KEY: "${BIFROST_ENCRYPTION_KEY:-chronos-dev-encryption-key-32byte}"
       CHRONOS_VK: "${CHRONOS_VK:-sk-bf-chronos-verifier-dev}"
       BIFROST_SETUP_TOKEN: "${BIFROST_SETUP_TOKEN:-chronos-dev-setup-token}"
@@ -113,9 +114,12 @@ services:
       # from Tavily while extraction and judging stay rule-based, which is
       # the useful setup when you have a Tavily key but no model key.
       CHRONOS_LIVE_MODELS: "${CHRONOS_LIVE_MODELS:-}"
-      CHRONOS_EXTRACT_MODEL: "${CHRONOS_EXTRACT_MODEL:-mockllm/chronos-demo}"
-      CHRONOS_JUDGE_MODEL: "${CHRONOS_JUDGE_MODEL:-mockllm/chronos-demo}"
-      CHRONOS_FALLBACK_MODELS: "${CHRONOS_FALLBACK_MODELS:-groq/llama-3.1-8b-instant}"
+      # Free by default: Groq serves open-weights Llama with no card.
+      # mockllm/chronos-demo keeps the model path testable with no key.
+      CHRONOS_EXTRACT_MODEL: "${CHRONOS_EXTRACT_MODEL:-groq/llama-3.3-70b-versatile}"
+      CHRONOS_JUDGE_MODEL: "${CHRONOS_JUDGE_MODEL:-groq/llama-3.3-70b-versatile}"
+      CHRONOS_FALLBACK_MODELS: "${CHRONOS_FALLBACK_MODELS:-groq/llama-3.1-8b-instant,ollama/llama3.1}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
 
       CHRONOS_TAVILY_DAILY_CREDITS: "${CHRONOS_TAVILY_DAILY_CREDITS:-400}"
       CHRONOS_DB_PATH: "/data/chronos.sqlite"
@@ -146,9 +150,27 @@ services:
       - "5173:80"
     networks: [chronos]
 
+  # ---------------------------------------------------------------------
+  # Optional, entirely local model. No key, no quota, no network calls.
+  #   docker compose --profile local up -d ollama
+  #   docker compose exec ollama ollama pull llama3.1
+  # It is the last link in the verifier's fallback chain, so a spent Groq
+  # allowance degrades to a local model rather than to rule-based judging.
+  # ---------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:0.5.7
+    container_name: chronos-ollama
+    profiles: ["local"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    networks: [chronos]
+
 volumes:
   bifrost-data:
   verifier-data:
+  ollama-models:
 
 networks:
   chronos:

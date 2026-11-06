@@ -31,14 +31,18 @@
     "groq": {
       "keys": [
         {
-          "name": "groq-fallback",
+          "name": "groq-free",
           "value": "env.GROQ_API_KEY",
           "models": [
             "*"
           ],
           "weight": 1.0
         }
-      ]
+      ],
+      "network_config": {
+        "default_request_timeout_in_seconds": 60,
+        "max_retries": 2
+      }
     },
     "mockllm": {
       "custom_provider_config": {
@@ -54,6 +58,24 @@
         {
           "name": "mockllm-local",
           "value": "not-a-secret-offline-demo",
+          "models": [
+            "*"
+          ],
+          "weight": 1.0
+        }
+      ]
+    },
+    "ollama": {
+      "network_config": {
+        "base_url": "env.OLLAMA_BASE_URL",
+        "default_request_timeout_in_seconds": 180,
+        "max_retries": 0,
+        "allow_private_network": true
+      },
+      "keys": [
+        {
+          "name": "ollama-local",
+          "value": "not-a-secret-local-ollama",
           "models": [
             "*"
           ],
@@ -93,6 +115,16 @@
           },
           {
             "provider": "mockllm",
+            "allowed_models": [
+              "*"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
+          },
+          {
+            "provider": "ollama",
             "allowed_models": [
               "*"
             ],

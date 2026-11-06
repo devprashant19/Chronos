@@ -29,6 +29,8 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
+import jsonmode
+
 FIXTURES = Path(__file__).parent / "fixtures" / "answers.json"
 
 app = FastAPI(title="mockllm", docs_url=None, redoc_url=None)
@@ -43,6 +45,19 @@ def _load_fixtures() -> dict[str, Any]:
 
 
 _FIXTURES = _load_fixtures()
+
+
+def _system_message(messages: list[dict[str, Any]]) -> str:
+    for msg in messages or []:
+        if msg.get("role") == "system":
+            content = msg.get("content")
+            if isinstance(content, str):
+                return content
+            if isinstance(content, list):
+                return "\n".join(
+                    part.get("text", "") for part in content if isinstance(part, dict)
+                )
+    return ""
 
 
 def _last_user_message(messages: list[dict[str, Any]]) -> str:
@@ -99,7 +114,16 @@ async def chat_completions(request: Request) -> Any:
     body = await request.json()
     messages = body.get("messages") or []
     prompt = _last_user_message(messages)
-    answer, fixture_id = _pick_answer(prompt)
+    system = _system_message(messages)
+
+    # Chronos's own extraction and judging calls get strict JSON back, so the
+    # model path can be exercised with no API key. See jsonmode.py.
+    if jsonmode.is_extract_prompt(system):
+        answer, fixture_id = jsonmode.extraction_reply(prompt), "extract-json"
+    elif jsonmode.is_judge_prompt(system):
+        answer, fixture_id = jsonmode.judge_reply(prompt), "judge-json"
+    else:
+        answer, fixture_id = _pick_answer(prompt)
 
     model = body.get("model") or "chronos-demo"
     # Deterministic id so cache behaviour is reproducible across runs.
