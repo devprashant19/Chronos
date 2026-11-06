@@ -1,0 +1,316 @@
+{
+  "benchmark": "StaleBench",
+  "dataset_version": "1.0.0",
+  "dataset_date": "2026-11-06",
+  "run": {
+    "started_at": "2026-11-06T19:04:30.272341+00:00",
+    "finished_at": "2026-11-06T19:08:01.363485+00:00",
+    "duration_s": 211.1,
+    "claims": 30,
+    "concurrency": 2,
+    "verifier": "http://verifier:8000"
+  },
+  "configuration": {
+    "offline_demo": false,
+    "tavily_configured": true,
+    "claim_cache_backend": "redis",
+    "evidence_source": "tavily",
+    "note": "Numbers measured with this configuration only. An offline run uses recorded evidence, so its precision reflects the fixtures, not the live web."
+  },
+  "modes": {
+    "annotate": {
+      "mode": "annotate",
+      "label": "cold",
+      "n": 30,
+      "usable": 30,
+      "errors": 0,
+      "wall_seconds": 211.0,
+      "outdated_detection": {
+        "precision": 0.5,
+        "recall": 0.1,
+        "f1": 0.1667,
+        "tp": 1,
+        "fp": 1,
+        "fn": 9,
+        "tn": 19,
+        "accuracy": 0.6667
+      },
+      "per_class": {
+        "leadership": {
+          "precision": 0.5,
+          "recall": 0.1,
+          "f1": 0.1667,
+          "tp": 1,
+          "fp": 1,
+          "fn": 9,
+          "n": 20
+        }
+      },
+      "timeless": {
+        "n": 10,
+        "skipped_without_credits": 10,
+        "skip_rate": 1.0
+      },
+      "latency_ms": {
+        "p50": 15840.2,
+        "p95": 25862.8,
+        "mean": 14028.6,
+        "max": 26112.3
+      },
+      "tavily_credits": {
+        "total": 32,
+        "per_1000_answers": 1066.7
+      },
+      "claim_cache_hits": 0,
+      "unverifiable": 15,
+      "degraded_responses": 12
+    }
+  },
+  "claim_cache_effect": {
+    "cold_credits_per_1000_answers": 1066.7,
+    "warm_credits_per_1000_answers": null,
+    "credit_saving_fraction": null,
+    "measured": false,
+    "note": "Re-run with --measure-cache to populate this."
+  },
+  "replay": {
+    "measured": false,
+    "note": "Re-run with --replay to populate this."
+  },
+  "service_counters": {
+    "before": {
+      "answers_checked": 3862,
+      "claims_checked": 647,
+      "claims_skipped": 3078,
+      "stale_claims": 239,
+      "outdated_answers": 238,
+      "cache_evictions": 11,
+      "stale_hits_prevented": 11,
+      "tavily_credits_used": 1645,
+      "verify_p50_ms": 3202.0,
+      "verify_p95_ms": 20728.0,
+      "claim_cache": {
+        "backend": "redis",
+        "hits": 0,
+        "misses": 0,
+        "hit_rate": 0.0,
+        "entries_in_memory": 0
+      },
+      "tavily": {
+        "limit": 400,
+        "used": 0,
+        "remaining": 400,
+        "configured": true,
+        "live": true
+      },
+      "evictor": {
+        "cleared": 0,
+        "failed": 0
+      },
+      "sweeper": {
+        "runs": 0,
+        "last_run": 0.0,
+        "reverified": 0,
+        "evicted": 0,
+        "interval_s": 600,
+        "enabled": true
+      },
+      "stream_subscribers": 0,
+      "mode": {
+        "offline_demo": false,
+        "extract_model": "groq/openai/gpt-oss-120b",
+        "judge_model": "groq/openai/gpt-oss-20b"
+      },
+      "thresholds": {
+        "current": 80.0,
+        "check": 50.0
+      },
+      "uptime_s": 19.7
+    },
+    "after": {
+      "answers_checked": 4053,
+      "claims_checked": 677,
+      "claims_skipped": 3112,
+      "stale_claims": 242,
+      "outdated_answers": 241,
+      "cache_evictions": 11,
+      "stale_hits_prevented": 11,
+      "tavily_credits_used": 1734,
+      "verify_p50_ms": 3298.0,
+      "verify_p95_ms": 21997.0,
+      "claim_cache": {
+        "backend": "redis",
+        "hits": 0,
+        "misses": 71,
+        "hit_rate": 0.0,
+        "entries_in_memory": 0
+      },
+      "tavily": {
+        "limit": 400,
+        "used": 302,
+        "remaining": 98,
+        "configured": true,
+        "live": true
+      },
+      "evictor": {
+        "cleared": 0,
+        "failed": 0
+      },
+      "sweeper": {
+        "runs": 1,
+        "last_run": 1793991880.8059084,
+        "reverified": 0,
+        "evicted": 0,
+        "interval_s": 600,
+        "enabled": true
+      },
+      "stream_subscribers": 0,
+      "mode": {
+        "offline_demo": false,
+        "extract_model": "groq/openai/gpt-oss-120b",
+        "judge_model": "groq/openai/gpt-oss-20b"
+      },
+      "thresholds": {
+        "current": 80.0,
+        "check": 50.0
+      },
+      "uptime_s": 230.7
+    }
+  },
+  "label_disagreements": {
+    "count": 10,
+    "note": "A disagreement on a `current`-group claim may be a stale LABEL rather than a system error; check label_confidence and the source.",
+    "items": [
+      {
+        "id": "current-007",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Mark Zuckerberg is the CEO of Meta Platforms.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 26.5,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "Mark Zuckerberg",
+        "source_url": "https://www.politico.com/news/2026/10/21/zuckerberg-considered-leaving-ca-over-wealth-tax-meta-says-01131087"
+      },
+      {
+        "id": "stale-001",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Jack Dorsey is the CEO of Twitter.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Dorsey stepped down as CEO in November 2021.",
+        "current_value": "insufficient",
+        "source_url": "https://www.coindesk.com/markets/2026/11/04/jack-dorsey-s-block-faces-usd764-million-doj-settlement-as-bitcoin-profit-plunges-50"
+      },
+      {
+        "id": "stale-003",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "The company is called Facebook, Inc.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Renamed Meta Platforms, Inc. in October 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-004",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Larry Page is the CEO of Google.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Sundar Pichai became Google CEO in 2015 and Alphabet CEO in 2019.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-005",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Steve Ballmer is the CEO of Microsoft.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Satya Nadella became CEO in February 2014.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-006",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Boris Johnson is the Prime Minister of the United Kingdom.",
+        "expected": "outdated",
+        "actual": "check",
+        "score": 71.5,
+        "label_confidence": "high",
+        "label_basis": "Resigned as PM in September 2022; the office has changed hands since.",
+        "current_value": "Prime Minister of the United Kingdom",
+        "source_url": "https://www.kcrg.com/2026/11/02/boris-johnsons-speech-univ-iowa-postponed"
+      },
+      {
+        "id": "stale-007",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Elizabeth II is the reigning monarch of the United Kingdom.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Queen Elizabeth II died in September 2022; Charles III acceded.",
+        "current_value": "is the reigning monarch of the United Kingdom",
+        "source_url": "https://www.britannica.com/biography/Camilla-queen-of-the-United-Kingdom"
+      },
+      {
+        "id": "stale-008",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Angela Merkel is the Chancellor of Germany.",
+        "expected": "outdated",
+        "actual": "check",
+        "score": 71.5,
+        "label_confidence": "high",
+        "label_basis": "Left office in December 2021.",
+        "current_value": "Chancellor of Germany",
+        "source_url": "https://www.dw.com/en/germany-news-gen-z-group-calls-for-new-protests/live-79814961"
+      },
+      {
+        "id": "stale-009",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Jeff Bezos is the CEO of Amazon.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Andy Jassy became CEO in July 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-010",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Bob Iger has retired and is no longer involved with Disney.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Iger returned as CEO in November 2022.",
+        "current_value": null,
+        "source_url": null
+      }
+    ]
+  }
+}
