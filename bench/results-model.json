@@ -3,11 +3,11 @@
   "dataset_version": "1.0.0",
   "dataset_date": "2026-11-06",
   "run": {
-    "started_at": "2026-11-06T19:04:30.272341+00:00",
-    "finished_at": "2026-11-06T19:08:01.363485+00:00",
-    "duration_s": 211.1,
-    "claims": 30,
-    "concurrency": 2,
+    "started_at": "2026-11-06T20:07:57.258811+00:00",
+    "finished_at": "2026-11-06T20:13:41.086493+00:00",
+    "duration_s": 343.8,
+    "claims": 18,
+    "concurrency": 1,
     "verifier": "http://verifier:8000"
   },
   "configuration": {
@@ -21,53 +21,53 @@
     "annotate": {
       "mode": "annotate",
       "label": "cold",
-      "n": 30,
-      "usable": 30,
+      "n": 18,
+      "usable": 18,
       "errors": 0,
-      "wall_seconds": 211.0,
+      "wall_seconds": 343.6,
       "outdated_detection": {
-        "precision": 0.5,
-        "recall": 0.1,
-        "f1": 0.1667,
-        "tp": 1,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
         "fp": 1,
-        "fn": 9,
-        "tn": 19,
-        "accuracy": 0.6667
+        "fn": 6,
+        "tn": 11,
+        "accuracy": 0.6111
       },
       "per_class": {
         "leadership": {
-          "precision": 0.5,
-          "recall": 0.1,
-          "f1": 0.1667,
-          "tp": 1,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "tp": 0,
           "fp": 1,
-          "fn": 9,
-          "n": 20
+          "fn": 6,
+          "n": 12
         }
       },
       "timeless": {
-        "n": 10,
-        "skipped_without_credits": 10,
+        "n": 6,
+        "skipped_without_credits": 6,
         "skip_rate": 1.0
       },
       "latency_ms": {
-        "p50": 15840.2,
-        "p95": 25862.8,
-        "mean": 14028.6,
-        "max": 26112.3
+        "p50": 17600.8,
+        "p95": 25096.9,
+        "mean": 19090.5,
+        "max": 34139.7
       },
       "tavily_credits": {
-        "total": 32,
-        "per_1000_answers": 1066.7
+        "total": 58,
+        "per_1000_answers": 3222.2
       },
       "claim_cache_hits": 0,
-      "unverifiable": 15,
-      "degraded_responses": 12
+      "unverifiable": 7,
+      "degraded_responses": 0
     }
   },
   "claim_cache_effect": {
-    "cold_credits_per_1000_answers": 1066.7,
+    "cold_credits_per_1000_answers": 3222.2,
     "warm_credits_per_1000_answers": null,
     "credit_saving_fraction": null,
     "measured": false,
@@ -79,16 +79,16 @@
   },
   "service_counters": {
     "before": {
-      "answers_checked": 3862,
-      "claims_checked": 647,
-      "claims_skipped": 3078,
-      "stale_claims": 239,
-      "outdated_answers": 238,
+      "answers_checked": 4372,
+      "claims_checked": 766,
+      "claims_skipped": 3115,
+      "stale_claims": 255,
+      "outdated_answers": 254,
       "cache_evictions": 11,
       "stale_hits_prevented": 11,
-      "tavily_credits_used": 1645,
-      "verify_p50_ms": 3202.0,
-      "verify_p95_ms": 20728.0,
+      "tavily_credits_used": 2041,
+      "verify_p50_ms": 3311.0,
+      "verify_p95_ms": 25616.0,
       "claim_cache": {
         "backend": "redis",
         "hits": 0,
@@ -106,6 +106,13 @@
       "evictor": {
         "cleared": 0,
         "failed": 0
+      },
+      "model_pacing": {
+        "tokens_per_minute": 8000,
+        "enabled": true,
+        "waits": 0,
+        "wait_seconds": 0.0,
+        "used_by_model": {}
       },
       "sweeper": {
         "runs": 0,
@@ -125,30 +132,30 @@
         "current": 80.0,
         "check": 50.0
       },
-      "uptime_s": 19.7
+      "uptime_s": 8.5
     },
     "after": {
-      "answers_checked": 4053,
-      "claims_checked": 677,
-      "claims_skipped": 3112,
-      "stale_claims": 242,
-      "outdated_answers": 241,
+      "answers_checked": 4390,
+      "claims_checked": 784,
+      "claims_skipped": 3115,
+      "stale_claims": 256,
+      "outdated_answers": 255,
       "cache_evictions": 11,
       "stale_hits_prevented": 11,
-      "tavily_credits_used": 1734,
-      "verify_p50_ms": 3298.0,
-      "verify_p95_ms": 21997.0,
+      "tavily_credits_used": 2099,
+      "verify_p50_ms": 3335.0,
+      "verify_p95_ms": 25616.0,
       "claim_cache": {
         "backend": "redis",
         "hits": 0,
-        "misses": 71,
+        "misses": 12,
         "hit_rate": 0.0,
         "entries_in_memory": 0
       },
       "tavily": {
         "limit": 400,
-        "used": 302,
-        "remaining": 98,
+        "used": 58,
+        "remaining": 342,
         "configured": true,
         "live": true
       },
@@ -156,9 +163,19 @@
         "cleared": 0,
         "failed": 0
       },
+      "model_pacing": {
+        "tokens_per_minute": 8000,
+        "enabled": true,
+        "waits": 23,
+        "wait_seconds": 112.1,
+        "used_by_model": {
+          "groq/openai/gpt-oss-120b": 7057,
+          "groq/openai/gpt-oss-20b": 0
+        }
+      },
       "sweeper": {
         "runs": 1,
-        "last_run": 1793991880.8059084,
+        "last_run": 1793995699.1201198,
         "reverified": 0,
         "evicted": 0,
         "interval_s": 600,
@@ -174,25 +191,25 @@
         "current": 80.0,
         "check": 50.0
       },
-      "uptime_s": 230.7
+      "uptime_s": 352.1
     }
   },
   "label_disagreements": {
-    "count": 10,
+    "count": 7,
     "note": "A disagreement on a `current`-group claim may be a stale LABEL rather than a system error; check label_confidence and the source.",
     "items": [
       {
-        "id": "current-007",
+        "id": "current-002",
         "group": "current",
         "class": "leadership",
-        "claim": "Mark Zuckerberg is the CEO of Meta Platforms.",
+        "claim": "Tim Cook is the CEO of Apple.",
         "expected": "current",
         "actual": "outdated",
         "score": 26.5,
         "label_confidence": "high",
         "label_basis": "Believed true as of 2026-11-06.",
-        "current_value": "Mark Zuckerberg",
-        "source_url": "https://www.politico.com/news/2026/10/21/zuckerberg-considered-leaving-ca-over-wealth-tax-meta-says-01131087"
+        "current_value": "John Ternus",
+        "source_url": "https://mashable.com/tech/apple-q4-2026-earnings-call-ternus-iphone-duo"
       },
       {
         "id": "stale-001",
@@ -204,8 +221,21 @@
         "score": 0.0,
         "label_confidence": "high",
         "label_basis": "Dorsey stepped down as CEO in November 2021.",
-        "current_value": "insufficient",
-        "source_url": "https://www.coindesk.com/markets/2026/11/04/jack-dorsey-s-block-faces-usd764-million-doj-settlement-as-bitcoin-profit-plunges-50"
+        "current_value": "Jack Dorsey",
+        "source_url": "https://x.com/rdominguezibar/status/2114667828997398703"
+      },
+      {
+        "id": "stale-002",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Twitter is a publicly traded company on the New York Stock Exchange.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Taken private after the October 2022 acquisition.",
+        "current_value": "a publicly traded company on the New York Stock Exchange",
+        "source_url": "https://x.com/tedcruz/status/2118125881067487633"
       },
       {
         "id": "stale-003",
@@ -213,12 +243,12 @@
         "class": "leadership",
         "claim": "The company is called Facebook, Inc.",
         "expected": "outdated",
-        "actual": "current",
-        "score": 100.0,
+        "actual": "check",
+        "score": 71.5,
         "label_confidence": "high",
         "label_basis": "Renamed Meta Platforms, Inc. in October 2021.",
-        "current_value": null,
-        "source_url": null
+        "current_value": "Facebook, Inc",
+        "source_url": "https://abcnews.com/Business/facebook-announces-changing-company-meta/story?id=80683908"
       },
       {
         "id": "stale-004",
@@ -230,8 +260,8 @@
         "score": 0.0,
         "label_confidence": "high",
         "label_basis": "Sundar Pichai became Google CEO in 2015 and Alphabet CEO in 2019.",
-        "current_value": null,
-        "source_url": null
+        "current_value": "Larry Page",
+        "source_url": "https://blog.google/company-news/inside-google/message-ceo/alphabet-earnings-q3-2026"
       },
       {
         "id": "stale-005",
@@ -243,8 +273,8 @@
         "score": 0.0,
         "label_confidence": "high",
         "label_basis": "Satya Nadella became CEO in February 2014.",
-        "current_value": null,
-        "source_url": null
+        "current_value": "Steve Ballmer",
+        "source_url": "https://fortune.com/2026/10/15/microsoft-ceo-satya-nadella-haunted-by-meeting-with-bill-gates-stayed-silent-steve-ballmer-taught-ownership-mindset"
       },
       {
         "id": "stale-006",
@@ -252,64 +282,12 @@
         "class": "leadership",
         "claim": "Boris Johnson is the Prime Minister of the United Kingdom.",
         "expected": "outdated",
-        "actual": "check",
-        "score": 71.5,
+        "actual": "unverifiable",
+        "score": 0.0,
         "label_confidence": "high",
         "label_basis": "Resigned as PM in September 2022; the office has changed hands since.",
-        "current_value": "Prime Minister of the United Kingdom",
-        "source_url": "https://www.kcrg.com/2026/11/02/boris-johnsons-speech-univ-iowa-postponed"
-      },
-      {
-        "id": "stale-007",
-        "group": "stale",
-        "class": "leadership",
-        "claim": "Elizabeth II is the reigning monarch of the United Kingdom.",
-        "expected": "outdated",
-        "actual": "unverifiable",
-        "score": 0.0,
-        "label_confidence": "high",
-        "label_basis": "Queen Elizabeth II died in September 2022; Charles III acceded.",
-        "current_value": "is the reigning monarch of the United Kingdom",
-        "source_url": "https://www.britannica.com/biography/Camilla-queen-of-the-United-Kingdom"
-      },
-      {
-        "id": "stale-008",
-        "group": "stale",
-        "class": "leadership",
-        "claim": "Angela Merkel is the Chancellor of Germany.",
-        "expected": "outdated",
-        "actual": "check",
-        "score": 71.5,
-        "label_confidence": "high",
-        "label_basis": "Left office in December 2021.",
-        "current_value": "Chancellor of Germany",
-        "source_url": "https://www.dw.com/en/germany-news-gen-z-group-calls-for-new-protests/live-79814961"
-      },
-      {
-        "id": "stale-009",
-        "group": "stale",
-        "class": "leadership",
-        "claim": "Jeff Bezos is the CEO of Amazon.",
-        "expected": "outdated",
-        "actual": "unverifiable",
-        "score": 0.0,
-        "label_confidence": "high",
-        "label_basis": "Andy Jassy became CEO in July 2021.",
-        "current_value": null,
-        "source_url": null
-      },
-      {
-        "id": "stale-010",
-        "group": "stale",
-        "class": "leadership",
-        "claim": "Bob Iger has retired and is no longer involved with Disney.",
-        "expected": "outdated",
-        "actual": "unverifiable",
-        "score": 0.0,
-        "label_confidence": "high",
-        "label_basis": "Iger returned as CEO in November 2022.",
-        "current_value": null,
-        "source_url": null
+        "current_value": "Boris Johnson",
+        "source_url": "https://www.c-span.org/program/prime-ministers-questions/question-time/686784"
       }
     ]
   }

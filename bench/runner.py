@@ -106,7 +106,9 @@ class Bench:
     async def run(self) -> dict[str, Any]:
         started = datetime.now(timezone.utc)
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
+        # Generous: a paced verifier waits on purpose, and a client timeout
+        # would be recorded as an error rather than as slowness.
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0)) as client:
             health = await self._health(client)
             stats_before = await self._stats(client)
 
