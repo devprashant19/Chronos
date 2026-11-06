@@ -41,3 +41,6 @@ tmp/
 
 # vendored bifrost source tarball (reproducible from the pinned tag)
 deploy/vendor/*.tar.gz
+
+# local test artifacts
+tmp/
