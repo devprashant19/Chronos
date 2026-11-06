@@ -16,6 +16,7 @@ It also means Chronos dogfoods the gateway it extends.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from typing import Any
@@ -147,7 +148,7 @@ class LLMClient:
 
         try:
             resp = await client.chat.completions.create(**kwargs)
-        except Exception as exc:  # noqa: BLE001 - any failure is "unavailable"
+        except Exception as exc:
             raise ModelUnavailable(f"model call failed ({target}): {exc}") from exc
 
         try:
@@ -161,10 +162,8 @@ class LLMClient:
 
     async def aclose(self) -> None:
         if self._client is not None:
-            try:
+            with contextlib.suppress(Exception):
                 await self._client.close()
-            except Exception:  # noqa: BLE001
-                pass
             self._client = None
 
 

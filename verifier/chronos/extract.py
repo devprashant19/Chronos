@@ -128,7 +128,7 @@ async def extract_with_model(
         skipped = payload.get("skipped")
         return ExtractionResult(
             claims=claims,
-            skipped=int(skipped) if isinstance(skipped, (int, float)) else 0,
+            skipped=int(skipped) if isinstance(skipped, int | float) else 0,
             model_used=settings.extract_model,
         )
 

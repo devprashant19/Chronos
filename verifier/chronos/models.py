@@ -8,7 +8,7 @@ score a claim it does not actually understand.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from pydantic import (
@@ -27,7 +27,7 @@ Mode = Literal["observe", "annotate", "guard"]
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # ---------------------------------------------------------------------------

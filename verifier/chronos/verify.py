@@ -30,10 +30,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .cache import ClaimCache
 from .events import BUS
@@ -128,7 +127,7 @@ class Verifier:
         """Verify one answer and return a complete report."""
         started = time.perf_counter()
         report_id = uuid.uuid4().hex[:16]
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         degraded = False
         reason: str | None = None
@@ -174,7 +173,7 @@ class Verifier:
                     self._verify_claims(claims, now),
                     timeout=self.settings.verify_deadline_s,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("verification deadline hit for report %s", report_id)
                 return self._unverifiable(
                     report_id,
@@ -190,7 +189,6 @@ class Verifier:
                 verdicts = [self._budget_skipped(c, now) for c in claims]
 
         credits = sum(v.tavily_credits for v in verdicts)
-        scores = [v.score for v in verdicts]
         checkable = [v for v in verdicts if v.verdict != "unverifiable"]
 
         score = answer_score([v.score for v in checkable]) if checkable else 0.0
@@ -269,7 +267,7 @@ class Verifier:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         out: list[ClaimVerdict] = []
-        for claim, result in zip(claims, results):
+        for claim, result in zip(claims, results, strict=False):
             if isinstance(result, BudgetExhausted):
                 raise result
             if isinstance(result, BaseException):
@@ -337,10 +335,13 @@ class Verifier:
 
         # If the cached evidence contradicted the *cached* stated value, the
         # live answer may still differ. Compare against this answer's value.
-        if cached.current_value and claim.stated_value:
-            if not values_agree(claim.stated_value, cached.current_value):
-                verdict_name = "outdated"
-                breakdown.score = min(breakdown.score, 40.0)
+        if (
+            cached.current_value
+            and claim.stated_value
+            and not values_agree(claim.stated_value, cached.current_value)
+        ):
+            verdict_name = "outdated"
+            breakdown.score = min(breakdown.score, 40.0)
 
         METRICS.record_claim(claim.claim_class, verdict_name)
 
@@ -527,7 +528,7 @@ class Verifier:
 
         try:
             return await self.llm.complete_json(
-                system=JUDGE_SYSTEM.format(today=datetime.now(timezone.utc).date().isoformat()),
+                system=JUDGE_SYSTEM.format(today=datetime.now(UTC).date().isoformat()),
                 user=user,
                 model=self.settings.judge_model,
                 max_tokens=1200,
