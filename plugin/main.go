@@ -66,6 +66,7 @@ const (
 	ctxKeyModel   schemas.BifrostContextKey = "chronos-model"
 	ctxKeyCacheKy schemas.BifrostContextKey = "chronos-cache-key"
 	ctxKeyResult  schemas.BifrostContextKey = "chronos-result"
+	ctxKeySkip    schemas.BifrostContextKey = "chronos-skip"
 	ctxKeyCorrID  schemas.BifrostContextKey = "chronos-correlation-id"
 )
 
@@ -93,6 +94,11 @@ const (
 	hdrClass   = "x-chronos-class"
 	hdrMode    = "x-chronos-mode"
 	hdrLatency = "x-chronos-latency-ms"
+
+	// hdrInternal marks a request as Chronos's own traffic. The verifier
+	// sets it on every model call it makes (verifier/chronos/llm.py:
+	// INTERNAL_HEADER) and the two strings must not drift.
+	hdrInternal = "x-chronos-internal"
 )
 
 // Verdicts.
@@ -235,6 +241,21 @@ func HTTPTransportPreHook(ctx *schemas.BifrostContext, req *schemas.HTTPRequest)
 		return nil, nil
 	}
 
+	// Chronos's own model calls must not be verified.
+	//
+	// The verifier reaches its models THROUGH this gateway, so without this
+	// check the plugin verifies Chronos's own extraction and judging calls,
+	// each of which makes further model calls that are verified in turn. That
+	// loop amplifies until it exhausts the model's token budget: measured at
+	// 4,605 verifications from a single 18-claim benchmark run.
+	if req.CaseInsensitiveHeaderLookup(hdrInternal) != "" {
+		ctx.SetValue(ctxKeySkip, true)
+		if st.cfg.Debug {
+			ctx.Log(schemas.LogLevelDebug, "chronos: skipping its own internal model call")
+		}
+		return nil, nil
+	}
+
 	model, prompt, _ := PromptFromRequestBody(req.Body)
 	class := ClassifyPrompt(prompt)
 	ttl := st.cfg.ttlForClass(string(class.Class))
@@ -315,6 +336,11 @@ func PostLLMHook(ctx *schemas.BifrostContext, resp *schemas.BifrostResponse, bif
 
 	// Never interfere with an already-failed request.
 	if bifrostErr != nil || resp == nil {
+		return resp, bifrostErr, nil
+	}
+
+	// Chronos's own traffic: see HTTPTransportPreHook.
+	if skip, ok := ctx.Value(ctxKeySkip).(bool); ok && skip {
 		return resp, bifrostErr, nil
 	}
 
@@ -444,6 +470,9 @@ func HTTPTransportResponseHeadersHook(ctx *schemas.BifrostContext, req *schemas.
 		return nil
 	}
 	if req != nil && !st.cfg.watchesPath(req.Path) {
+		return nil
+	}
+	if skip, ok := ctx.Value(ctxKeySkip).(bool); ok && skip {
 		return nil
 	}
 
