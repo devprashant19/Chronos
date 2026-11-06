@@ -1,0 +1,765 @@
+{
+  "benchmark": "StaleBench",
+  "dataset_version": "1.0.0",
+  "dataset_date": "2026-11-06",
+  "run": {
+    "started_at": "2026-11-06T16:38:01.025413+00:00",
+    "finished_at": "2026-11-06T16:38:01.928026+00:00",
+    "duration_s": 0.9,
+    "claims": 120,
+    "concurrency": 4,
+    "verifier": "http://chronos-verifier-offline:8000"
+  },
+  "configuration": {
+    "offline_demo": true,
+    "tavily_configured": false,
+    "claim_cache_backend": "redis",
+    "evidence_source": "fixtures",
+    "note": "Numbers measured with this configuration only. An offline run uses recorded evidence, so its precision reflects the fixtures, not the live web."
+  },
+  "modes": {
+    "annotate": {
+      "mode": "annotate",
+      "label": "cold",
+      "n": 120,
+      "usable": 120,
+      "errors": 0,
+      "wall_seconds": 0.3,
+      "outdated_detection": {
+        "precision": 0.4737,
+        "recall": 0.225,
+        "f1": 0.3051,
+        "tp": 9,
+        "fp": 10,
+        "fn": 31,
+        "tn": 70,
+        "accuracy": 0.6583
+      },
+      "per_class": {
+        "events": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "n": 3
+        },
+        "law": {
+          "precision": 0.5,
+          "recall": 0.25,
+          "f1": 0.3333,
+          "tp": 1,
+          "fp": 1,
+          "fn": 3,
+          "n": 13
+        },
+        "leadership": {
+          "precision": 0.3571,
+          "recall": 0.5,
+          "f1": 0.4167,
+          "tp": 5,
+          "fp": 9,
+          "fn": 5,
+          "n": 22
+        },
+        "market": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 5,
+          "n": 11
+        },
+        "pricing": {
+          "precision": 1.0,
+          "recall": 0.2,
+          "f1": 0.3333,
+          "tp": 1,
+          "fp": 0,
+          "fn": 4,
+          "n": 10
+        },
+        "version": {
+          "precision": 1.0,
+          "recall": 0.1538,
+          "f1": 0.2667,
+          "tp": 2,
+          "fp": 0,
+          "fn": 11,
+          "n": 21
+        }
+      },
+      "timeless": {
+        "n": 40,
+        "skipped_without_credits": 40,
+        "skip_rate": 1.0
+      },
+      "latency_ms": {
+        "p50": 10.0,
+        "p95": 15.5,
+        "mean": 10.1,
+        "max": 50.8
+      },
+      "tavily_credits": {
+        "total": 0,
+        "per_1000_answers": 0.0
+      },
+      "claim_cache_hits": 19,
+      "unverifiable": 3,
+      "degraded_responses": 0
+    }
+  },
+  "claim_cache_effect": {
+    "cold_credits_per_1000_answers": 0.0,
+    "warm_credits_per_1000_answers": 0.0,
+    "credit_saving_fraction": null,
+    "measured": true,
+    "note": "Cold is a first pass against an empty claim cache; warm repeats the same claims. The saving is the share of Tavily credits the claim cache avoided."
+  },
+  "replay": {
+    "replayed_cache_hits": 40,
+    "stale_hits_prevented": 9,
+    "prevention_rate": 0.225
+  },
+  "service_counters": {
+    "before": {
+      "answers_checked": 280,
+      "claims_checked": 70,
+      "claims_skipped": 210,
+      "stale_claims": 47,
+      "outdated_answers": 47,
+      "cache_evictions": 0,
+      "stale_hits_prevented": 0,
+      "tavily_credits_used": 0,
+      "verify_p50_ms": 2.0,
+      "verify_p95_ms": 4.0,
+      "claim_cache": {
+        "backend": "redis",
+        "hits": 31,
+        "misses": 23,
+        "hit_rate": 0.5741,
+        "entries_in_memory": 0
+      },
+      "tavily": {
+        "limit": 400,
+        "used": 0,
+        "remaining": 400,
+        "configured": false,
+        "live": false
+      },
+      "evictor": {
+        "cleared": 0,
+        "failed": 9
+      },
+      "sweeper": {
+        "runs": 0,
+        "last_run": 0.0,
+        "reverified": 0,
+        "evicted": 0,
+        "interval_s": 600,
+        "enabled": false
+      },
+      "stream_subscribers": 0,
+      "mode": {
+        "offline_demo": true,
+        "extract_model": null,
+        "judge_model": null
+      },
+      "thresholds": {
+        "current": 80.0,
+        "check": 50.0
+      },
+      "uptime_s": 37.6
+    },
+    "after": {
+      "answers_checked": 560,
+      "claims_checked": 140,
+      "claims_skipped": 420,
+      "stale_claims": 94,
+      "outdated_answers": 94,
+      "cache_evictions": 0,
+      "stale_hits_prevented": 0,
+      "tavily_credits_used": 0,
+      "verify_p50_ms": 2.0,
+      "verify_p95_ms": 4.0,
+      "claim_cache": {
+        "backend": "redis",
+        "hits": 78,
+        "misses": 30,
+        "hit_rate": 0.7222,
+        "entries_in_memory": 0
+      },
+      "tavily": {
+        "limit": 400,
+        "used": 0,
+        "remaining": 400,
+        "configured": false,
+        "live": false
+      },
+      "evictor": {
+        "cleared": 0,
+        "failed": 18
+      },
+      "sweeper": {
+        "runs": 0,
+        "last_run": 0.0,
+        "reverified": 0,
+        "evicted": 0,
+        "interval_s": 600,
+        "enabled": false
+      },
+      "stream_subscribers": 0,
+      "mode": {
+        "offline_demo": true,
+        "extract_model": null,
+        "judge_model": null
+      },
+      "thresholds": {
+        "current": 80.0,
+        "check": 50.0
+      },
+      "uptime_s": 38.4
+    }
+  },
+  "label_disagreements": {
+    "count": 41,
+    "note": "A disagreement on a `current`-group claim may be a stale LABEL rather than a system error; check label_confidence and the source.",
+    "items": [
+      {
+        "id": "current-001",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Satya Nadella is the CEO of Microsoft.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-002",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Tim Cook is the CEO of Apple.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-003",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Sundar Pichai is the CEO of Alphabet.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-004",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Jensen Huang is the CEO of NVIDIA.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-005",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Andy Jassy is the CEO of Amazon.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-007",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Mark Zuckerberg is the CEO of Meta Platforms.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-008",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Lisa Su is the CEO of AMD.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-009",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Sam Altman is the CEO of OpenAI.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "medium",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-010",
+        "group": "current",
+        "class": "leadership",
+        "claim": "Dario Amodei is the CEO of Anthropic.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "not Jack Dorsey — he stepped down as CEO in November 2021",
+        "source_url": "https://about.x.com/en/who-we-are/our-company"
+      },
+      {
+        "id": "current-021",
+        "group": "current",
+        "class": "law",
+        "claim": "The EU AI Act entered into force in 2024.",
+        "expected": "current",
+        "actual": "outdated",
+        "score": 40.0,
+        "label_confidence": "high",
+        "label_basis": "Believed true as of 2026-11-06.",
+        "current_value": "adopted and in force — it is a published Regulation, not a pending proposal, with obligations phasing in on a timetable",
+        "source_url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+      },
+      {
+        "id": "stale-002",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Twitter is a publicly traded company on the New York Stock Exchange.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Taken private after the October 2022 acquisition.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-003",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "The company is called Facebook, Inc.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Renamed Meta Platforms, Inc. in October 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-007",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Elizabeth II is the reigning monarch of the United Kingdom.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Queen Elizabeth II died in September 2022; Charles III acceded.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-008",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Angela Merkel is the Chancellor of Germany.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Left office in December 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-010",
+        "group": "stale",
+        "class": "leadership",
+        "claim": "Bob Iger has retired and is no longer involved with Disney.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Iger returned as CEO in November 2022.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-011",
+        "group": "stale",
+        "class": "version",
+        "claim": "Twitter's logo is a blue bird.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Rebranded to X with a new logo in July 2023.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-013",
+        "group": "stale",
+        "class": "version",
+        "claim": "Node.js 18 is the current LTS release.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Node.js promotes a new LTS line every year.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-014",
+        "group": "stale",
+        "class": "version",
+        "claim": "The current version of Java is Java 17.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Java ships a release every six months; 17 is from September 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-015",
+        "group": "stale",
+        "class": "version",
+        "claim": "GPT-4 is OpenAI's newest and most capable model.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Newer model families have shipped since GPT-4's March 2023 release.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-016",
+        "group": "stale",
+        "class": "version",
+        "claim": "React 17 is the latest major version of React.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "React 18 shipped in March 2022, and later majors have followed.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-017",
+        "group": "stale",
+        "class": "version",
+        "claim": "PostgreSQL 14 is the newest major release.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "PostgreSQL ships a major release annually; 14 is from 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-019",
+        "group": "stale",
+        "class": "version",
+        "claim": "Kubernetes is at version 1.24.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Kubernetes ships roughly three minor releases a year; 1.24 is from 2022.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-020",
+        "group": "stale",
+        "class": "version",
+        "claim": "The newest iPhone is the iPhone 13.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Apple has released several newer iPhone generations since 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-021",
+        "group": "stale",
+        "class": "version",
+        "claim": "Windows 10 is Microsoft's current desktop operating system.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Windows 11 shipped in October 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-022",
+        "group": "stale",
+        "class": "version",
+        "claim": "TypeScript's latest release is 4.9.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "TypeScript ships several minor releases a year; 4.9 is from November 2022.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-024",
+        "group": "stale",
+        "class": "law",
+        "claim": "The United Kingdom is a member state of the European Union.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "The UK left the EU on 31 January 2020.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-025",
+        "group": "stale",
+        "class": "law",
+        "claim": "Roe v. Wade is settled law establishing a federal right to abortion in the United States.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Overturned by Dobbs v. Jackson in June 2022.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-026",
+        "group": "stale",
+        "class": "law",
+        "claim": "The GDPR has not yet come into effect.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "The GDPR has applied since 25 May 2018.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-027",
+        "group": "stale",
+        "class": "pricing",
+        "claim": "Twitter's API has a generous free tier for developers.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Free API access was substantially restricted in 2023.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-029",
+        "group": "stale",
+        "class": "pricing",
+        "claim": "GPT-4 costs $0.03 per 1K input tokens and $0.06 per 1K output tokens.",
+        "expected": "outdated",
+        "actual": "unverifiable",
+        "score": 0.0,
+        "label_confidence": "high",
+        "label_basis": "Original GPT-4 launch pricing, since superseded.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-030",
+        "group": "stale",
+        "class": "pricing",
+        "claim": "Heroku offers a free tier for hobby applications.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Free product tiers were discontinued in November 2022.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-031",
+        "group": "stale",
+        "class": "pricing",
+        "claim": "Docker Desktop is free for all commercial use.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "A paid subscription has been required for larger businesses since 2021.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-032",
+        "group": "stale",
+        "class": "market",
+        "claim": "Bitcoin is trading at about $43,200.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "A spot price is stale within minutes of being written.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-033",
+        "group": "stale",
+        "class": "market",
+        "claim": "Bitcoin's all-time high is around $69,000.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "The November 2021 high was exceeded in 2024.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-034",
+        "group": "stale",
+        "class": "version",
+        "claim": "Ethereum uses proof-of-work consensus.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Ethereum moved to proof-of-stake at the Merge in September 2022.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-035",
+        "group": "stale",
+        "class": "market",
+        "claim": "Apple's market capitalisation is about $2 trillion.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Apple's market capitalisation has moved well past $2tn since 2022.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-036",
+        "group": "stale",
+        "class": "market",
+        "claim": "The US federal funds rate is near zero.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Rates were raised substantially from March 2022 onwards.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-037",
+        "group": "stale",
+        "class": "market",
+        "claim": "Tesla's stock trades around $1,200 per share.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "Pre-dates the August 2022 three-for-one stock split, so the figure is not comparable.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-038",
+        "group": "stale",
+        "class": "events",
+        "claim": "The 2022 FIFA World Cup is scheduled to be played in the summer.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "It was played in November and December 2022.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-039",
+        "group": "stale",
+        "class": "events",
+        "claim": "Queen Elizabeth II is celebrating her Platinum Jubilee this year.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "The Platinum Jubilee was in 2022, and she died that September.",
+        "current_value": null,
+        "source_url": null
+      },
+      {
+        "id": "stale-040",
+        "group": "stale",
+        "class": "events",
+        "claim": "Stack Overflow is the primary way developers get programming answers, with no AI competition.",
+        "expected": "outdated",
+        "actual": "current",
+        "score": 100.0,
+        "label_confidence": "high",
+        "label_basis": "AI coding assistants became mainstream from 2022 onwards.",
+        "current_value": null,
+        "source_url": null
+      }
+    ]
+  }
+}
