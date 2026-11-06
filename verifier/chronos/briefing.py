@@ -252,7 +252,7 @@ class BriefingService:
                 system=BRIEF_SYSTEM.format(today=today),
                 user=f"Subject: {subject}\n\nSearch results:\n{rendered}",
                 model=self.settings.judge_model,
-                max_tokens=900,
+                max_tokens=self.settings.judge_max_tokens * 2,
             )
         except ModelUnavailable as exc:
             logger.warning("brief drafting unavailable: %s", exc)

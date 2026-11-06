@@ -55,8 +55,16 @@ effective dates), events (results, schedules), timeless (never changes).
 
 - span_start/span_end are character offsets into the answer, so that
   answer[span_start:span_end] is the claim's sentence.
-- subject = the entity (e.g. "OpenAI GPT-4o"). predicate = the property
-  (e.g. "input token price"). stated_value = what the answer says it is.
+- subject = the entity the property BELONGS TO. predicate = the property.
+  stated_value = what the answer says that property currently is.
+- For a role, the subject is the ORGANISATION and the value is the PERSON:
+    "Larry Page is the CEO of Google."
+    -> subject "Google", predicate "CEO", stated_value "Larry Page"
+  NOT subject "Larry Page". The subject becomes a search query, and searching
+  for the person finds pages about the person rather than pages saying who
+  holds the job now.
+- Likewise: "GPT-4o costs $5 per million input tokens."
+    -> subject "OpenAI GPT-4o", predicate "input token price", stated_value "$5 per million"
 - Skip opinions, hedges, arithmetic and code; count them in "skipped".
 - At most {max_claims} claims, most time-sensitive first.
 """
@@ -91,7 +99,7 @@ async def extract_with_model(
                 system=prompt,
                 user=answer,
                 model=settings.extract_model,
-                max_tokens=1800,
+                max_tokens=settings.extract_max_tokens,
             )
         except ModelUnavailable as exc:
             last_error = str(exc)

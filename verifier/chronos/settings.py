@@ -234,12 +234,28 @@ class Settings:
     # the round trip and returns nothing.
     model_tpm: int = field(default_factory=lambda: _env_int("CHRONOS_MODEL_TPM", 8000))
 
+    # max_tokens is a RESERVATION against the tokens-per-minute budget, not
+    # just a safety cap. Groq's own refusal shows it: "Limit 8000, Used 6226,
+    # Requested 1804" for a call whose prompt was a few hundred tokens and
+    # whose max_tokens was 1800.
+    #
+    # So an over-generous cap directly reduces throughput. With
+    # reasoning_effort=low the real completions are 66-200 tokens, so these are
+    # sized to fit the JSON comfortably and no more: 8000/750 is about ten
+    # extraction calls a minute, against four at the old 1800.
+    extract_max_tokens: int = field(
+        default_factory=lambda: _env_int("CHRONOS_EXTRACT_MAX_TOKENS", 750)
+    )
+    judge_max_tokens: int = field(
+        default_factory=lambda: _env_int("CHRONOS_JUDGE_MAX_TOKENS", 650)
+    )
+
     reasoning_effort: str = field(
         default_factory=lambda: os.getenv("CHRONOS_REASONING_EFFORT", "low").strip()
     )
 
     judge_snippet_chars: int = field(
-        default_factory=lambda: _env_int("CHRONOS_JUDGE_SNIPPET_CHARS", 800)
+        default_factory=lambda: _env_int("CHRONOS_JUDGE_SNIPPET_CHARS", 1100)
     )
     judge_max_sources: int = field(
         default_factory=lambda: _env_int("CHRONOS_JUDGE_MAX_SOURCES", 4)

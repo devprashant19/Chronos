@@ -130,3 +130,45 @@ def test_concurrent_callers_cannot_both_claim_the_last_room():
         assert pacer.used("m") <= 600
 
     asyncio.run(asyncio.wait_for(run(), timeout=70))
+
+
+# ---------------------------------------------------------------------------
+# query building — grouped here because it is the other half of the same fix:
+# pacing made the model path affordable, and the query made it accurate.
+# ---------------------------------------------------------------------------
+
+
+def test_role_claims_ask_for_the_current_holder():
+    """The measured failure: "Larry Page CEO of Google" retrieves pages about
+    Larry Page, so the judge is never shown who holds the job now and reports
+    insufficient. Four of five missed stale claims failed exactly this way."""
+    from chronos.tavily_client import build_query
+
+    q = build_query("Google", "CEO")
+    assert q.startswith("who is the current CEO of Google")
+    assert "Larry Page" not in q
+
+
+def test_specific_role_beats_the_generic_wording():
+    """Regex alternation is leftmost-first, so "holder of role (CEO)" would
+    otherwise produce "the current holder of role of Google"."""
+    from chronos.tavily_client import build_query
+
+    assert build_query("Google", "holder of role (CEO)").startswith(
+        "who is the current CEO of Google"
+    )
+
+
+def test_non_role_claims_keep_the_plain_query():
+    from chronos.tavily_client import build_query
+
+    q = build_query("OpenAI GPT-4o", "input token price")
+    assert q.startswith("OpenAI GPT-4o input token price")
+    assert "who is" not in q
+
+
+def test_empty_claim_produces_no_query():
+    from chronos.tavily_client import build_query
+
+    assert build_query("", "") == ""
+    assert build_query(None, None) == ""  # type: ignore[arg-type]
