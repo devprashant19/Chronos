@@ -1,0 +1,92 @@
+{
+  "_README": [
+    "Fixed answers for the offline demo and for CI. These are TEST INPUT, not",
+    "claims this project makes.",
+    "",
+    "Several answers are deliberately out of date: that is the point, because",
+    "Chronos has to be shown catching something. Each entry records, in",
+    "`intentionally_stale_because`, exactly what is wrong with it. Nothing here",
+    "is presented as true, and the verifier is never told which entries are",
+    "stale — it has to work that out from live evidence (or, offline, from the",
+    "recorded evidence in verifier/fixtures/).",
+    "",
+    "The `expected_verdict` field is what StaleBench scores against."
+  ],
+
+  "answers": [
+    {
+      "id": "pricing-gpt4o-stale",
+      "match": ["gpt-4o.*(price|cost|how much)", "(price|cost|how much).*gpt-4o", "openai api pricing"],
+      "class": "pricing",
+      "expected_verdict": "outdated",
+      "intentionally_stale_because": "Quotes a per-million-token price from an older OpenAI rate card. OpenAI has revised gpt-4o pricing since, so the figure needs re-checking against the live pricing page.",
+      "answer": "OpenAI's GPT-4o is priced at $5.00 per million input tokens and $15.00 per million output tokens. GPT-4o mini is much cheaper, at $0.15 per million input tokens and $0.60 per million output tokens. There is no free tier for the API, though new accounts receive a small trial credit."
+    },
+    {
+      "id": "leadership-twitter-stale",
+      "match": ["who is the ceo of (twitter|x)", "(twitter|x corp).*ceo", "ceo of twitter"],
+      "class": "leadership",
+      "expected_verdict": "outdated",
+      "intentionally_stale_because": "Names Jack Dorsey as Twitter's sitting CEO. Dorsey stepped down in November 2021 and the company was renamed X; the role has changed hands more than once since.",
+      "answer": "Jack Dorsey is the CEO of Twitter. He co-founded the company and returned as chief executive in 2015, and he continues to lead it from its San Francisco headquarters. Twitter remains a publicly traded company on the New York Stock Exchange."
+    },
+    {
+      "id": "version-python-stale",
+      "match": ["latest.*python.*version", "python.*latest (version|release)", "current python version", "newest python"],
+      "class": "version",
+      "expected_verdict": "outdated",
+      "intentionally_stale_because": "States 3.11 as the newest Python release. Several minor versions have shipped since, so the stated version is behind by more than one release.",
+      "answer": "The latest stable release of Python is 3.11, which came out in October 2022. It brought significant speed improvements over 3.10 — typically 10 to 60 percent faster — along with better error messages and exception groups. Python 3.11 is the version most projects should target today."
+    },
+    {
+      "id": "market-btc-stale",
+      "match": ["bitcoin.*(price|worth|trading)", "(price|worth) of bitcoin", "btc price"],
+      "class": "market",
+      "expected_verdict": "outdated",
+      "intentionally_stale_because": "Quotes a specific spot price. Any spot price is stale within minutes, which is the clearest possible case for a short cache TTL.",
+      "answer": "Bitcoin is currently trading at about $43,200, up roughly 2 percent over the past 24 hours. Its market capitalisation sits near $845 billion, which keeps it comfortably the largest cryptocurrency by value."
+    },
+    {
+      "id": "law-euaiact-stale",
+      "match": ["eu ai act", "ai act.*(force|effect|deadline|apply)", "european.*ai regulation"],
+      "class": "law",
+      "expected_verdict": "check",
+      "intentionally_stale_because": "Describes the EU AI Act as a proposal still under negotiation. The Act has since been adopted and entered into force, with obligations phasing in on a published timetable.",
+      "answer": "The EU AI Act is still a legislative proposal working its way through the European Parliament and Council. Negotiators have not yet agreed a final text, so there is no date on which its obligations begin to apply. Companies should watch the trilogue process for developments."
+    },
+    {
+      "id": "timeless-capital",
+      "match": ["capital of france", "what is the capital of"],
+      "class": "timeless",
+      "expected_verdict": "current",
+      "intentionally_stale_because": null,
+      "answer": "The capital of France is Paris. It sits on the river Seine in the north of the country and has been the seat of French government for centuries."
+    },
+    {
+      "id": "timeless-boiling",
+      "match": ["boiling point of water", "what temperature does water boil"],
+      "class": "timeless",
+      "expected_verdict": "current",
+      "intentionally_stale_because": null,
+      "answer": "At standard atmospheric pressure, water boils at 100 degrees Celsius, which is 212 degrees Fahrenheit. The boiling point falls as pressure drops, so water boils at a lower temperature at altitude."
+    },
+    {
+      "id": "timeless-code",
+      "match": ["write (a|me|some)? ?(function|code|program|script)", "reverse a string", "fizzbuzz"],
+      "class": "timeless",
+      "expected_verdict": "current",
+      "intentionally_stale_because": null,
+      "answer": "Here is a small Python function that reverses a string:\n\n    def reverse(s: str) -> str:\n        return s[::-1]\n\nSlicing with a step of -1 walks the string backwards and builds a new one, which is the shortest idiomatic form in Python."
+    },
+    {
+      "id": "mixed-pricing-and-timeless",
+      "match": ["compare.*pricing", "which model should i use"],
+      "class": "pricing",
+      "expected_verdict": "outdated",
+      "intentionally_stale_because": "Mixes a stale price with a timeless architectural statement, so a correct verifier must score the two sentences differently rather than condemning or passing the whole answer.",
+      "answer": "GPT-4o mini costs $0.15 per million input tokens, making it the cheapest option in the GPT-4 family. Transformer models in general scale their attention cost quadratically with sequence length, which is why long contexts remain expensive regardless of which provider you choose."
+    }
+  ],
+
+  "default": "I can answer that, but I do not have specific up-to-date figures to hand. For anything time-sensitive — prices, versions, leadership or market data — check the provider's own current documentation."
+}
