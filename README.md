@@ -23,6 +23,8 @@ request ─▶ Bifrost ─▶ semantic cache ─▶ provider
                                                  └─▶ DELETE /api/cache/clear/{id}
 ```
 
+Full diagram and the reasoning behind each decision: [docs/architecture.md](docs/architecture.md).
+
 ---
 
 ## What actually runs, and what it produced
@@ -339,15 +341,18 @@ console/     the operator console (Vite + React + TypeScript)
 bench/       StaleBench: 120 hand-labelled claims, the runner, and results
 deploy/      docker-compose, the multi-stage image, gateway config, mockllm
 scripts/     verify-all.sh — every check, end to end
-design/      the console design reference
+design/      the console design reference and the original blueprint
+docs/        architecture.md - the diagram and the design decisions
 ```
 
 ## Verifying
 
 ```bash
-./scripts/verify-all.sh            # everything: 35 checks
+./scripts/verify-all.sh            # everything: 39 checks
 ./scripts/verify-all.sh --unit     # unit tests only, no Docker stack
 ```
+
+All 39 pass on this machine, and the same script is what CI runs.
 
 It asserts specifics rather than absence of errors: that the gateway loaded
 `chronos.so`, that a second identical request is a cache hit, that Chronos set
