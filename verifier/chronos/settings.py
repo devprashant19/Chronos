@@ -157,11 +157,14 @@ class Settings:
         default_factory=lambda: os.getenv("BIFROST_SETUP_TOKEN", "")
     )
 
+    # Free, open-weights by default. Llama 3.3 70B on Groq handles the strict
+    # JSON contract and the judging reliably, and Groq's free tier needs no
+    # card. Swap in openai/gpt-4o-mini or groq/openai/gpt-oss-120b by env.
     extract_model: str = field(
-        default_factory=lambda: os.getenv("CHRONOS_EXTRACT_MODEL", "openai/gpt-4o-mini")
+        default_factory=lambda: os.getenv("CHRONOS_EXTRACT_MODEL", "groq/llama-3.3-70b-versatile")
     )
     judge_model: str = field(
-        default_factory=lambda: os.getenv("CHRONOS_JUDGE_MODEL", "openai/gpt-4o-mini")
+        default_factory=lambda: os.getenv("CHRONOS_JUDGE_MODEL", "groq/llama-3.3-70b-versatile")
     )
     #: Comma-separated provider/model pairs Bifrost should fall back to.
     fallback_models: tuple[str, ...] = field(
@@ -169,6 +172,9 @@ class Settings:
             m.strip()
             for m in os.getenv(
                 "CHRONOS_FALLBACK_MODELS",
+                # 8b has the large daily allowance, so it catches a spent 70b
+                # quota; ollama is local and unmetered, so it catches a spent
+                # Groq account entirely.
                 "groq/llama-3.1-8b-instant,ollama/llama3.1",
             ).split(",")
             if m.strip()

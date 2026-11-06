@@ -62,16 +62,27 @@ class LLMClient:
         )
         return self._client
 
-    def _fallbacks(self) -> list[dict[str, str]]:
-        """Bifrost's per-request fallback chain.
+    def _fallbacks(self) -> list[str]:
+        """Bifrost's per-request fallback chain, as "provider/model" strings.
 
-        Sent as extra_body so the OpenAI SDK passes it through untouched.
+        Sent via extra_body so the OpenAI SDK passes it through untouched.
+
+        The wire format is a list of STRINGS, not objects. Bifrost's Go
+        `Fallback` struct has `provider` and `model` fields, which makes
+        `[{"provider": "groq", "model": "..."}]` the obvious guess — and the
+        OpenAI-compatible route rejects it with 400 "Invalid request payload".
+        That struct is the internal representation; the integration layer
+        parses "provider/model" strings into it.
+
+        Getting this wrong is quiet in the worst way: every extraction and
+        judge call 400s, the verifier falls back to its rule engine, and the
+        only symptom is that quality is worse than it should be.
         """
-        out: list[dict[str, str]] = []
+        out: list[str] = []
         for ref in self.settings.fallback_models:
             provider, model = _split_model(ref)
             if provider and model:
-                out.append({"provider": provider, "model": model})
+                out.append(f"{provider}/{model}")
         return out
 
     async def complete_json(
@@ -149,7 +160,23 @@ class LLMClient:
         try:
             resp = await client.chat.completions.create(**kwargs)
         except Exception as exc:
-            raise ModelUnavailable(f"model call failed ({target}): {exc}") from exc
+            # Not every model accepts response_format, and support varies both
+            # by provider and by model within a provider. Rather than lose the
+            # call, retry once without it: the prompt already demands strict
+            # JSON and _parse_json_object copes with a fenced or prose-wrapped
+            # reply. This is what keeps a free-tier model that lacks JSON mode
+            # usable instead of silently dropping to the rule engine.
+            if json_mode and _is_response_format_error(exc):
+                logger.info("%s rejected response_format; retrying without JSON mode", target)
+                kwargs.pop("response_format", None)
+                try:
+                    resp = await client.chat.completions.create(**kwargs)
+                except Exception as retry_exc:
+                    raise ModelUnavailable(
+                        f"model call failed ({target}): {retry_exc}"
+                    ) from retry_exc
+            else:
+                raise ModelUnavailable(f"model call failed ({target}): {exc}") from exc
 
         try:
             content = resp.choices[0].message.content or ""
@@ -165,6 +192,32 @@ class LLMClient:
             with contextlib.suppress(Exception):
                 await self._client.close()
             self._client = None
+
+
+#: Phrases providers use when they reject response_format. Matched loosely,
+#: because each provider words it differently and none of them use a code.
+_RESPONSE_FORMAT_REJECTIONS = (
+    "response_format",
+    "json_object",
+    "json mode",
+    "structured output",
+    "unsupported parameter",
+    "unknown parameter",
+    "not supported",
+)
+
+
+def _is_response_format_error(exc: Exception) -> bool:
+    """Whether this failure looks like "I do not support response_format".
+
+    Deliberately conservative about what it does NOT match: a 429 or an auth
+    failure must fall straight through, because retrying those without JSON
+    mode would just burn a second request against the same wall.
+    """
+    message = str(exc).lower()
+    if any(token in message for token in ("rate limit", "429", "quota", "unauthor", "401", "403")):
+        return False
+    return any(token in message for token in _RESPONSE_FORMAT_REJECTIONS)
 
 
 def _parse_json_object(raw: str) -> dict[str, Any]:

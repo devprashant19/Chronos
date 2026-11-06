@@ -200,6 +200,12 @@ class VerifyResponse(BaseModel):
     reason: str | None = None
     latency_ms: int = 0
 
+    #: Which extractor produced the claims: a model name, "rules", or
+    #: "rules (model unavailable)". Worth reporting because a silent fall back
+    #: from the model to the rule engine looks identical to a bad model - the
+    #: only symptom is that quality is worse than it should be.
+    extractor: str = "unknown"
+
     #: Echoed back so the console can correlate a report with gateway traffic.
     request_id: str = ""
     cache_hit: bool = False

@@ -139,7 +139,12 @@ class Verifier:
 
             if extraction.error:
                 return self._unverifiable(
-                    report_id, req, started, reason=extraction.error, skipped=extraction.skipped
+                    report_id,
+                    req,
+                    started,
+                    reason=extraction.error,
+                    skipped=extraction.skipped,
+                    extractor=extraction.model_used or "unknown",
                 )
 
             claims = extraction.claims[: self.settings.max_claims_per_answer]
@@ -162,6 +167,7 @@ class Verifier:
                     cache_hit=req.cache_hit,
                     cache_id=req.cache_id,
                     reason="no time-sensitive claims found",
+                    extractor=extraction.model_used or "unknown",
                 )
                 METRICS.answers.labels(
                     verdict="current", cache_hit=str(bool(req.cache_hit)).lower()
@@ -181,6 +187,7 @@ class Verifier:
                     started,
                     reason=f"verification exceeded {self.settings.verify_deadline_s}s",
                     skipped=extraction.skipped,
+                    extractor=extraction.model_used or "unknown",
                 )
             except BudgetExhausted as exc:
                 degraded = True
@@ -220,6 +227,7 @@ class Verifier:
             request_id=req.request_id,
             cache_hit=req.cache_hit,
             cache_id=req.cache_id,
+            extractor=extraction.model_used or "unknown",
         )
 
         METRICS.answers.labels(
@@ -584,6 +592,7 @@ class Verifier:
         started: float,
         reason: str,
         skipped: int = 0,
+        extractor: str = "unknown",
     ) -> VerifyResponse:
         elapsed = int((time.perf_counter() - started) * 1000)
         METRICS.answers.labels(
@@ -604,6 +613,7 @@ class Verifier:
             cache_id=req.cache_id,
             degraded=True,
             reason=reason,
+            extractor=extractor,
         )
 
     def _unverifiable_claim(
