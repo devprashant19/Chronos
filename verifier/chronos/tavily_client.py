@@ -22,7 +22,7 @@ import asyncio
 import json
 import logging
 import re
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -125,7 +125,7 @@ class TavilyClient:
         try:
             with path.open(encoding="utf-8") as fh:
                 self._fixtures = json.load(fh)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("no evidence fixtures at %s (%s)", path, exc)
             self._fixtures = {"queries": []}
         return self._fixtures
@@ -174,7 +174,7 @@ class TavilyClient:
             try:
                 client = self._ensure_client()
                 raw = await client.search(**kwargs)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("tavily search failed for %r: %s", query[:80], exc)
                 return {"results": [], "credits": cost, "recorded": False, "error": str(exc)}
 
@@ -207,7 +207,7 @@ class TavilyClient:
             try:
                 client = self._ensure_client()
                 raw = await client.extract(urls=urls)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("tavily extract failed: %s", exc)
                 return {"pages": [], "credits": cost, "recorded": False, "error": str(exc)}
 
@@ -270,7 +270,7 @@ def _fixture_payload(entry: dict[str, Any]) -> dict[str, Any]:
             try:
                 days = int(published[2:])
                 published = (
-                    datetime.now(timezone.utc) - timedelta(days=days)
+                    datetime.now(UTC) - timedelta(days=days)
                 ).date().isoformat()
             except ValueError:
                 published = None

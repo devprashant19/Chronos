@@ -28,7 +28,7 @@ hard to look up.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
 
 from .models import Evidence, ScoreBreakdown, Verdict
@@ -88,9 +88,10 @@ def classify_source(url: str, subject: str = "") -> str:
 
     subject_low = subject.lower()
     for key, domains in OFFICIAL_DOMAIN_HINTS.items():
-        if key in subject_low:
-            if any(domain == d or domain.endswith("." + d) for d in domains):
-                return "official"
+        if key in subject_low and any(
+            domain == d or domain.endswith("." + d) for d in domains
+        ):
+            return "official"
 
     if domain in MAJOR_NEWS_DOMAINS or any(
         domain.endswith("." + d) for d in MAJOR_NEWS_DOMAINS
@@ -124,10 +125,10 @@ def date_from_url(url: str) -> datetime | None:
     if not (1 <= month <= 12 and 1 <= day <= 31):
         return None
     try:
-        parsed = datetime(year, month, day, tzinfo=timezone.utc)
+        parsed = datetime(year, month, day, tzinfo=UTC)
     except ValueError:
         return None
-    if parsed > datetime.now(timezone.utc):
+    if parsed > datetime.now(UTC):
         return None
     return parsed
 
@@ -144,13 +145,13 @@ def parse_date(raw: str | None) -> datetime | None:
     try:
         cleaned = text.replace("Z", "+00:00")
         parsed = datetime.fromisoformat(cleaned)
-        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
     except ValueError:
         pass
 
     for fmt in ("%Y-%m-%d", "%d %B %Y", "%B %d, %Y", "%b %d, %Y", "%d/%m/%Y", "%m/%d/%Y"):
         try:
-            return datetime.strptime(text, fmt).replace(tzinfo=timezone.utc)
+            return datetime.strptime(text, fmt).replace(tzinfo=UTC)
         except ValueError:
             continue
     return None
@@ -197,7 +198,7 @@ def recency(evidence: list[Evidence], now: datetime | None = None) -> float:
     carry no publication date, and penalising them as though they were a year
     old would bias the score against primary sources.
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
 
     ages: list[float] = []
     for e in evidence:
@@ -235,9 +236,9 @@ def decay(claim_class: str, last_checked: datetime | None, now: datetime | None 
     if interval is None or last_checked is None:
         return 0.0
 
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     if last_checked.tzinfo is None:
-        last_checked = last_checked.replace(tzinfo=timezone.utc)
+        last_checked = last_checked.replace(tzinfo=UTC)
 
     elapsed = (now - last_checked).total_seconds()
     if elapsed <= 0:
@@ -258,7 +259,7 @@ def score_claim(
     now: datetime | None = None,
 ) -> ScoreBreakdown:
     """Score one claim and return every term that produced the number."""
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
 
     a, supporting, contradicting, insufficient = agreement(evidence)
     r = recency(evidence, now=now)

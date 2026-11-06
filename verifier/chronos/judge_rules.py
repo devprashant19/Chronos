@@ -437,25 +437,14 @@ def _judge_one(claim: Claim, e: Evidence, kind: str) -> tuple[str, str, str]:
         # Same kind of value present, none of them matching: a real conflict.
         return "contradicts", _sentence_with(text, candidates[0]), candidates[0]
 
-    if kind == "name":
-        if _mentions(text, claim.stated_value):
-            return "supports", _sentence_with(text, claim.stated_value.split()[-1]), claim.stated_value
-
-        # Absence alone is NOT evidence against. A Microsoft pricing page does
-        # not mention the CEO; that is irrelevance, not contradiction. Treating
-        # it as a contradiction was measured at precision 0.50 on StaleBench
-        # while recall was 0.87 — the detector crying wolf.
-        #
-        # A page may only contradict a name claim if it actually addresses the
-        # role AND names someone else in the same breath.
-        other = _other_name_for_role(text, claim.predicate, claim.stated_value)
-        if other:
-            return "contradicts", _sentence_with(text, other), other
-        return "insufficient", "", ""
+    # kind == "name" never reaches here. Role claims are adjudicated across all
+    # sources at once in _judge_roles, because the decision needs corroboration
+    # that a single source cannot provide, and because absence from one page is
+    # not evidence against a claim.
 
     # Free text: presence supports; absence is not proof of the negative.
     if kind == "phrase":
-        key_tokens = [t for t in re.findall(r"[a-z]{4,}", claim.stated_value.lower())][:4]
+        key_tokens = re.findall(r"[a-z]{4,}", claim.stated_value.lower())[:4]
         if key_tokens and all(t in text.lower() for t in key_tokens):
             return "supports", _sentence_with(text, key_tokens[0]), claim.stated_value
         return "insufficient", "", ""
