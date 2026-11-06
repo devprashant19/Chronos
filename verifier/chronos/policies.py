@@ -34,10 +34,10 @@ class PolicyStore:
             for raw in await self.store.all_policies():
                 try:
                     policy = Policy.model_validate(raw)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     continue
                 self._cache[policy.virtual_key] = policy
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("could not load policies: %s", exc)
         self._loaded = True
         logger.info("loaded %d virtual-key policies", len(self._cache))

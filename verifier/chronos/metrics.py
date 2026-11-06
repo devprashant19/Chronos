@@ -17,8 +17,9 @@ never be the reason a service will not boot.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
 
 logger = logging.getLogger("chronos.metrics")
 
@@ -39,7 +40,7 @@ except ImportError:  # pragma: no cover
 
 
 class _NoopMetric:
-    def labels(self, *_args: Any, **_kwargs: Any) -> "_NoopMetric":
+    def labels(self, *_args: Any, **_kwargs: Any) -> _NoopMetric:
         return self
 
     def inc(self, *_args: Any, **_kwargs: Any) -> None:

@@ -21,7 +21,8 @@ import asyncio
 import json
 import logging
 from collections import deque
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 logger = logging.getLogger("chronos.events")
 
@@ -92,7 +93,7 @@ class EventBus:
             while True:
                 try:
                     frame = await asyncio.wait_for(queue.get(), timeout=keepalive_s)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield ": keepalive\n\n"
                     continue
                 yield f"data: {frame}\n\n"

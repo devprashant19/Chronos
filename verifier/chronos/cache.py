@@ -19,6 +19,7 @@ the gateway.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import logging
@@ -83,7 +84,7 @@ class ClaimCache:
                 self.settings.redis_url, encoding="utf-8", decode_responses=True
             )
             await client.ping()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("claim cache falling back to memory (redis: %s)", exc)
             return
 
@@ -93,10 +94,8 @@ class ClaimCache:
 
     async def aclose(self) -> None:
         if self._redis is not None:
-            try:
+            with contextlib.suppress(Exception):
                 await self._redis.aclose()
-            except Exception:  # noqa: BLE001
-                pass
             self._redis = None
             self._connected = False
 
@@ -116,7 +115,7 @@ class ClaimCache:
         try:
             payload = json.loads(raw)
             verdict = ClaimVerdict.model_validate(payload)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             # A poisoned entry must not break a request, but it must not be
             # quiet either: an unreadable entry turns every hit into a miss and
             # silently re-buys evidence Chronos already paid for.
@@ -130,12 +129,9 @@ class ClaimCache:
 
     async def put(self, subject: str, predicate: str, verdict: ClaimVerdict) -> None:
         interval = recheck_interval(verdict.claim_class)
-        if interval is None:
-            # Timeless claims are cached for a week: long enough to save the
-            # credits, short enough that a reclassification takes effect.
-            ttl_seconds = 7 * 24 * 3600
-        else:
-            ttl_seconds = int(interval.total_seconds())
+        # Timeless claims are cached for a week: long enough to save the
+        # credits, short enough that a reclassification takes effect.
+        ttl_seconds = 7 * 24 * 3600 if interval is None else int(interval.total_seconds())
 
         key = claim_key(subject, predicate)
         # Stored under field names, not wire aliases: this is internal
@@ -150,7 +146,7 @@ class ClaimCache:
             try:
                 await self._redis.delete(key)
                 return
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("redis delete failed, falling through: %s", exc)
         self._memory.pop(key, None)
 
@@ -161,7 +157,7 @@ class ClaimCache:
             try:
                 value = await self._redis.ttl(key)
                 return int(value)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         entry = self._memory.get(key)
         if entry is None:
@@ -187,12 +183,12 @@ class ClaimCache:
                         continue
                     try:
                         out.append(ClaimVerdict.model_validate(json.loads(raw)))
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         continue
                     if len(out) >= limit:
                         break
                 return out
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("redis scan failed: %s", exc)
 
         now = time.time()
@@ -201,7 +197,7 @@ class ClaimCache:
                 continue
             try:
                 out.append(ClaimVerdict.model_validate(json.loads(raw)))
-            except Exception:  # noqa: BLE001
+            except Exception:
                 continue
             if len(out) >= limit:
                 break
@@ -223,7 +219,7 @@ class ClaimCache:
         if self._redis is not None:
             try:
                 return await self._redis.get(key)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("redis get failed, using memory: %s", exc)
 
         entry = self._memory.get(key)
@@ -240,7 +236,7 @@ class ClaimCache:
             try:
                 await self._redis.setex(key, ttl_seconds, payload)
                 return
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("redis setex failed, using memory: %s", exc)
 
         self._memory[key] = (time.time() + ttl_seconds, payload)

@@ -145,7 +145,7 @@ class ReportStore:
     async def save(self, report: VerifyResponse, prompt: str = "", answer: str = "") -> None:
         try:
             await asyncio.to_thread(self._save_sync, report, prompt, answer)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             # Losing a report must not fail the verification that produced it.
             logger.warning("could not persist report %s: %s", report.report_id, exc)
 
@@ -175,7 +175,7 @@ class ReportStore:
             query += " WHERE verdict = ?"
             params = (verdict,)
         query += " ORDER BY created_at DESC LIMIT ?"
-        params = params + (limit,)
+        params = (*params, limit)
 
         with self._connect() as conn:
             rows = conn.execute(query, params).fetchall()
@@ -210,7 +210,7 @@ class ReportStore:
             await asyncio.to_thread(
                 self._event_sync, kind, cache_id, cache_key, report_id, score, detail
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("could not record cache event: %s", exc)
 
     def _cache_events_sync(self, limit: int, since: float) -> list[dict[str, Any]]:
@@ -274,7 +274,7 @@ class ReportStore:
     async def counters(self) -> dict[str, Any]:
         try:
             return await asyncio.to_thread(self._counters_sync)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("could not read counters: %s", exc)
             return {}
 
@@ -344,7 +344,7 @@ class ReportStore:
     async def hot_cache_entries(self, limit: int = 50) -> list[dict[str, Any]]:
         try:
             return await asyncio.to_thread(self._hot_cache_keys_sync, limit)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("could not read hot cache entries: %s", exc)
             return []
 
@@ -355,5 +355,5 @@ class ReportStore:
     async def mark_evicted(self, report_id: str) -> None:
         try:
             await asyncio.to_thread(self._mark_evicted_sync, report_id)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("could not mark report evicted: %s", exc)

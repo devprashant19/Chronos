@@ -20,12 +20,13 @@ import asyncio
 import contextlib
 import logging
 import time
+from datetime import UTC
 
 from .cache import ClaimCache
 from .events import BUS
 from .evictor import Evictor
 from .metrics import METRICS
-from .models import Claim, VerifyRequest
+from .models import Claim
 from .settings import Settings, get_settings
 from .store import ReportStore
 from .verify import Verifier
@@ -81,7 +82,7 @@ class Sweeper:
         try:
             await asyncio.wait_for(self._stop.wait(), timeout=30)
             return
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
 
         while not self._stop.is_set():
@@ -89,14 +90,14 @@ class Sweeper:
                 await self.sweep_once()
             except asyncio.CancelledError:
                 raise
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("sweep failed: %s", exc)
 
             try:
                 await asyncio.wait_for(
                     self._stop.wait(), timeout=self.settings.sweep_interval_s
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
 
     # -- the sweep ------------------------------------------------------
@@ -147,7 +148,7 @@ class Sweeper:
             await self.claim_cache.invalidate(claim.subject, claim.predicate)
             try:
                 fresh = await self.verifier._verify_one(claim, _now())
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("sweep could not re-verify %s: %s", claim.subject, exc)
                 continue
 
@@ -179,7 +180,7 @@ class Sweeper:
         evicted = 0
         try:
             hot = await self.store.hot_cache_entries(limit=self.settings.sweep_batch)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("could not list cache entries: %s", exc)
             return 0
 
@@ -222,6 +223,6 @@ class Sweeper:
 
 
 def _now():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)

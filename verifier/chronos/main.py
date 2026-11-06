@@ -176,7 +176,7 @@ async def verify(req: VerifyRequest) -> VerifyResponse:
 
     try:
         report = await APP.verifier.verify(req)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         # The plugin treats any error as "unverifiable" and passes the answer
         # through, but returning a 500 would also show up in the gateway's logs
         # as a Chronos fault, which is exactly what we want to be loud about.
@@ -216,7 +216,7 @@ async def _verify_in_background(req: VerifyRequest, report_id: str) -> None:
         report = await APP.verifier.verify(req)
         report.report_id = report_id
         await _finalise(report, req)
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.exception("background verification failed for %s", report_id)
 
 
@@ -224,40 +224,38 @@ async def _finalise(report: VerifyResponse, req: VerifyRequest) -> None:
     """Persist a report and act on it: evict, count, announce."""
     policy = APP.policies.get(req.virtual_key)
 
-    if (
-        report.verdict == "outdated"
-        and req.cache_hit
-        and req.cache_id
-        and policy.evict_stale
-    ):
-        if await APP.evictor.clear_cache_id(req.cache_id):
-            report.evicted = True
-            METRICS.evictions.labels(reason="stale_hit").inc()
-            await APP.store.record_cache_event(
-                "evicted",
-                cache_id=req.cache_id,
-                cache_key=req.cache_key,
-                report_id=report.report_id,
-                score=report.score,
-                detail="served an outdated claim",
-            )
-            BUS.publish(
-                "eviction",
-                {
-                    "cache_id": req.cache_id,
-                    "cache_key": req.cache_key,
-                    "report_id": report.report_id,
-                    "score": report.score,
-                    "reason": "stale_hit",
-                    "stale_claims": report.stale_count,
-                },
-            )
-            logger.info(
-                "stale_hit_prevented cache_id=%s score=%.0f report=%s",
-                req.cache_id,
-                report.score,
-                report.report_id,
-            )
+    should_evict = (
+        report.verdict == "outdated" and req.cache_hit and req.cache_id and policy.evict_stale
+    )
+    # Short-circuits: the clear is only attempted when the verdict warrants it.
+    if should_evict and await APP.evictor.clear_cache_id(req.cache_id):
+        report.evicted = True
+        METRICS.evictions.labels(reason="stale_hit").inc()
+        await APP.store.record_cache_event(
+            "evicted",
+            cache_id=req.cache_id,
+            cache_key=req.cache_key,
+            report_id=report.report_id,
+            score=report.score,
+            detail="served an outdated claim",
+        )
+        BUS.publish(
+            "eviction",
+            {
+                "cache_id": req.cache_id,
+                "cache_key": req.cache_key,
+                "report_id": report.report_id,
+                "score": report.score,
+                "reason": "stale_hit",
+                "stale_claims": report.stale_count,
+            },
+        )
+        logger.info(
+            "stale_hit_prevented cache_id=%s score=%.0f report=%s",
+            req.cache_id,
+            report.score,
+            report.report_id,
+        )
 
     await APP.store.save(report, prompt=req.prompt, answer=req.answer)
 
@@ -403,7 +401,7 @@ async def list_policies() -> dict[str, Any]:
 async def brief(req: BriefRequest) -> BriefResponse:
     try:
         return await APP.briefing.brief(req)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.exception("briefing failed")
         raise HTTPException(status_code=500, detail=f"briefing failed: {exc}") from exc
 
