@@ -49,6 +49,7 @@ from .models import (
     VerifyResponse,
     utcnow,
 )
+from .pagetext import clean_page_text, relevant_window
 from .score import (
     answer_score,
     answer_ttl_seconds,
@@ -63,7 +64,6 @@ from .tavily_client import (
     BudgetExhausted,
     TavilyClient,
     build_query,
-    official_domains_for,
     topic_for_class,
 )
 
@@ -381,10 +381,20 @@ class Verifier:
             return self._unverifiable_claim(claim, now, "no searchable subject")
 
         credits = 0
+        # No include_domains. It reads like "prefer authoritative sources" and
+        # is really a hard filter: restricting a "who is the CEO of Google"
+        # search to Google's own domains returned a careers page, a breadcrumb
+        # nav bar and a conference speaker list, and excluded every
+        # encyclopaedic and news page stating the answer outright. The judge
+        # correctly reported "insufficient" on all five, and the model path
+        # measured 0.00 recall.
+        #
+        # Chronos already prefers authoritative sources where preference
+        # belongs — the Q term of the score, applied after retrieval — so it
+        # does not need to narrow what it can see beforehand.
         search = await self.tavily.search(
             query,
             topic=topic_for_class(claim.claim_class),
-            include_domains=official_domains_for(claim.subject) or None,
             search_depth="advanced",
         )
         credits += int(search.get("credits", 0))
@@ -409,7 +419,7 @@ class Verifier:
         recorded: dict[str, dict] = {}
         for r in results[: self.settings.tavily_max_results]:
             url = r["url"]
-            body = pages.get(url) or r.get("content") or ""
+            body = clean_page_text(pages.get(url) or r.get("content") or "")
 
             # Recorded fixtures may carry their own call/quote/current value.
             # A live search never does, so this is empty on the live path.
@@ -480,8 +490,18 @@ class Verifier:
         # self-contradictory output, and it happened whenever thin or undated
         # evidence pushed a well-supported claim under the threshold. Such a
         # claim is `check` — worth a human look, not a correction.
+        #
+        # It does NOT apply when sources actually contradicted the claim. A
+        # model asked for `current_value` sometimes echoes the stated value
+        # back even while calling two sources "contradicts" — judging "Larry
+        # Page is the CEO of Google" returned two contradictions and
+        # current_value "Larry Page", and this guard then downgraded a correct
+        # `outdated` to `check`. Per-source calls are the stronger signal:
+        # they are a judgement about a specific page, whereas current_value is
+        # free text the model may not have filled in carefully.
         if (
             verdict_name == "outdated"
+            and not is_contradicted(breakdown)
             and current_value
             and values_agree(claim.stated_value, current_value)
         ):
@@ -527,11 +547,24 @@ class Verifier:
         # which is correct — it never saw them, so they are insufficient
         # rather than silent agreement.
         budgeted = evidence[: self.settings.judge_max_sources]
+
+        def render(index: int, item: Evidence) -> str:
+            window = relevant_window(
+                item.snippet,
+                claim.subject,
+                claim.predicate,
+                claim.stated_value,
+                self.settings.judge_snippet_chars,
+            )
+            return (
+                f"[{index}] url: {item.url}\n"
+                f"published: {item.published_date or 'unknown'}\n"
+                f"title: {item.title}\n"
+                f"text: {window}"
+            )
+
         rendered = "\n\n".join(
-            f"[{i + 1}] url: {e.url}\npublished: {e.published_date or 'unknown'}\n"
-            f"title: {e.title}\n"
-            f"text: {_relevant_window(e.snippet, claim, self.settings.judge_snippet_chars)}"
-            for i, e in enumerate(budgeted)
+            render(i + 1, e) for i, e in enumerate(budgeted)
         )
         user = JUDGE_USER.format(
             text=claim.text,
@@ -657,34 +690,6 @@ class Verifier:
 # ---------------------------------------------------------------------------
 # value comparison
 # ---------------------------------------------------------------------------
-
-def _relevant_window(text: str, claim: Claim, budget: int) -> str:
-    """The most useful `budget` characters of a page for judging this claim.
-
-    Centres the window on the first mention of the claim's stated value or
-    subject, falling back to the head of the page. A naive head-of-page slice
-    often stops before the sentence that actually carries the value, which
-    makes the judge report "insufficient" about a page that did answer the
-    question — so trimming for tokens has to trim the *right* part.
-    """
-    if not text:
-        return ""
-    if len(text) <= budget:
-        return text
-
-    low = text.lower()
-    for needle in (claim.stated_value, claim.subject):
-        candidate = (needle or "").strip().lower()
-        if len(candidate) < 3:
-            continue
-        found = low.find(candidate)
-        if found == -1:
-            continue
-        start = max(0, found - budget // 3)
-        return text[start : start + budget]
-
-    return text[:budget]
-
 
 def _clamp_float(value: object, default: float) -> float:
     try:

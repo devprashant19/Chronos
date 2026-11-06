@@ -297,17 +297,53 @@ def _tokens(text: str) -> list[str]:
     return _TOKEN_RE.findall((text or "").lower())
 
 
+#: A named position. Tried before the generic wording below, because regex
+#: alternation is leftmost-first: in "holder of role (CEO)" the generic phrase
+#: starts at index 0 and would win, giving the useless query "who is the
+#: current holder of role of Google".
+_SPECIFIC_ROLE = re.compile(
+    r"\b(chief executive|ceo|cto|cfo|coo|president|prime minister|chancellor|"
+    r"monarch|king|queen|chair(?:man|person|woman)?|minister|governor|mayor|"
+    r"head coach|coach|manager)\b",
+    re.I,
+)
+
+#: The generic wording Chronos's own rule extractor produces.
+_GENERIC_ROLE = re.compile(r"\b(holder of role|role holder|head of)\b", re.I)
+
+
+def _role_word(predicate: str) -> str | None:
+    """The role a predicate names, preferring the specific term."""
+    match = _SPECIFIC_ROLE.search(predicate) or _GENERIC_ROLE.search(predicate)
+    return match.group(0) if match else None
+
+
 def build_query(subject: str, predicate: str) -> str:
     """Turn a claim into a search query.
 
-    Keeping this a pure function makes it testable, and it is the one place
-    where query wording — which drives both result quality and credit spend —
-    can be tuned.
+    A pure function so it can be tested, and the one place query wording —
+    which drives both result quality and credit spend — is decided.
+
+    A role claim is asked as a question about the CURRENT holder. Measured on
+    StaleBench: "Larry Page CEO of Google" retrieves pages *about Larry Page*,
+    so the judge never sees a page saying who holds the job now and correctly
+    reports "insufficient" — four of five missed stale claims failed exactly
+    this way. "who is the current CEO of Google" retrieves the answer. The
+    extractor is also told to put the organisation in `subject`; this is the
+    safety net for when it does not.
     """
     subject = (subject or "").strip()
     predicate = (predicate or "").strip()
+    if not (subject or predicate):
+        return ""
+
+    year = date.today().year
+    role = _role_word(predicate)
+    if role and subject:
+        return f"who is the current {role} of {subject} {year}"
+
     base = f"{subject} {predicate}".strip()
-    return f"{base} current {date.today().year}" if base else ""
+    return f"{base} current {year}"
 
 
 def topic_for_class(claim_class: str) -> str:
