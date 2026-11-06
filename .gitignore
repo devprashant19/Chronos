@@ -1,0 +1,43 @@
+# secrets
+.env
+*.pem
+*.key
+
+# go
+plugin/build/
+*.so
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+verifier/data/
+*.sqlite
+*.sqlite3
+*.db
+
+# node
+node_modules/
+console/dist/
+.vite/
+
+# docker / runtime
+deploy/data/
+deploy/.bifrost-data/
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# scratch
+tmp/
+
+# vendored bifrost source tarball (reproducible from the pinned tag)
+deploy/vendor/*.tar.gz
