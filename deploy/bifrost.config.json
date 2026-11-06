@@ -1,0 +1,157 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+  "encryption_key": "env.BIFROST_ENCRYPTION_KEY",
+  "client": {
+    "drop_excess_requests": false,
+    "enable_logging": true,
+    "enforce_auth_on_inference": false,
+    "allowed_origins": [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173"
+    ]
+  },
+  "providers": {
+    "openai": {
+      "keys": [
+        {
+          "name": "openai-primary",
+          "value": "env.OPENAI_API_KEY",
+          "models": [
+            "*"
+          ],
+          "weight": 1.0
+        }
+      ],
+      "network_config": {
+        "default_request_timeout_in_seconds": 60,
+        "max_retries": 2
+      }
+    },
+    "groq": {
+      "keys": [
+        {
+          "name": "groq-fallback",
+          "value": "env.GROQ_API_KEY",
+          "models": [
+            "*"
+          ],
+          "weight": 1.0
+        }
+      ]
+    },
+    "mockllm": {
+      "custom_provider_config": {
+        "base_provider_type": "openai"
+      },
+      "network_config": {
+        "base_url": "http://mockllm:8900",
+        "default_request_timeout_in_seconds": 30,
+        "max_retries": 0,
+        "allow_private_network": true
+      },
+      "keys": [
+        {
+          "name": "mockllm-local",
+          "value": "not-a-secret-offline-demo",
+          "models": [
+            "*"
+          ],
+          "weight": 1.0
+        }
+      ]
+    }
+  },
+  "governance": {
+    "virtual_keys": [
+      {
+        "id": "vk-chronos-verifier",
+        "name": "chronos-verifier",
+        "value": "env.CHRONOS_VK",
+        "is_active": true,
+        "provider_configs": [
+          {
+            "provider": "openai",
+            "allowed_models": [
+              "gpt-4o-mini",
+              "gpt-4o"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
+          },
+          {
+            "provider": "groq",
+            "allowed_models": [
+              "*"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
+          },
+          {
+            "provider": "mockllm",
+            "allowed_models": [
+              "*"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
+          }
+        ]
+      }
+    ]
+  },
+  "vector_store": {
+    "enabled": true,
+    "type": "redis",
+    "config": {
+      "addr": "redis:6379"
+    }
+  },
+  "plugins": [
+    {
+      "enabled": true,
+      "name": "chronos",
+      "path": "/app/plugins/chronos.so",
+      "placement": "pre_builtin",
+      "order": 0,
+      "config": {
+        "verifier_url": "http://verifier:8000",
+        "bifrost_admin_url": "http://127.0.0.1:8080",
+        "mode": "annotate",
+        "guard_threshold": 50,
+        "verify_timeout_ms": 4000,
+        "sync_on_cache_hit": true,
+        "evict_stale": true,
+        "auto_cache_key": "",
+        "default_ttl": "24h",
+        "ttl_by_class": {
+          "market": "15m",
+          "pricing": "6h",
+          "version": "6h",
+          "leadership": "24h",
+          "law": "24h",
+          "events": "12h",
+          "timeless": "168h"
+        },
+        "debug": true
+      }
+    },
+    {
+      "enabled": true,
+      "name": "semantic_cache",
+      "config": {
+        "dimension": 1,
+        "ttl": "24h",
+        "cache_by_model": true,
+        "cache_by_provider": true,
+        "disable_identity_scoping": true,
+        "conversation_history_threshold": 10,
+        "vector_store_namespace": "ChronosSemanticCache"
+      }
+    }
+  ]
+}
