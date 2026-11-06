@@ -168,6 +168,21 @@ func LoadConfig(raw any) (Config, []string) {
 	if v := os.Getenv("CHRONOS_AUTO_CACHE_KEY"); v != "" {
 		cfg.AutoCacheKey = v
 	}
+	// The gateway's management API requires a setup token while dashboard auth
+	// is inactive, and it is a secret, so it comes from the environment rather
+	// than from config.json.
+	if v := os.Getenv("CHRONOS_ADMIN_TOKEN"); v != "" {
+		cfg.AdminAuthValue = v
+		if cfg.AdminAuthHeader == "" {
+			cfg.AdminAuthHeader = "X-Bifrost-Setup-Token"
+		}
+	}
+	if v := os.Getenv("BIFROST_SETUP_TOKEN"); v != "" && cfg.AdminAuthValue == "" {
+		cfg.AdminAuthValue = v
+		if cfg.AdminAuthHeader == "" {
+			cfg.AdminAuthHeader = "X-Bifrost-Setup-Token"
+		}
+	}
 	if v := os.Getenv("CHRONOS_DEBUG"); v == "1" || strings.EqualFold(v, "true") {
 		cfg.Debug = true
 	}

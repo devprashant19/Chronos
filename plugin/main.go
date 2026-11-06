@@ -41,6 +41,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/maximhq/bifrost/core/schemas"
@@ -48,6 +49,13 @@ import (
 
 // Version is stamped at build time with -ldflags "-X main.Version=...".
 var Version = "dev"
+
+var (
+	// corrCounter and processEpoch together make correlation ids unique within
+	// a process and distinct across restarts.
+	corrCounter  uint64
+	processEpoch = time.Now().UnixNano() / int64(time.Millisecond)
+)
 
 // Chronos's own context keys. Values set in one hook are read in a later hook
 // of the same request.
@@ -58,6 +66,7 @@ const (
 	ctxKeyModel   schemas.BifrostContextKey = "chronos-model"
 	ctxKeyCacheKy schemas.BifrostContextKey = "chronos-cache-key"
 	ctxKeyResult  schemas.BifrostContextKey = "chronos-result"
+	ctxKeyCorrID  schemas.BifrostContextKey = "chronos-correlation-id"
 )
 
 // Semantic-cache context keys, mirrored by value rather than imported.
@@ -107,12 +116,47 @@ type pluginState struct {
 	// burst of traffic cannot spawn unbounded goroutines against the verifier.
 	inflight chan struct{}
 
+	// results carries a verdict from PostLLMHook to the response-headers hook.
+	// See state.go for why the request context cannot do this.
+	results *resultStore
+
 	wg     sync.WaitGroup
 	closed chan struct{}
 	once   sync.Once
 }
 
 var state *pluginState
+
+// record parks a verdict where the response-headers hook will find it.
+//
+// It writes to both the context and the request-id store: the context is the
+// natural place and costs nothing, and the store is the one that actually
+// works across the transport boundary.
+func (st *pluginState) record(ctx *schemas.BifrostContext, res result) {
+	ctx.SetValue(ctxKeyResult, res)
+	st.results.put(correlationID(ctx), res)
+}
+
+// correlationID returns the key under which a verdict is parked for this
+// request. Chronos's own id is preferred; Bifrost's request id is a fallback
+// for code paths that never passed through HTTPTransportPreHook.
+func correlationID(ctx *schemas.BifrostContext) string {
+	if id, ok := ctx.Value(ctxKeyCorrID).(string); ok && id != "" {
+		return id
+	}
+	if id, ok := ctx.Value(schemas.BifrostContextKeyRequestID).(string); ok {
+		return id
+	}
+	return ""
+}
+
+// nextCorrelationID produces a short, process-unique id without pulling in a
+// UUID dependency: a plugin shares its dependency graph with the gateway, so
+// every import is a version constraint worth avoiding.
+func nextCorrelationID() string {
+	n := atomic.AddUint64(&corrCounter, 1)
+	return strconv.FormatInt(processEpoch, 36) + "-" + strconv.FormatUint(n, 36)
+}
 
 // result is what a verification produced, as the headers hook needs it.
 type result struct {
@@ -143,6 +187,7 @@ func Init(config any) error {
 		verifier: NewVerifierClient(cfg.VerifierURL, cfg.verifyTimeout()),
 		evictor:  NewEvictor(cfg.BifrostAdminURL, cfg.AdminAuthHeader, cfg.AdminAuthValue),
 		inflight: make(chan struct{}, 64),
+		results:  newResultStore(),
 		closed:   make(chan struct{}),
 	}
 	state = st
@@ -209,6 +254,17 @@ func HTTPTransportPreHook(ctx *schemas.BifrostContext, req *schemas.HTTPRequest)
 			ctx.SetValue(ctxKeyCacheKy, existing)
 		}
 	}
+
+	// Chronos mints its own correlation id here rather than relying on
+	// Bifrost's request id.
+	//
+	// The reason is empirical: BifrostContextKeyRequestID is present in the
+	// LLM-pipeline context that PostLLMHook sees, but NOT in the transport
+	// context that HTTPTransportResponseHeadersHook sees. A value set here, in
+	// a transport hook, is visible both to PostLLMHook (context values
+	// propagate downward) and to the sibling transport hook that commits the
+	// headers — so it is the one key that reaches both ends.
+	ctx.SetValue(ctxKeyCorrID, nextCorrelationID())
 
 	ctx.SetValue(ctxKeyClass, string(class.Class))
 	ctx.SetValue(ctxKeyTTL, ttl)
@@ -310,7 +366,7 @@ func PostLLMHook(ctx *schemas.BifrostContext, resp *schemas.BifrostResponse, bif
 
 	if !inline {
 		st.verifyInBackground(vreq)
-		ctx.SetValue(ctxKeyResult, result{
+		st.record(ctx, result{
 			Verdict: verdictPending,
 			Class:   class,
 			TTL:     ttlSeconds(ctx),
@@ -330,10 +386,11 @@ func PostLLMHook(ctx *schemas.BifrostContext, resp *schemas.BifrostResponse, bif
 	if err != nil || vres == nil {
 		// Degrade, loudly in the log and quietly on the wire.
 		ctx.Log(schemas.LogLevelWarn, fmt.Sprintf("chronos: verification unavailable, passing through: %v", err))
-		ctx.SetValue(ctxKeyResult, result{
+		st.record(ctx, result{
 			Verdict:   verdictUnverifiable,
 			Class:     class,
 			LatencyMS: latency,
+			TTL:       ttlSeconds(ctx),
 		})
 		return resp, bifrostErr, nil
 	}
@@ -348,7 +405,7 @@ func PostLLMHook(ctx *schemas.BifrostContext, resp *schemas.BifrostResponse, bif
 		Class:     class,
 		LatencyMS: latency,
 	}
-	ctx.SetValue(ctxKeyResult, res)
+	st.record(ctx, res)
 
 	// A cached answer with an outdated claim is exactly the failure Chronos
 	// exists to prevent: evict it so the next caller does not get it too.
@@ -390,10 +447,20 @@ func HTTPTransportResponseHeadersHook(ctx *schemas.BifrostContext, req *schemas.
 		return nil
 	}
 
-	res, ok := ctx.Value(ctxKeyResult).(result)
+	// The store is the reliable path across the transport boundary; the
+	// context is checked too, in case a future Bifrost propagates upward.
+	var res result
+	var ok bool
+	corrID := correlationID(ctx)
+	if corrID != "" {
+		res, ok = st.results.take(corrID)
+	}
 	if !ok {
-		// Nothing ran (not an inference route, a streamed chunk path, or an
-		// error response). Say nothing rather than guess.
+		res, ok = ctx.Value(ctxKeyResult).(result)
+	}
+	if !ok {
+		// Nothing ran: not an inference route, or an error response. Say
+		// nothing rather than guess.
 		return nil
 	}
 
@@ -510,11 +577,19 @@ func (st *pluginState) evict(ctx *schemas.BifrostContext, cacheID, cacheKey stri
 
 	if err := st.evictor.ClearCacheID(ectx, cacheID); err != nil {
 		ctx.Log(schemas.LogLevelWarn, fmt.Sprintf("chronos: could not evict stale cache entry %s: %v", cacheID, err))
+		logf("warn", "could not evict stale cache entry %s: %v", cacheID, err)
 		return
 	}
-	ctx.Log(schemas.LogLevelInfo, fmt.Sprintf(
-		"chronos: stale_hit_prevented cache_id=%s cache_key=%s score=%.0f stale_claims=%d report=%s",
-		cacheID, cacheKey, res.Score, res.Stale, res.ReportID))
+
+	// Logged twice on purpose. ctx.Log is the idiomatic path for a Bifrost
+	// plugin, but its output did not reach the gateway's log stream in
+	// testing, and stale_hit_prevented is the one event an operator must be
+	// able to see. The stderr line is the one that is actually observable.
+	msg := fmt.Sprintf(
+		"stale_hit_prevented cache_id=%s cache_key=%s score=%.0f stale_claims=%d report=%s",
+		cacheID, cacheKey, res.Score, res.Stale, res.ReportID)
+	ctx.Log(schemas.LogLevelInfo, "chronos: "+msg)
+	logf("info", "%s", msg)
 }
 
 // blockedError builds the error guard mode returns instead of a stale answer.

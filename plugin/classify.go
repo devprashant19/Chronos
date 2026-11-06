@@ -63,6 +63,11 @@ var rules = []classifier{
 			`\b(price|worth|value)\b.*\b(bitcoin|btc|ethereum|eth)\b`,
 			`\b(interest|inflation|repo) rate\b`, `\bbond yield\b`,
 			`\btrading at\b`, `\bpre-?market\b`,
+			// Market commentary tied to a moment. Without this, "what happened
+			// in the markets today" falls through to `events` and gets a
+			// 12-hour TTL, which is far too long for a moving market.
+			`\b(markets?|stocks?|indices|index|shares?)\b[^.]{0,40}\b(today|now|this (morning|afternoon|week)|close[ds]?|open(ed|ing)?|up|down|rose|fell|rally|selloff)\b`,
+			`\b(today|now|this morning)\b[^.]{0,40}\b(markets?|stocks?|indices)\b`,
 		),
 	},
 	{
