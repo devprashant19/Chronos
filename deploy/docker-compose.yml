@@ -73,6 +73,7 @@ services:
       GROQ_API_KEY: "${GROQ_API_KEY:-gsk-unset-offline-demo}"
       BIFROST_ENCRYPTION_KEY: "${BIFROST_ENCRYPTION_KEY:-chronos-dev-encryption-key-32byte}"
       CHRONOS_VK: "${CHRONOS_VK:-sk-bf-chronos-verifier-dev}"
+      BIFROST_SETUP_TOKEN: "${BIFROST_SETUP_TOKEN:-chronos-dev-setup-token}"
 
       # Plugin knobs. These override deploy/bifrost.config.json.
       CHRONOS_VERIFIER_URL: "http://verifier:8000"
@@ -104,9 +105,14 @@ services:
       CHRONOS_BIFROST_URL: "http://bifrost:8080/v1"
       CHRONOS_BIFROST_ADMIN_URL: "http://bifrost:8080"
       CHRONOS_VK: "${CHRONOS_VK:-sk-bf-chronos-verifier-dev}"
+      BIFROST_SETUP_TOKEN: "${BIFROST_SETUP_TOKEN:-chronos-dev-setup-token}"
       TAVILY_API_KEY: "${TAVILY_API_KEY:-}"
 
       CHRONOS_OFFLINE_DEMO: "${CHRONOS_OFFLINE_DEMO:-1}"
+      # Empty follows CHRONOS_OFFLINE_DEMO. Set to 0 to take evidence live
+      # from Tavily while extraction and judging stay rule-based, which is
+      # the useful setup when you have a Tavily key but no model key.
+      CHRONOS_LIVE_MODELS: "${CHRONOS_LIVE_MODELS:-}"
       CHRONOS_EXTRACT_MODEL: "${CHRONOS_EXTRACT_MODEL:-mockllm/chronos-demo}"
       CHRONOS_JUDGE_MODEL: "${CHRONOS_JUDGE_MODEL:-mockllm/chronos-demo}"
       CHRONOS_FALLBACK_MODELS: "${CHRONOS_FALLBACK_MODELS:-groq/llama-3.1-8b-instant}"

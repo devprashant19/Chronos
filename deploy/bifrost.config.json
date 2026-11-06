@@ -1,6 +1,7 @@
 {
   "$schema": "https://www.getbifrost.ai/schema",
   "encryption_key": "env.BIFROST_ENCRYPTION_KEY",
+  "setup_token": "env.BIFROST_SETUP_TOKEN",
   "client": {
     "drop_excess_requests": false,
     "enable_logging": true,
@@ -137,7 +138,8 @@
           "events": "12h",
           "timeless": "168h"
         },
-        "debug": true
+        "debug": true,
+        "admin_auth_header": "X-Bifrost-Setup-Token"
       }
     },
     {
