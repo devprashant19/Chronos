@@ -1,0 +1,222 @@
+name: CI
+
+# Runs on every push and PR. Nothing here needs an API key: the stack is
+# exercised against deploy/mockllm and the recorded evidence fixtures, so CI
+# spends no Tavily credits and no provider tokens.
+on:
+  push:
+    branches: [main, master, dev]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.27.3"
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+
+jobs:
+  # --------------------------------------------------------------------
+  plugin:
+    name: Go plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: plugin/go.sum
+
+      - name: go vet
+        working-directory: plugin
+        run: go vet ./...
+
+      - name: gofmt
+        working-directory: plugin
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "these files need gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go test -race
+        working-directory: plugin
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race -count=1 ./...
+
+      # The plugin is only useful if it builds as a shared object, and that is
+      # a different code path from `go build`.
+      - name: build as a Go plugin
+        working-directory: plugin
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          go build -buildmode=plugin -o /tmp/chronos.so .
+          test -s /tmp/chronos.so
+          ldd /tmp/chronos.so | grep -q libc
+
+  # --------------------------------------------------------------------
+  verifier:
+    name: Python verifier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: verifier/requirements-dev.txt
+
+      - name: install
+        working-directory: verifier
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: ruff
+        working-directory: verifier
+        run: ruff check chronos/
+
+      # Offline: no Tavily key, no model key, evidence from the fixtures.
+      - name: pytest
+        working-directory: verifier
+        env:
+          CHRONOS_OFFLINE_DEMO: "1"
+          CHRONOS_SWEEPER_ENABLED: "0"
+          CHRONOS_DB_PATH: /tmp/chronos-ci.sqlite
+        run: python -m pytest tests/ -q
+
+  # --------------------------------------------------------------------
+  dataset:
+    name: StaleBench dataset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # The dataset is generated, so a drifted checked-in copy is a bug.
+      - name: dataset regenerates identically
+        run: |
+          cp bench/stalebench.json /tmp/committed.json
+          python bench/build_dataset.py
+          if ! diff -q /tmp/committed.json bench/stalebench.json; then
+            echo "bench/stalebench.json is out of date; re-run bench/build_dataset.py"
+            diff /tmp/committed.json bench/stalebench.json | head -20
+            exit 1
+          fi
+
+      - name: fixtures and config are valid
+        run: |
+          python -c "import json;json.load(open('deploy/bifrost.config.json'))"
+          python -c "import json;json.load(open('deploy/mockllm/fixtures/answers.json'))"
+          python -c "import json;json.load(open('verifier/fixtures/evidence.json'))"
+
+  # --------------------------------------------------------------------
+  console:
+    name: Console
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: install
+        working-directory: console
+        run: npm install --no-audit --no-fund
+
+      - name: typecheck
+        working-directory: console
+        run: npx tsc --noEmit
+
+      - name: build
+        working-directory: console
+        run: npx vite build
+
+  # --------------------------------------------------------------------
+  secrets:
+    name: No committed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: no .env committed
+        run: |
+          if git ls-files | grep -qE '(^|/)\.env$'; then
+            echo "a .env file is tracked"; exit 1
+          fi
+
+      # Matches the real credential prefixes, not the .env.example placeholders.
+      - name: no credential-shaped strings
+        run: |
+          if git grep -nIE '(sk-[A-Za-z0-9]{20,}|tvly-(dev-)?[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,})' \
+               -- . ':!*.example' ':!scripts/verify-all.sh' ':!.github/workflows/ci.yml'; then
+            echo "a credential-shaped string is committed"; exit 1
+          fi
+
+  # --------------------------------------------------------------------
+  e2e:
+    name: End-to-end stack
+    runs-on: ubuntu-latest
+    # The image compiles Bifrost from source, so this is the slow job.
+    timeout-minutes: 45
+    needs: [plugin, verifier]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: build the gateway image (bifrost + chronos.so)
+        run: docker build -f deploy/Dockerfile.bifrost -t chronos/bifrost:dev .
+
+      # Asserts the two properties that make the plugin loadable at all.
+      - name: the image carries a dynamically linked binary and the plugin
+        run: |
+          docker run --rm --entrypoint sh chronos/bifrost:dev -c '
+            test -f /app/plugins/chronos.so &&
+            ldd /app/main | grep -q "libc.so.6" &&
+            cat /app/BUILDINFO'
+
+      - name: start the stack
+        working-directory: deploy
+        env:
+          CHRONOS_OFFLINE_DEMO: "1"
+          CHRONOS_MODE: annotate
+        run: |
+          cp ../.env.example .env
+          docker compose up -d redis mockllm verifier bifrost
+
+      - name: wait for health
+        run: |
+          for i in $(seq 1 60); do
+            b=$(curl -s -m 3 -o /dev/null -w '%{http_code}' http://localhost:8080/health || true)
+            v=$(curl -s -m 3 -o /dev/null -w '%{http_code}' http://localhost:8000/health || true)
+            if [ "$b" = "200" ] && [ "$v" = "200" ]; then echo "healthy"; exit 0; fi
+            sleep 5
+          done
+          echo "stack did not become healthy"
+          (cd deploy && docker compose logs --tail 80)
+          exit 1
+
+      - name: verify everything
+        run: ./scripts/verify-all.sh --no-build
+
+      - name: logs on failure
+        if: failure()
+        working-directory: deploy
+        run: docker compose logs --tail 200
+
+      - name: tear down
+        if: always()
+        working-directory: deploy
+        run: docker compose down -v
