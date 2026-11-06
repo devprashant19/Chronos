@@ -12,11 +12,14 @@
     "",
     "The `expected_verdict` field is what StaleBench scores against."
   ],
-
   "answers": [
     {
       "id": "pricing-gpt4o-stale",
-      "match": ["gpt-4o.*(price|cost|how much)", "(price|cost|how much).*gpt-4o", "openai api pricing"],
+      "match": [
+        "gpt-?4o.*(pric|cost|how much|token)",
+        "(pric|cost|how much).*gpt-?4o",
+        "openai.*(api )?pricing"
+      ],
       "class": "pricing",
       "expected_verdict": "outdated",
       "intentionally_stale_because": "Quotes a per-million-token price from an older OpenAI rate card. OpenAI has revised gpt-4o pricing since, so the figure needs re-checking against the live pricing page.",
@@ -24,7 +27,11 @@
     },
     {
       "id": "leadership-twitter-stale",
-      "match": ["who is the ceo of (twitter|x)", "(twitter|x corp).*ceo", "ceo of twitter"],
+      "match": [
+        "who (is|runs|leads).*(ceo|chief exec).*(twitter|x corp|x\b)",
+        "(ceo|chief exec).*(of )?(twitter|x corp)",
+        "(twitter|x corp).*(ceo|chief exec)"
+      ],
       "class": "leadership",
       "expected_verdict": "outdated",
       "intentionally_stale_because": "Names Jack Dorsey as Twitter's sitting CEO. Dorsey stepped down in November 2021 and the company was renamed X; the role has changed hands more than once since.",
@@ -32,7 +39,12 @@
     },
     {
       "id": "version-python-stale",
-      "match": ["latest.*python.*version", "python.*latest (version|release)", "current python version", "newest python"],
+      "match": [
+        "(latest|newest|current|most recent).*(version|release).*python",
+        "python.*(latest|newest|current|most recent).*(version|release)",
+        "(latest|newest|current).*python",
+        "python.*(version|release)"
+      ],
       "class": "version",
       "expected_verdict": "outdated",
       "intentionally_stale_because": "States 3.11 as the newest Python release. Several minor versions have shipped since, so the stated version is behind by more than one release.",
@@ -40,7 +52,10 @@
     },
     {
       "id": "market-btc-stale",
-      "match": ["bitcoin.*(price|worth|trading)", "(price|worth) of bitcoin", "btc price"],
+      "match": [
+        "(bitcoin|btc).*(price|worth|trading|market cap|value)",
+        "(price|worth|value|how much).*(bitcoin|btc)"
+      ],
       "class": "market",
       "expected_verdict": "outdated",
       "intentionally_stale_because": "Quotes a specific spot price. Any spot price is stale within minutes, which is the clearest possible case for a short cache TTL.",
@@ -48,7 +63,11 @@
     },
     {
       "id": "law-euaiact-stale",
-      "match": ["eu ai act", "ai act.*(force|effect|deadline|apply)", "european.*ai regulation"],
+      "match": [
+        "eu ai act",
+        "ai act.*(force|effect|deadline|appl|status|proposal)",
+        "european.*ai.*(regulat|act)"
+      ],
       "class": "law",
       "expected_verdict": "check",
       "intentionally_stale_because": "Describes the EU AI Act as a proposal still under negotiation. The Act has since been adopted and entered into force, with obligations phasing in on a published timetable.",
@@ -56,7 +75,10 @@
     },
     {
       "id": "timeless-capital",
-      "match": ["capital of france", "what is the capital of"],
+      "match": [
+        "capital of france",
+        "what is the capital of"
+      ],
       "class": "timeless",
       "expected_verdict": "current",
       "intentionally_stale_because": null,
@@ -64,7 +86,11 @@
     },
     {
       "id": "timeless-boiling",
-      "match": ["boiling point of water", "what temperature does water boil"],
+      "match": [
+        "boiling point of water",
+        "(what )?temperature.*water boil",
+        "water boil"
+      ],
       "class": "timeless",
       "expected_verdict": "current",
       "intentionally_stale_because": null,
@@ -72,7 +98,11 @@
     },
     {
       "id": "timeless-code",
-      "match": ["write (a|me|some)? ?(function|code|program|script)", "reverse a string", "fizzbuzz"],
+      "match": [
+        "write (a|me|some)? ?(function|code|program|script)",
+        "reverse a string",
+        "fizzbuzz"
+      ],
       "class": "timeless",
       "expected_verdict": "current",
       "intentionally_stale_because": null,
@@ -80,13 +110,15 @@
     },
     {
       "id": "mixed-pricing-and-timeless",
-      "match": ["compare.*pricing", "which model should i use"],
+      "match": [
+        "compare.*(pricing|price|cost)",
+        "which model should i use"
+      ],
       "class": "pricing",
       "expected_verdict": "outdated",
       "intentionally_stale_because": "Mixes a stale price with a timeless architectural statement, so a correct verifier must score the two sentences differently rather than condemning or passing the whole answer.",
       "answer": "GPT-4o mini costs $0.15 per million input tokens, making it the cheapest option in the GPT-4 family. Transformer models in general scale their attention cost quadratically with sequence length, which is why long contexts remain expensive regardless of which provider you choose."
     }
   ],
-
   "default": "I can answer that, but I do not have specific up-to-date figures to hand. For anything time-sensitive — prices, versions, leadership or market data — check the provider's own current documentation."
 }
