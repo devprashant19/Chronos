@@ -1,6 +1,6 @@
 """Pulling time-sensitive claims out of an answer.
 
-Two extractors, same output contract:
+Two extractors, one output contract:
 
   * `extract_with_model` asks a model for strict JSON and validates it against
     the `Claim` schema. On a validation failure it retries once, handing the
@@ -8,15 +8,19 @@ Two extractors, same output contract:
     claim list, because it produces confident scores about sentences the answer
     never made.
 
-  * `extract_with_rules` finds claims with patterns only. It is the offline and
-    model-unavailable path, and it is deterministic, which is what makes the
-    demo and the benchmark reproducible.
+  * `extract_with_rules` finds claims with patterns only (see rules.py). It is
+    the offline and model-unavailable path, and it is deterministic, which is
+    what makes the demo and the benchmark reproducible.
 
-What both must do is *skip* the sentences that do not need checking. Opinions,
-arithmetic, code and definitions have no "current value" to look up, and
-spending a Tavily credit on "the capital of France is Paris" is the easiest
-waste in the whole system. The benchmark measures this as the timeless skip
-rate.
+Both must *skip* the sentences that do not need checking. Opinions, arithmetic,
+code and definitions have no current value to look up, and spending a Tavily
+credit on "the capital of France is Paris" is the easiest waste in the system.
+The benchmark measures this as the timeless skip rate.
+
+The failure mode to design against is silence. A claim that is never extracted
+produces a 100 score and a "current" verdict — a staleness detector saying
+nothing and looking like approval. That is why the rule extractor has a generic
+second layer rather than only hand-written patterns.
 """
 
 from __future__ import annotations
@@ -29,6 +33,13 @@ from pydantic import ValidationError
 
 from .llm import LLMClient, ModelUnavailable
 from .models import Claim, ExtractionResult
+from .rules import (
+    CLAIM_RULES,
+    GENERIC_ASSERTION,
+    SKIP_PATTERNS,
+    TIMELESS_PATTERNS,
+    infer_class,
+)
 from .settings import Settings, get_settings
 
 logger = logging.getLogger("chronos.extract")
@@ -49,8 +60,8 @@ Rules:
   events, timeless.
     market     prices, rates, market caps, anything quoted live
     pricing    product or service prices, plans, per-token costs
-    version    software versions, releases, model names, deprecations
-    leadership people holding a role: CEO, minister, manager
+    version    software versions, releases, model names, deprecations, branding
+    leadership people holding a role: CEO, minister, monarch, manager
     law        statutes, regulations, effective dates, legal status
     events     results, schedules, recent happenings
     timeless   facts that do not change
@@ -60,8 +71,8 @@ Rules:
 - "predicate" is the property asserted (e.g. "input token price").
 - "stated_value" is what the answer says that property is, verbatim.
 - SKIP and do not return: opinions, recommendations, hedged statements,
-  arithmetic, code, definitions, and anything with no checkable public source.
-  Count what you skipped in "skipped".
+  arithmetic, code, and anything with no checkable public source. Count what
+  you skipped in "skipped".
 - Return at most {max_claims} claims, the most time-sensitive first.
 - If the answer contains no time-sensitive claims, return {{"claims": [], "skipped": N}}.
 """
@@ -126,20 +137,9 @@ async def extract_with_model(
 
 def _validate_claims(payload: dict, answer: str, max_claims: int) -> list[Claim]:
     """Validate the model's claim list, repairing spans where we safely can."""
-    raw_claims = payload.get("claims")
-    if raw_claims is None:
-        raw_claims = []
+    raw_claims = payload.get("claims") or []
     if not isinstance(raw_claims, list):
-        raise ValidationError.from_exception_data(
-            "ExtractionResult",
-            [
-                {
-                    "type": "list_type",
-                    "loc": ("claims",),
-                    "input": raw_claims,
-                }
-            ],
-        )
+        raise ValueError("claims must be a list")
 
     out: list[Claim] = []
     for item in raw_claims[:max_claims]:
@@ -149,17 +149,17 @@ def _validate_claims(payload: dict, answer: str, max_claims: int) -> list[Claim]
 
         # Models are unreliable about character offsets. If the span does not
         # actually contain the claim text, relocate it by searching the answer;
-        # only drop the claim if the text is not present at all.
+        # drop the claim only if its text is absent entirely.
         if answer[claim.span_start : claim.span_end].strip() != claim.text.strip():
-            found = answer.find(claim.text.strip())
+            needle = claim.text.strip()
+            found = answer.find(needle)
+            if found == -1 and len(needle) > 60:
+                found = answer.find(needle[:60])
             if found == -1:
-                snippet = claim.text.strip()[:60]
-                found = answer.find(snippet) if snippet else -1
-            if found == -1:
-                logger.debug("dropping claim whose text is absent from the answer: %r", claim.text[:60])
+                logger.debug("dropping claim absent from the answer: %r", needle[:60])
                 continue
             claim = claim.model_copy(
-                update={"span_start": found, "span_end": found + len(claim.text.strip())}
+                update={"span_start": found, "span_end": found + len(needle)}
             )
 
         out.append(claim)
@@ -180,125 +180,20 @@ def _short_validation_error(exc: ValidationError) -> str:
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9])|\n+")
 
-#: Sentences that look like these never need checking.
-_SKIP_PATTERNS = [
-    re.compile(p, re.I)
-    for p in (
-        r"^\s*(def |class |import |from |#|//|<|\{|\}|return |print\()",
-        r"^\s{4,}\S",  # indented code
-        r"\b(i think|in my opinion|you should|i recommend|consider|it depends|generally|typically)\b",
-        r"\b(for example|e\.g\.|such as)\b.*\b(code|function|snippet)\b",
-        r"^\s*\d+\s*[-+*/x]\s*\d+",
-    )
-]
+#: Sentence-initial words capitalised by grammar, not by being a name. Without
+#: this, the subject of "The capital of France is Paris" comes out as "The",
+#: which is a useless cache key and a useless search query.
+_LEADING_STOPWORDS = frozenset(
+    {
+        "the", "a", "an", "it", "this", "that", "these", "those", "there",
+        "here", "its", "their", "his", "her", "they", "he", "she", "we",
+        "you", "i", "at", "in", "on", "of", "for", "as", "and", "but", "so",
+        "if", "when", "while", "with", "without", "however", "although",
+        "every", "each", "some", "any", "most", "many", "both", "all",
+    }
+)
 
-_CLAIM_RULES: list[tuple[str, re.Pattern[str], str, str]] = [
-    # (class, pattern, predicate, value-group-name)
-    (
-        "market",
-        re.compile(
-            r"(?P<subject>bitcoin|btc|ethereum|eth|[A-Z]{1,5}\s+(?:stock|shares))\b[^.]{0,60}?"
-            r"(?:trading at|is at|price of|worth|costs?)\s*(?P<value>[$€£]\s?[\d,]+(?:\.\d+)?(?:\s?(?:k|m|bn|billion|million|trillion))?)",
-            re.I,
-        ),
-        "spot price",
-        "value",
-    ),
-    (
-        "market",
-        re.compile(
-            r"market cap(?:italisation|italization)?\s*(?:of|sits near|is|at)?\s*(?P<value>[$€£]\s?[\d,.]+\s?(?:k|m|bn|billion|million|trillion)?)",
-            re.I,
-        ),
-        "market capitalisation",
-        "value",
-    ),
-    (
-        "pricing",
-        re.compile(
-            r"(?P<value>[$€£]\s?[\d,]+(?:\.\d+)?)\s*(?:per|/)\s*(?P<unit>million|1m|1k|thousand|month|year|seat|user|request)\b[^.]{0,30}?(?P<kind>input|output|token|tokens)?",
-            re.I,
-        ),
-        "price",
-        "value",
-    ),
-    (
-        "pricing",
-        re.compile(
-            r"\b(?:costs?|priced at|is)\s*(?P<value>[$€£]\s?[\d,]+(?:\.\d+)?)\b",
-            re.I,
-        ),
-        "price",
-        "value",
-    ),
-    (
-        "version",
-        re.compile(
-            r"(?:latest|current|newest|most recent)\s+(?:stable\s+)?(?:release|version)\s+of\s+(?P<subject>[A-Za-z][\w .+#-]{1,40}?)\s+is\s+(?P<value>v?\d[\w.]*)",
-            re.I,
-        ),
-        "latest version",
-        "value",
-    ),
-    (
-        "version",
-        re.compile(
-            r"(?P<subject>[A-Z][\w .+#-]{1,30}?)\s+(?P<value>v?\d+\.\d+(?:\.\d+)?)\s+is\s+the\s+(?:latest|current|newest|version most)",
-            re.I,
-        ),
-        "latest version",
-        "value",
-    ),
-    (
-        "leadership",
-        re.compile(
-            r"(?P<value>[A-Z][a-z]+(?:\s+[A-Z][a-z.]+){0,2})\s+is\s+(?:the\s+)?(?P<role>chief executive|ceo|cto|cfo|coo|president|prime minister|chair(?:man|person)?)\s+of\s+(?P<subject>[A-Z][\w .&-]{1,40})",
-            re.I,
-        ),
-        "holder of role",
-        "value",
-    ),
-    (
-        "leadership",
-        re.compile(
-            r"(?:the\s+)?(?P<role>ceo|cto|cfo|president|prime minister)\s+of\s+(?P<subject>[A-Z][\w .&-]{1,40}?)\s+is\s+(?P<value>[A-Z][a-z]+(?:\s+[A-Z][a-z.]+){0,2})",
-            re.I,
-        ),
-        "holder of role",
-        "value",
-    ),
-    (
-        "law",
-        re.compile(
-            r"(?P<subject>[A-Z][\w .-]{2,50}(?:Act|Regulation|Directive|Law|Bill))\b[^.]{0,80}?"
-            r"(?P<value>is still a (?:legislative )?proposal|has not yet|comes into force[^.]{0,30}|applies from[^.]{0,30}|entered into force[^.]{0,30})",
-            re.I,
-        ),
-        "legal status",
-        "value",
-    ),
-    (
-        "events",
-        re.compile(
-            r"(?P<subject>[A-Z][\w .&-]{2,40})\s+(?:won|lost|announced|launched|acquired|raised)\s+(?P<value>[^.]{3,60})",
-        ),
-        "recent event",
-        "value",
-    ),
-]
-
-_TIMELESS_PATTERNS = [
-    re.compile(p, re.I)
-    for p in (
-        r"\bcapital of [A-Z]",
-        r"\bboil(?:s|ing)? at\b",
-        r"\bspeed of light\b",
-        r"\b(?:sits on|is located|is situated) (?:the|in|on)\b",
-        r"\bquadratic|\blinear(?:ly)? with\b",
-        r"\bhas been the (?:seat|home)\b",
-        r"\bdegrees (?:celsius|fahrenheit)\b",
-    )
-]
+_SUBJECT_HINT = re.compile(r"\b([A-Z][\w.+-]*(?:\s+[A-Z][\w.+-]*){0,3})\b")
 
 
 def extract_with_rules(answer: str, settings: Settings | None = None) -> ExtractionResult:
@@ -314,60 +209,24 @@ def extract_with_rules(answer: str, settings: Settings | None = None) -> Extract
         if len(stripped) < 12:
             continue
 
-        if any(p.search(stripped) for p in _SKIP_PATTERNS):
+        if any(p.search(stripped) for p in SKIP_PATTERNS):
             skipped += 1
             continue
 
-        # A sentence that is clearly timeless is recorded as a timeless claim
-        # so the report can show it as deliberately skipped, which is what
-        # makes the credit saving visible rather than invisible.
-        if any(p.search(stripped) for p in _TIMELESS_PATTERNS):
+        # Timeless sentences are recorded as timeless claims, not dropped, so
+        # the saved Tavily credit shows up in the report instead of vanishing.
+        if any(p.search(stripped) for p in TIMELESS_PATTERNS):
             claims.append(
-                Claim(
-                    text=stripped,
-                    span_start=start,
-                    span_end=start + len(stripped),
-                    subject=_guess_subject(stripped),
-                    predicate="timeless statement",
-                    stated_value="",
-                    **{"class": "timeless"},
-                )
+                _make_claim(stripped, start, _guess_subject(stripped),
+                            "timeless statement", "", "timeless")
             )
             continue
 
-        matched = False
-        for claim_class, pattern, predicate, value_group in _CLAIM_RULES:
-            m = pattern.search(stripped)
-            if not m:
-                continue
-
-            groups = m.groupdict()
-            subject = (groups.get("subject") or _guess_subject(stripped)).strip(" .,:;")
-            value = (groups.get(value_group) or m.group(0)).strip(" .,:;")
-            role = groups.get("role")
-            full_predicate = f"{predicate} ({role})" if role else predicate
-
-            key = (subject.lower(), full_predicate.lower())
-            if key in seen:
-                continue
-            seen.add(key)
-
-            claims.append(
-                Claim(
-                    text=stripped,
-                    span_start=start,
-                    span_end=start + len(stripped),
-                    subject=subject,
-                    predicate=full_predicate,
-                    stated_value=value,
-                    **{"class": claim_class},
-                )
-            )
-            matched = True
-            break
-
-        if not matched:
+        claim = _match_specific(stripped, start, seen) or _match_generic(stripped, start, seen)
+        if claim is None:
             skipped += 1
+        else:
+            claims.append(claim)
 
         if len(claims) >= settings.max_claims_per_answer:
             break
@@ -375,12 +234,94 @@ def extract_with_rules(answer: str, settings: Settings | None = None) -> Extract
     return ExtractionResult(claims=claims, skipped=skipped, model_used="rules")
 
 
+def _match_specific(
+    sentence: str, start: int, seen: set[tuple[str, str]]
+) -> Claim | None:
+    """Layer 1: a hand-written pattern with named groups."""
+    for claim_class, pattern, predicate, value_group in CLAIM_RULES:
+        m = pattern.search(sentence)
+        if not m:
+            continue
+
+        groups = m.groupdict()
+        raw_subject = (groups.get("subject") or _guess_subject(sentence)).strip(" .,:;")
+        subject = _strip_leading_stopwords(raw_subject) or raw_subject
+        value = (groups.get(value_group) or m.group(0)).strip(" .,:;")
+        role = groups.get("role")
+        full_predicate = f"{predicate} ({role})" if role else predicate
+
+        key = (subject.lower(), full_predicate.lower())
+        if key in seen:
+            return None
+        seen.add(key)
+
+        return _make_claim(sentence, start, subject, full_predicate, value, claim_class)
+    return None
+
+
+def _match_generic(
+    sentence: str, start: int, seen: set[tuple[str, str]]
+) -> Claim | None:
+    """Layer 2: any stative assertion carrying a time-sensitivity cue.
+
+    This is what stops an unanticipated phrasing from being silently treated as
+    having nothing to check.
+    """
+    claim_class = infer_class(sentence)
+    if claim_class is None:
+        return None
+
+    m = GENERIC_ASSERTION.match(sentence)
+    if not m:
+        return None
+
+    raw_subject = m.group("subject").strip(" .,:;")
+    subject = _strip_leading_stopwords(raw_subject) or _guess_subject(sentence)
+    value = m.group("value").strip(" .,:;")
+
+    # The predicate is the cue that classified the sentence, which keeps the
+    # claim-cache key stable across rewordings of the same question.
+    predicate = _predicate_for(claim_class)
+
+    key = (subject.lower(), predicate.lower())
+    if key in seen:
+        return None
+    seen.add(key)
+
+    return _make_claim(sentence, start, subject, predicate, value, claim_class)
+
+
+def _predicate_for(claim_class: str) -> str:
+    return {
+        "market": "current market value",
+        "pricing": "current price",
+        "version": "current version or state",
+        "leadership": "current role holder",
+        "law": "current legal status",
+        "events": "recent event",
+    }.get(claim_class, "current state")
+
+
+def _make_claim(
+    sentence: str, start: int, subject: str, predicate: str, value: str, claim_class: str
+) -> Claim:
+    return Claim(
+        text=sentence,
+        span_start=start,
+        span_end=start + len(sentence),
+        subject=subject[:300] or "unknown",
+        predicate=predicate[:300],
+        stated_value=value[:500],
+        **{"class": claim_class},
+    )
+
+
 def _sentences(text: str) -> list[tuple[str, int]]:
     """Split into sentences, keeping each one's offset into the original text."""
     out: list[tuple[str, int]] = []
     cursor = 0
     for piece in _SENTENCE_SPLIT.split(text):
-        if piece is None:
+        if not piece:
             continue
         idx = text.find(piece, cursor)
         if idx == -1:
@@ -390,20 +331,11 @@ def _sentences(text: str) -> list[tuple[str, int]]:
     return out
 
 
-_SUBJECT_HINT = re.compile(r"\b([A-Z][\w.+-]*(?:\s+[A-Z][\w.+-]*){0,3})\b")
-
-#: Sentence-initial words that are capitalised by grammar, not by being a name.
-#: Without this the subject of "The capital of France is Paris" comes out as
-#: "The", which makes a useless cache key and a useless search query.
-_LEADING_STOPWORDS = frozenset(
-    {
-        "the", "a", "an", "it", "this", "that", "these", "those", "there",
-        "here", "its", "their", "his", "her", "they", "he", "she", "we",
-        "you", "i", "at", "in", "on", "of", "for", "as", "and", "but", "so",
-        "if", "when", "while", "with", "without", "however", "although",
-        "every", "each", "some", "any", "most", "many", "both", "all",
-    }
-)
+def _strip_leading_stopwords(phrase: str) -> str:
+    words = phrase.split()
+    while words and words[0].lower().strip(".,:;") in _LEADING_STOPWORDS:
+        words.pop(0)
+    return " ".join(words)
 
 
 def _guess_subject(sentence: str) -> str:
@@ -414,7 +346,6 @@ def _guess_subject(sentence: str) -> str:
         head = phrase.split()[0].lower().strip(".,:;")
         if head not in _LEADING_STOPWORDS:
             return phrase
-        # "The capital of France" -> keep looking, but remember the tail.
         rest = " ".join(phrase.split()[1:])
         if rest:
             return rest
@@ -433,11 +364,11 @@ async def extract_claims(
     llm: LLMClient | None = None,
     settings: Settings | None = None,
 ) -> ExtractionResult:
-    """Extract claims using whichever extractor is available.
+    """Extract claims with whichever extractor is available.
 
     Falls back from model to rules rather than failing: a rule-extracted claim
     list is less complete than a model-extracted one, but it is still a real
-    check, and degrading is always better than reporting nothing.
+    check, and degrading beats reporting nothing.
     """
     settings = settings or get_settings()
 
