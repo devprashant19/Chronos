@@ -26,6 +26,14 @@ from .settings import Settings, get_settings
 
 logger = logging.getLogger("chronos.llm")
 
+#: Header marking a request as Chronos's own internal traffic.
+#:
+#: The plugin skips verification for any request carrying it, which is what
+#: stops Chronos verifying its own verification calls. Kept as a shared
+#: constant because the plugin hard-codes the same string
+#: (plugin/main.go: hdrInternal) and the two must not drift.
+INTERNAL_HEADER = "x-chronos-internal"
+
 #: Raised when the model layer cannot produce a usable answer. Callers treat
 #: this as "unverifiable", never as a server error.
 class ModelUnavailable(RuntimeError):
@@ -152,7 +160,17 @@ class LLMClient:
             # difference.
             extra_body["reasoning_effort"] = self.settings.reasoning_effort
 
-        extra_headers: dict[str, str] = {}
+        # Mark this as Chronos's own traffic so the plugin does not verify it.
+        #
+        # This is load-bearing, not hygiene. The verifier's extraction and
+        # judging calls go through Bifrost, where the Chronos plugin is
+        # attached — so without this marker the plugin verifies Chronos's own
+        # verification calls, and each of those makes further model calls that
+        # are verified in turn. Measured before the fix: one benchmark run
+        # produced 4,605 verifications and 245 pacing waits totalling 37
+        # minutes, having exhausted the token budget on itself.
+        extra_headers: dict[str, str] = {INTERNAL_HEADER: "1"}
+
         if cache_key:
             # Chronos's own calls are cacheable too — an identical judging
             # prompt does not need a second provider round trip.
