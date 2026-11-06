@@ -38,6 +38,8 @@ from datetime import datetime, timezone
 from .cache import ClaimCache
 from .events import BUS
 from .extract import extract_claims
+from .judge_rules import judge as judge_by_rules
+from .judge_rules import values_agree
 from .llm import LLMClient, ModelUnavailable
 from .metrics import METRICS
 from .models import (
@@ -52,6 +54,7 @@ from .score import (
     answer_score,
     answer_ttl_seconds,
     classify_source,
+    date_from_url,
     is_contradicted,
     score_claim,
     verdict_for,
@@ -335,7 +338,7 @@ class Verifier:
         # If the cached evidence contradicted the *cached* stated value, the
         # live answer may still differ. Compare against this answer's value.
         if cached.current_value and claim.stated_value:
-            if not _values_agree(claim.stated_value, cached.current_value):
+            if not values_agree(claim.stated_value, cached.current_value):
                 verdict_name = "outdated"
                 breakdown.score = min(breakdown.score, 40.0)
 
@@ -408,12 +411,21 @@ class Verifier:
                     "current_value": r.get("current_value") or "",
                 }
 
+            # Fall back to the date in the URL path when the search API
+            # returned none; an undated source scores R = 0.4 and drags an
+            # otherwise well-supported claim below the `current` threshold.
+            published = r.get("published_date")
+            if not published:
+                from_url = date_from_url(url)
+                if from_url is not None:
+                    published = from_url.date().isoformat()
+
             evidence.append(
                 Evidence(
                     url=url,
                     title=r.get("title", ""),
                     snippet=body[:1500],
-                    published_date=r.get("published_date"),
+                    published_date=published,
                     tier=classify_source(url, claim.subject),
                     call="insufficient",
                 )
@@ -452,6 +464,21 @@ class Verifier:
             contradicted=is_contradicted(breakdown),
         )
 
+        # Consistency guard: if the evidence's current value agrees with what
+        # the answer said, the claim cannot be `outdated`, whatever the score
+        # arithmetic produced. Reporting "outdated, current value: Satya
+        # Nadella" for the claim "Satya Nadella is the CEO of Microsoft" is
+        # self-contradictory output, and it happened whenever thin or undated
+        # evidence pushed a well-supported claim under the threshold. Such a
+        # claim is `check` — worth a human look, not a correction.
+        if (
+            verdict_name == "outdated"
+            and current_value
+            and values_agree(claim.stated_value, current_value)
+        ):
+            verdict_name = "check"
+            breakdown.score = max(breakdown.score, self.settings.check_threshold)
+
         return ClaimVerdict(
             text=claim.text,
             span_start=claim.span_start,
@@ -482,7 +509,7 @@ class Verifier:
     ) -> dict:
         """Ask a model to judge the evidence, or judge it by rule when offline."""
         if not self.settings.live_models:
-            return _judge_offline(claim, evidence, recorded)
+            return judge_by_rules(claim, evidence, recorded)
 
         rendered = "\n\n".join(
             f"[{i + 1}] url: {e.url}\npublished: {e.published_date or 'unknown'}\n"
@@ -508,7 +535,7 @@ class Verifier:
             )
         except ModelUnavailable as exc:
             logger.warning("judge unavailable, falling back to rules: %s", exc)
-            return _judge_offline(claim, evidence, recorded)
+            return judge_by_rules(claim, evidence, recorded)
 
     # ------------------------------------------------------------------
     # regeneration (guard mode)
@@ -612,127 +639,9 @@ class Verifier:
 # value comparison
 # ---------------------------------------------------------------------------
 
-_NUMBER_RE = re.compile(r"-?\d+(?:[.,]\d+)?")
-
-
-def _values_agree(stated: str, current: str) -> bool:
-    """Decide whether two value strings say the same thing.
-
-    Numbers are compared numerically, because "$5.00" and "5 dollars" are the
-    same price and a string compare would call them a contradiction. Everything
-    else falls back to a normalised substring test, which is deliberately
-    lenient: Chronos only overrides the score when the judge ALSO returned a
-    contradicting source, so a false "disagree" here cannot alone condemn a
-    claim.
-    """
-    s, c = (stated or "").strip().lower(), (current or "").strip().lower()
-    if not s or not c:
-        return True
-    if s == c:
-        return True
-
-    s_nums = [float(n.replace(",", "")) for n in _NUMBER_RE.findall(s)]
-    c_nums = [float(n.replace(",", "")) for n in _NUMBER_RE.findall(c)]
-    if s_nums and c_nums:
-        # Agree if any stated number is within 1% of any current number.
-        for a in s_nums:
-            for b in c_nums:
-                if a == b:
-                    return True
-                scale = max(abs(a), abs(b), 1e-9)
-                if abs(a - b) / scale <= 0.01:
-                    return True
-        return False
-
-    return s in c or c in s
-
-
 def _clamp_float(value: object, default: float) -> float:
     try:
         f = float(value)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return default
     return max(0.0, min(1.0, f))
-
-
-# ---------------------------------------------------------------------------
-# offline judging
-# ---------------------------------------------------------------------------
-
-
-def _judge_offline(
-    claim: Claim, evidence: list[Evidence], recorded: dict[str, dict] | None = None
-) -> dict:
-    """Judge by rule, for offline demos, CI and model outages.
-
-    Recorded fixtures carry their own call, quote and current value, so this
-    mostly reads them back. Where none is given it compares the claim's stated
-    value against the source text numerically.
-    """
-    recorded = recorded or {}
-    sources = []
-    current_value = ""
-    contradicted = False
-
-    for e in evidence:
-        note = recorded.get(e.url) or {}
-        raw_call = str(note.get("call") or e.call or "insufficient").lower()
-        call = raw_call if raw_call in {"supports", "contradicts"} else "insufficient"
-        quote = str(note.get("quote") or e.quote or "")
-        if note.get("current_value"):
-            current_value = current_value or str(note["current_value"])
-
-        if call == "insufficient" and e.snippet:
-            found = _find_value(e.snippet, claim.predicate)
-            if found:
-                current_value = current_value or found
-                if claim.stated_value and not _values_agree(claim.stated_value, found):
-                    call = "contradicts"
-                    contradicted = True
-                else:
-                    call = "supports"
-                quote = _sentence_containing(e.snippet, found) or quote
-
-        if call == "contradicts":
-            contradicted = True
-
-        sources.append({"url": e.url, "call": call, "quote": quote})
-
-    if not current_value:
-        current_value = claim.stated_value if not contradicted else ""
-
-    best = next((s["url"] for s in sources if s["call"] == "contradicts"), None) or next(
-        (s["url"] for s in sources if s["call"] == "supports"), None
-    )
-
-    return {
-        "sources": sources,
-        "current_value": current_value,
-        "confidence": 0.75 if any(s["call"] != "insufficient" for s in sources) else 0.2,
-        "best_source_url": best or (evidence[0].url if evidence else ""),
-        "publish_date": next((e.published_date for e in evidence if e.published_date), None),
-    }
-
-
-_VALUE_HINTS = (
-    re.compile(r"[$€£]\s?[\d,]+(?:\.\d+)?"),
-    re.compile(r"\bv?\d+\.\d+(?:\.\d+)?\b"),
-    re.compile(r"\b\d+(?:\.\d+)?\s?(?:%|percent)\b"),
-)
-
-
-def _find_value(text: str, predicate: str) -> str:
-    """Find the most likely 'current value' in a page of text."""
-    window = text[:4000]
-    for pattern in _VALUE_HINTS:
-        m = pattern.search(window)
-        if m:
-            return m.group(0).strip()
-    return ""
-
-
-def _sentence_containing(text: str, needle: str) -> str:
-    for sentence in re.split(r"(?<=[.!?])\s+", text[:4000]):
-        if needle and needle in sentence:
-            return sentence.strip()[:400]
-    return ""

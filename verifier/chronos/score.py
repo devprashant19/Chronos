@@ -27,6 +27,7 @@ hard to look up.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
@@ -99,6 +100,38 @@ def classify_source(url: str, subject: str = "") -> str:
     return "other"
 
 
+#: News URLs very often carry the publication date in the path, e.g.
+#: fortune.com/2026/10/15/... or theguardian.com/2026-10-15/...
+_URL_DATE = re.compile(r"/(20\d{2})[/-](\d{1,2})[/-](\d{1,2})(?:[/-]|$)")
+
+
+def date_from_url(url: str) -> datetime | None:
+    """Recover a publication date from a URL path.
+
+    Worth doing because Tavily frequently returns no `published_date` for
+    general-topic searches, and an undated source scores R = 0.4 — which caps
+    a well-supported claim at around 76, below the `current` threshold. The
+    date is usually sitting in the URL.
+
+    Only accepts plausible dates, and never a future one: a path segment that
+    happens to look like a date should not be able to invent fresher evidence
+    than exists.
+    """
+    m = _URL_DATE.search(url or "")
+    if not m:
+        return None
+    year, month, day = (int(g) for g in m.groups())
+    if not (1 <= month <= 12 and 1 <= day <= 31):
+        return None
+    try:
+        parsed = datetime(year, month, day, tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    if parsed > datetime.now(timezone.utc):
+        return None
+    return parsed
+
+
 def parse_date(raw: str | None) -> datetime | None:
     """Parse the assorted date shapes search APIs return."""
     if not raw:
@@ -129,20 +162,32 @@ def parse_date(raw: str | None) -> datetime | None:
 
 
 def agreement(evidence: list[Evidence]) -> tuple[float, int, int, int]:
-    """A: net supporting share of sources, floored at 0.
+    """A: net supporting share of the sources that ADDRESSED the claim.
 
     Returns (A, supporting, contradicting, insufficient).
+
+    The denominator is `supports + contradicts`, deliberately excluding the
+    sources that said nothing either way. Dividing by every retrieved result
+    instead punishes a claim for the search engine's aim: judging "Satya
+    Nadella is the CEO of Microsoft" against one confirming page and four
+    irrelevant ones gave A = 0.2 and a score of 44.5, i.e. `outdated` for a
+    claim that a source had just confirmed and none had disputed.
+
+    An insufficient source carries no information about the claim, so it
+    belongs in the breakdown for transparency but not in the ratio. Having no
+    addressing source at all is handled upstream as `unverifiable`, not as
+    disagreement.
     """
     supporting = sum(1 for e in evidence if e.call == "supports")
     contradicting = sum(1 for e in evidence if e.call == "contradicts")
     insufficient = sum(1 for e in evidence if e.call == "insufficient")
 
-    total = supporting + contradicting + insufficient
-    if total == 0:
-        return 0.0, 0, 0, 0
+    addressing = supporting + contradicting
+    if addressing == 0:
+        return 0.0, supporting, contradicting, insufficient
 
     net = supporting - contradicting
-    return max(0.0, net / total), supporting, contradicting, insufficient
+    return max(0.0, net / addressing), supporting, contradicting, insufficient
 
 
 def recency(evidence: list[Evidence], now: datetime | None = None) -> float:
