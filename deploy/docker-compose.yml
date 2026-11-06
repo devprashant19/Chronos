@@ -1,0 +1,149 @@
+# Chronos — one-command stack.
+#
+#   cd deploy && docker compose up --build
+#
+# With no API keys at all, the stack still runs: `mockllm` serves deterministic
+# answers (some deliberately stale) and the verifier falls back to recorded
+# evidence. Add OPENAI_API_KEY and TAVILY_API_KEY to .env for the live path.
+#
+name: chronos
+
+services:
+  # ---------------------------------------------------------------------
+  # Vector store behind Bifrost's semantic cache.
+  # redis-stack-server ships RediSearch, which the Redis vector store needs.
+  # ---------------------------------------------------------------------
+  redis:
+    image: redis/redis-stack-server:7.4.0-v3
+    container_name: chronos-redis
+    command: redis-stack-server --save 60 1 --appendonly no
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    networks: [chronos]
+
+  # ---------------------------------------------------------------------
+  # Offline test double for a model provider. Registered in Bifrost as the
+  # custom provider `mockllm`. Not part of Chronos; see deploy/mockllm/app.py.
+  # ---------------------------------------------------------------------
+  mockllm:
+    build:
+      context: ./mockllm
+      dockerfile: Dockerfile
+    container_name: chronos-mockllm
+    environment:
+      MOCKLLM_LATENCY_MS: "${MOCKLLM_LATENCY_MS:-0}"
+    ports:
+      - "8900:8900"
+    networks: [chronos]
+
+  # ---------------------------------------------------------------------
+  # The gateway, with chronos.so baked in and loaded from config.json.
+  # ---------------------------------------------------------------------
+  bifrost:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.bifrost
+      args:
+        BIFROST_REF: "${BIFROST_REF:-transports/v2.4.0}"
+        VERSION: "${CHRONOS_VERSION:-0.1.0}"
+    image: chronos/bifrost:dev
+    container_name: chronos-bifrost
+    depends_on:
+      redis:
+        condition: service_healthy
+      mockllm:
+        condition: service_started
+    environment:
+      APP_HOST: "0.0.0.0"
+      APP_PORT: "8080"
+      APP_DIR: "/app/data"
+      LOG_LEVEL: "${BIFROST_LOG_LEVEL:-info}"
+      LOG_STYLE: "json"
+
+      # Provider credentials. Dummy defaults keep config.json resolvable when
+      # you have no keys; requests to those providers then fail, which is why
+      # the offline demo routes to mockllm instead.
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-sk-unset-offline-demo}"
+      GROQ_API_KEY: "${GROQ_API_KEY:-gsk-unset-offline-demo}"
+      BIFROST_ENCRYPTION_KEY: "${BIFROST_ENCRYPTION_KEY:-chronos-dev-encryption-key-32byte}"
+      CHRONOS_VK: "${CHRONOS_VK:-sk-bf-chronos-verifier-dev}"
+
+      # Plugin knobs. These override deploy/bifrost.config.json.
+      CHRONOS_VERIFIER_URL: "http://verifier:8000"
+      CHRONOS_MODE: "${CHRONOS_MODE:-annotate}"
+      CHRONOS_GUARD_THRESHOLD: "${CHRONOS_GUARD_THRESHOLD:-50}"
+      CHRONOS_VERIFY_TIMEOUT_MS: "${CHRONOS_VERIFY_TIMEOUT_MS:-4000}"
+      CHRONOS_DEBUG: "${CHRONOS_DEBUG:-1}"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./bifrost.config.json:/app/data/config.json:ro
+      - bifrost-data:/app/data
+    networks: [chronos]
+
+  # ---------------------------------------------------------------------
+  # Claim extraction, Tavily verification, scoring, reports, sweeper.
+  # All of its own model calls go back out through Bifrost.
+  # ---------------------------------------------------------------------
+  verifier:
+    build:
+      context: ../verifier
+      dockerfile: Dockerfile
+    container_name: chronos-verifier
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      CHRONOS_REDIS_URL: "redis://redis:6379/1"
+      CHRONOS_BIFROST_URL: "http://bifrost:8080/v1"
+      CHRONOS_BIFROST_ADMIN_URL: "http://bifrost:8080"
+      CHRONOS_VK: "${CHRONOS_VK:-sk-bf-chronos-verifier-dev}"
+      TAVILY_API_KEY: "${TAVILY_API_KEY:-}"
+
+      CHRONOS_OFFLINE_DEMO: "${CHRONOS_OFFLINE_DEMO:-1}"
+      CHRONOS_EXTRACT_MODEL: "${CHRONOS_EXTRACT_MODEL:-mockllm/chronos-demo}"
+      CHRONOS_JUDGE_MODEL: "${CHRONOS_JUDGE_MODEL:-mockllm/chronos-demo}"
+      CHRONOS_FALLBACK_MODELS: "${CHRONOS_FALLBACK_MODELS:-groq/llama-3.1-8b-instant}"
+
+      CHRONOS_TAVILY_DAILY_CREDITS: "${CHRONOS_TAVILY_DAILY_CREDITS:-400}"
+      CHRONOS_DB_PATH: "/data/chronos.sqlite"
+      CHRONOS_SWEEP_INTERVAL_S: "${CHRONOS_SWEEP_INTERVAL_S:-600}"
+      CHRONOS_LOG_LEVEL: "${CHRONOS_LOG_LEVEL:-INFO}"
+    ports:
+      - "8000:8000"
+    volumes:
+      - verifier-data:/data
+    networks: [chronos]
+
+  # ---------------------------------------------------------------------
+  # The console. Reads the verifier's API and SSE stream; has a Demo mode
+  # that replays a recorded log so judging works without any keys.
+  # ---------------------------------------------------------------------
+  console:
+    build:
+      context: ../console
+      dockerfile: Dockerfile
+      args:
+        VITE_VERIFIER_URL: "${VITE_VERIFIER_URL:-http://localhost:8000}"
+        VITE_BIFROST_URL: "${VITE_BIFROST_URL:-http://localhost:8080}"
+    container_name: chronos-console
+    depends_on:
+      verifier:
+        condition: service_started
+    ports:
+      - "5173:80"
+    networks: [chronos]
+
+volumes:
+  bifrost-data:
+  verifier-data:
+
+networks:
+  chronos:
+    driver: bridge
