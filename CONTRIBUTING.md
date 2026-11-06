@@ -72,6 +72,29 @@ Demo mode must emit the same `FeedEvent` shape the SSE stream does. It is not a
 parallel rendering path, and it should not become one: that is what keeps it
 honest.
 
+### Working against a free model tier
+
+The defaults target a free Groq key, and that shapes the code in ways worth
+knowing before you change them:
+
+- **The limit is tokens per minute, per model.** Not requests. If you add a
+  model call, add it to the pacer's accounting (`chronos/pacer.py`) or it will
+  cause 429s for everything else.
+- **Keep prompts small.** The extraction prompt was cut by more than half
+  because its size, not the answer's, dominated the token cost of a call.
+- **Send `reasoning_effort=low` for structured output.** A reasoning model's
+  chain of thought is charged to the same budget and Chronos never reads it.
+  This was worth ~12x in tokens and latency.
+- **Do not retry a rate-limited call.** Retrying into a spent minute makes it
+  worse. `ModelUnavailable.rate_limited` distinguishes it from a validation
+  failure, which *is* worth one retry.
+- **Model ids rot.** Read them from the provider, not from documentation.
+  `./scripts/check-model.sh --all` is the check; Groq retired the Llama chat
+  models that most guides still recommend.
+
+If you have a paid key, set `CHRONOS_MODEL_TPM=0` to switch pacing off — but
+please make sure the free path still works before submitting.
+
 ### `bench/` — StaleBench
 
 ```bash

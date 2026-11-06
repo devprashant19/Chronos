@@ -128,60 +128,91 @@ judging goes back out through Bifrost, rather than direct to a provider.
 ## Models: free and open-weights by default
 
 Chronos needs a model for two jobs — pulling claims out of an answer, and
-judging evidence. Both default to **Groq serving open-weights Llama**, because
-Groq is the only provider still offering a genuinely free allowance with no
-credit card, and it is fast enough that inline verification stays inside its
-deadline. (Cerebras moved its free tier behind a card during 2026.)
+judging evidence. Both run on **open-weights models served free by Groq**, which
+is the only provider still offering a real allowance with no credit card
+(Cerebras moved its free tier behind a card during 2026).
 
 ```bash
-# 1. free key, no card:  https://console.groq.com/keys
-echo 'GROQ_API_KEY=gsk_...' >> deploy/.env
-echo 'CHRONOS_LIVE_MODELS=1' >> deploy/.env
-
-# 2. restart and check the model actually answers with JSON
+# free key, no card:  https://console.groq.com/keys
+echo 'GROQ_API_KEY=gsk_...'     >> deploy/.env
+echo 'CHRONOS_LIVE_MODELS=1'    >> deploy/.env
 cd deploy && docker compose up -d bifrost verifier
-./scripts/check-model.sh --all
+./scripts/check-model.sh --all          # what your key can actually reach
 ```
 
-| Model | Why |
-|---|---|
-| `groq/llama-3.3-70b-versatile` | **default.** Open weights, JSON mode, handles the strict claim schema |
-| `groq/llama-3.1-8b-instant` | **fallback.** Much larger daily allowance, catches a spent 70B quota |
-| `groq/openai/gpt-oss-120b` | Open weights with *strict* structured outputs; best quality if the allowance suits |
-| `ollama/llama3.1` | **last resort.** Fully local, no key, no quota: `docker compose --profile local up -d ollama` |
+| Model | Role | Notes |
+|---|---|---|
+| `groq/openai/gpt-oss-120b` | **extraction** | Apache-2.0 weights, 131k context, strict structured outputs |
+| `groq/openai/gpt-oss-20b` | **judging** | same family, cheaper per call |
+| `groq/qwen/qwen3.8-27b` | fallback | different vendor, open weights |
+| `ollama/llama3.1` | last resort | fully local, no key, no quota |
 
-Free-tier allowances reported by third parties in 2026 — indicative only,
-since Groq has changed them and the sources disagree: roughly **30 req/min and
-~14,400 req/day** for the 8B model, and **~1,000 req/day** for 70B. Limits are
-per *organisation*, so extra keys add no headroom. Check
-[your own limits page](https://console.groq.com/settings/limits).
+**Check the model ids before trusting any guide, including this one.** Queried
+live, Groq serves `openai/gpt-oss-120b`, `openai/gpt-oss-20b` and
+`qwen/qwen3.8-27b` for chat — and the Llama models that nearly every tutorial
+still recommends (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`) now return
+**404**. `./scripts/check-model.sh --all` tells you what works today:
 
-Those allowances go further than they look, because Chronos makes **one
-extraction call per answer and one judge call per claim-cache *miss***. Once
-the claim cache is warm, repeated questions cost nothing — measured at a 39%
-credit saving on a repeat pass.
+```
+groq/openai/gpt-oss-120b    OK    json_mode=yes  json=yes
+groq/openai/gpt-oss-20b     OK    json_mode=yes  json=yes
+groq/qwen/qwen3.8-27b       OK    json_mode=yes  json=yes
+```
 
-The fallback chain is a real one, not decoration: Bifrost retries on a 429, so
-a spent 70B allowance degrades to the 8B model, and a spent Groq account
-degrades to a local Ollama model, before Chronos ever drops to its rule engine.
+### Running inside a free tier
 
-### Two things worth knowing
+Four findings, each measured on a real free key, each now built into the
+defaults. Together they are the difference between the model path being
+unusable and being usable.
 
-**`fallbacks` is a list of strings on the wire.** Bifrost's Go `Fallback`
-struct has `provider` and `model` fields, which makes
-`[{"provider": "groq", "model": "..."}]` the obvious guess — and the
-OpenAI-compatible route answers `400 Invalid request payload`. It wants
-`["groq/llama-3.1-8b-instant"]`. Getting this wrong is quiet in the worst way:
-every model call 400s, the verifier silently falls back to its rule engine, and
-the only symptom is that quality is worse than it should be. Chronos now
-reports which extractor ran in `report.extractor`, so that failure is visible.
+**The limit is tokens per minute, not requests.** The key's own headers report
+`x-ratelimit-limit-requests: 1000` but `x-ratelimit-limit-tokens: 8000`. The
+daily request budget is generous; the minute token budget is what binds.
 
-**Not every model accepts `response_format`.** Support varies by provider and
-by model within a provider. Chronos retries once without JSON mode when a model
-rejects it — the prompt already demands strict JSON and the parser copes with
-fences — so a model without JSON mode stays usable. A 429 or an auth failure
-deliberately does *not* trigger that retry, since it would just hit the same
-wall twice.
+**Reasoning effort dominated everything.** `gpt-oss` are reasoning models, and
+their chain of thought is charged against that same budget even though Chronos
+never reads it. For one extraction call:
+
+| `reasoning_effort` | tokens | latency |
+|---|---|---|
+| default | ~2,400 | 12–24 s |
+| `"low"` | **192** | **1.6 s** |
+
+Filling a fixed JSON schema is not a task that benefits from deliberation, so
+`low` costs nothing in quality and turns roughly 3 calls per minute into 40.
+Chronos sends `reasoning_effort=low` by default.
+
+**The token budget is per model.** Groq's refusal names it — *"Rate limit
+reached for model `openai/gpt-oss-120b`"* — so extraction and judging run on
+**different** models deliberately, drawing on separate budgets instead of
+competing for one. Judging gets the cheaper 20b because it is the more frequent
+call (once per claim-cache *miss*, against once per answer).
+
+**Chronos paces itself rather than discovering the limit.** Before the pacer, a
+30-claim benchmark produced **42 rate-limit refusals and 40 deadline misses** —
+half the claims came back `unverifiable` because the extractor never ran. A 429
+costs the round trip and returns nothing, so `pacer.py` estimates each call's
+tokens, tracks a rolling minute per model, and waits for room instead. Pacing
+is visible in `/v1/stats` under `model_pacing`, so the slowdown is explained
+rather than mysterious. Set `CHRONOS_MODEL_TPM=0` to disable it on a paid tier.
+
+Because fresh answers are verified asynchronously, pacing delays a *background
+report*, not a user's response.
+
+### Two wire-format traps
+
+**`fallbacks` is a list of strings.** Bifrost's Go `Fallback` struct has
+`provider` and `model` fields, which makes `[{"provider": "groq", "model":
+"..."}]` the obvious guess — and the OpenAI-compatible route answers
+`400 Invalid request payload`. It wants `["groq/openai/gpt-oss-20b"]`. This
+fails quietly in the worst way: every model call 400s, the verifier falls back
+to its rule engine, and the only symptom is that quality is worse than it
+should be. Reports now carry `extractor`, so it is visible.
+
+**Optional parameters are not portable.** Support for `response_format` and
+`reasoning_effort` varies by provider and by model. Chronos retries once
+without them when a model objects. A rate-limit or auth failure deliberately
+does *not* trigger that retry — it would hit the same wall twice.
 
 ---
 
