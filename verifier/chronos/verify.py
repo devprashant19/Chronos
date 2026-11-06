@@ -520,10 +520,18 @@ class Verifier:
         if not self.settings.live_models:
             return judge_by_rules(claim, evidence, recorded)
 
+        # Only the strongest few sources go to the judge, and only a window of
+        # each. See Settings.judge_snippet_chars: the binding limit on a free
+        # tier is tokens per minute, and the whole page is not needed to read
+        # one value out of it. Sources held back get no call from the judge,
+        # which is correct — it never saw them, so they are insufficient
+        # rather than silent agreement.
+        budgeted = evidence[: self.settings.judge_max_sources]
         rendered = "\n\n".join(
             f"[{i + 1}] url: {e.url}\npublished: {e.published_date or 'unknown'}\n"
-            f"title: {e.title}\ntext: {e.snippet[:1200]}"
-            for i, e in enumerate(evidence)
+            f"title: {e.title}\n"
+            f"text: {_relevant_window(e.snippet, claim, self.settings.judge_snippet_chars)}"
+            for i, e in enumerate(budgeted)
         )
         user = JUDGE_USER.format(
             text=claim.text,
@@ -649,6 +657,34 @@ class Verifier:
 # ---------------------------------------------------------------------------
 # value comparison
 # ---------------------------------------------------------------------------
+
+def _relevant_window(text: str, claim: Claim, budget: int) -> str:
+    """The most useful `budget` characters of a page for judging this claim.
+
+    Centres the window on the first mention of the claim's stated value or
+    subject, falling back to the head of the page. A naive head-of-page slice
+    often stops before the sentence that actually carries the value, which
+    makes the judge report "insufficient" about a page that did answer the
+    question — so trimming for tokens has to trim the *right* part.
+    """
+    if not text:
+        return ""
+    if len(text) <= budget:
+        return text
+
+    low = text.lower()
+    for needle in (claim.stated_value, claim.subject):
+        candidate = (needle or "").strip().lower()
+        if len(candidate) < 3:
+            continue
+        found = low.find(candidate)
+        if found == -1:
+            continue
+        start = max(0, found - budget // 3)
+        return text[start : start + budget]
+
+    return text[:budget]
+
 
 def _clamp_float(value: object, default: float) -> float:
     try:

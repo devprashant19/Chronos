@@ -329,6 +329,7 @@ async def stats() -> dict[str, Any]:
             "live": APP.tavily.live,
         },
         "evictor": APP.evictor.stats(),
+        "model_pacing": APP.llm.pacer.stats(),
         "sweeper": APP.sweeper.stats(),
         "stream_subscribers": BUS.subscriber_count,
         "mode": {

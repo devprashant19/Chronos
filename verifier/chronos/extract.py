@@ -44,37 +44,21 @@ from .settings import Settings, get_settings
 
 logger = logging.getLogger("chronos.extract")
 
-EXTRACT_SYSTEM = """You extract time-sensitive factual claims from an AI assistant's answer.
+EXTRACT_SYSTEM = """Extract time-sensitive factual claims from an assistant's answer. Today is {today}.
 
-Today's date is {today}.
+Return ONLY this JSON:
+{{"claims":[{{"text":"","span_start":0,"span_end":0,"subject":"","predicate":"","stated_value":"","class":"","as_of_hint":null}}],"skipped":0}}
 
-Return STRICT JSON, no prose, in exactly this shape:
-{{"claims": [{{"text": "...", "span_start": 0, "span_end": 0, "subject": "...",
-"predicate": "...", "stated_value": "...", "class": "...", "as_of_hint": null}}],
-"skipped": 0}}
+class = one of: market (live prices/rates), pricing (product prices), version
+(releases, model names, branding), leadership (who holds a role), law (statutes,
+effective dates), events (results, schedules), timeless (never changes).
 
-Rules:
-- A claim is an assertion whose truth can change over time AND that could be
-  checked against a public source today.
-- "class" must be exactly one of: market, pricing, version, leadership, law,
-  events, timeless.
-    market     prices, rates, market caps, anything quoted live
-    pricing    product or service prices, plans, per-token costs
-    version    software versions, releases, model names, deprecations, branding
-    leadership people holding a role: CEO, minister, monarch, manager
-    law        statutes, regulations, effective dates, legal status
-    events     results, schedules, recent happenings
-    timeless   facts that do not change
-- "span_start" and "span_end" are character offsets into the answer EXACTLY as
-  given, such that answer[span_start:span_end] is the claim's sentence.
-- "subject" is the entity the claim is about, normalised (e.g. "OpenAI GPT-4o").
-- "predicate" is the property asserted (e.g. "input token price").
-- "stated_value" is what the answer says that property is, verbatim.
-- SKIP and do not return: opinions, recommendations, hedged statements,
-  arithmetic, code, and anything with no checkable public source. Count what
-  you skipped in "skipped".
-- Return at most {max_claims} claims, the most time-sensitive first.
-- If the answer contains no time-sensitive claims, return {{"claims": [], "skipped": N}}.
+- span_start/span_end are character offsets into the answer, so that
+  answer[span_start:span_end] is the claim's sentence.
+- subject = the entity (e.g. "OpenAI GPT-4o"). predicate = the property
+  (e.g. "input token price"). stated_value = what the answer says it is.
+- Skip opinions, hedges, arithmetic and code; count them in "skipped".
+- At most {max_claims} claims, most time-sensitive first.
 """
 
 EXTRACT_RETRY_SUFFIX = """
@@ -110,10 +94,17 @@ async def extract_with_model(
                 max_tokens=1800,
             )
         except ModelUnavailable as exc:
-            logger.warning("extraction model unavailable on attempt %d: %s", attempt, exc)
             last_error = str(exc)
+            # A rate-limited call must not be retried. The limit on a free tier
+            # is tokens per minute, so retrying immediately spends budget that
+            # is already gone, delays the reset, and ends in the same failure —
+            # measured as three 429s per answer before this check existed.
+            if getattr(exc, "rate_limited", False):
+                logger.warning("extraction rate-limited; not retrying: %s", _brief(exc))
+                return ExtractionResult(error=f"extraction rate-limited: {_brief(exc)}")
+            logger.warning("extraction model unavailable on attempt %d: %s", attempt, _brief(exc))
             if attempt == 2:
-                return ExtractionResult(error=f"extraction model unavailable: {exc}")
+                return ExtractionResult(error=f"extraction model unavailable: {_brief(exc)}")
             continue
 
         try:
@@ -164,6 +155,17 @@ def _validate_claims(payload: dict, answer: str, max_claims: int) -> list[Claim]
 
         out.append(claim)
     return out
+
+
+def _brief(exc: Exception) -> str:
+    """One line of an error, for logs.
+
+    Provider rate-limit bodies are several hundred characters of JSON, and
+    repeating them twice per failure made the logs unreadable at exactly the
+    moment they needed to be read.
+    """
+    text = " ".join(str(exc).split())
+    return text[:200] + ("…" if len(text) > 200 else "")
 
 
 def _short_validation_error(exc: ValidationError) -> str:
