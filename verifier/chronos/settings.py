@@ -151,6 +151,12 @@ class Settings:
     )
     virtual_key: str = field(default_factory=lambda: os.getenv("CHRONOS_VK", "chronos-verifier-vk"))
 
+    #: Bifrost requires this on every /api call while dashboard auth is
+    #: inactive (X-Bifrost-Setup-Token). Without it, cache eviction gets a 403.
+    bifrost_setup_token: str = field(
+        default_factory=lambda: os.getenv("BIFROST_SETUP_TOKEN", "")
+    )
+
     extract_model: str = field(
         default_factory=lambda: os.getenv("CHRONOS_EXTRACT_MODEL", "openai/gpt-4o-mini")
     )
@@ -193,18 +199,39 @@ class Settings:
     sweeper_enabled: bool = field(default_factory=lambda: _env_bool("CHRONOS_SWEEPER_ENABLED", True))
 
     # --- offline / demo ---
-    #: When true, no network calls are made: claim extraction uses a rule-based
-    #: extractor and evidence comes from verifier/fixtures. This is what makes
-    #: `docker compose up` and CI work with no keys.
+    #: When true, no network calls are made at all: claim extraction uses the
+    #: rule-based extractor and evidence comes from verifier/fixtures. This is
+    #: what makes `docker compose up` and CI work with no keys.
     offline_demo: bool = field(default_factory=lambda: _env_bool("CHRONOS_OFFLINE_DEMO", False))
+
+    #: Model calls and Tavily calls are configured independently, because the
+    #: two credentials rarely arrive together. With a Tavily key but no model
+    #: key, Chronos still does real work: rule-based extraction and judging
+    #: over genuinely live evidence. Set CHRONOS_LIVE_MODELS=0 for that.
+    #: Empty means "follow offline_demo".
+    live_models_override: str = field(
+        default_factory=lambda: os.getenv("CHRONOS_LIVE_MODELS", "").strip()
+    )
 
     @property
     def has_tavily(self) -> bool:
+        """True when evidence should be fetched from Tavily rather than fixtures."""
         return bool(self.tavily_api_key) and not self.offline_demo
 
     @property
     def live_models(self) -> bool:
+        """True when the extractor and judge may call a model through Bifrost."""
+        if self.live_models_override != "":
+            return self.live_models_override.lower() in {"1", "true", "yes", "on"}
         return not self.offline_demo
+
+    @property
+    def evidence_source(self) -> str:
+        return "tavily" if self.has_tavily else "fixtures"
+
+    @property
+    def reasoning_source(self) -> str:
+        return "model" if self.live_models else "rules"
 
 
 @lru_cache(maxsize=1)

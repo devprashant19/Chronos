@@ -11,7 +11,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 ClaimClass = Literal["market", "pricing", "version", "leadership", "law", "events", "timeless"]
 Verdict = Literal["current", "check", "outdated", "unverifiable", "pending"]
@@ -117,7 +124,10 @@ class ClaimVerdict(BaseModel):
     subject: str
     predicate: str
     stated_value: str
-    claim_class: ClaimClass = Field(serialization_alias="class")
+    claim_class: ClaimClass = Field(
+        validation_alias=AliasChoices("claim_class", "class"),
+        serialization_alias="class",
+    )
 
     verdict: Verdict
     score: float

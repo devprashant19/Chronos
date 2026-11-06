@@ -31,9 +31,15 @@ class Evictor:
 
     def _ensure(self) -> httpx.AsyncClient:
         if self._client is None:
+            headers = {}
+            if self.settings.bifrost_setup_token:
+                # Bifrost rejects /api calls without this while dashboard auth
+                # is inactive, which is the usual OSS deployment.
+                headers["X-Bifrost-Setup-Token"] = self.settings.bifrost_setup_token
             self._client = httpx.AsyncClient(
                 base_url=self.settings.bifrost_admin_url.rstrip("/"),
                 timeout=httpx.Timeout(5.0),
+                headers=headers,
             )
         return self._client
 

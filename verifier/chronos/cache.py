@@ -117,8 +117,10 @@ class ClaimCache:
             payload = json.loads(raw)
             verdict = ClaimVerdict.model_validate(payload)
         except Exception as exc:  # noqa: BLE001
-            # A poisoned entry must not break a request.
-            logger.debug("discarding unreadable claim cache entry %s: %s", key, exc)
+            # A poisoned entry must not break a request, but it must not be
+            # quiet either: an unreadable entry turns every hit into a miss and
+            # silently re-buys evidence Chronos already paid for.
+            logger.warning("discarding unreadable claim cache entry %s: %s", key, exc)
             self.misses += 1
             return None
 
@@ -136,7 +138,10 @@ class ClaimCache:
             ttl_seconds = int(interval.total_seconds())
 
         key = claim_key(subject, predicate)
-        payload = verdict.model_dump_json(by_alias=True)
+        # Stored under field names, not wire aliases: this is internal
+        # storage, and a round trip that needs an alias map is one more
+        # thing that can silently break a read.
+        payload = verdict.model_dump_json()
         await self._set_raw(key, payload, ttl_seconds)
 
     async def invalidate(self, subject: str, predicate: str) -> None:
