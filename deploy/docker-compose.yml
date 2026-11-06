@@ -116,12 +116,22 @@ services:
       CHRONOS_LIVE_MODELS: "${CHRONOS_LIVE_MODELS:-}"
       # Free by default: Groq serves open-weights Llama with no card.
       # mockllm/chronos-demo keeps the model path testable with no key.
-      CHRONOS_EXTRACT_MODEL: "${CHRONOS_EXTRACT_MODEL:-groq/llama-3.3-70b-versatile}"
-      CHRONOS_JUDGE_MODEL: "${CHRONOS_JUDGE_MODEL:-groq/llama-3.3-70b-versatile}"
-      CHRONOS_FALLBACK_MODELS: "${CHRONOS_FALLBACK_MODELS:-groq/llama-3.1-8b-instant,ollama/llama3.1}"
+      CHRONOS_EXTRACT_MODEL: "${CHRONOS_EXTRACT_MODEL:-groq/openai/gpt-oss-120b}"
+      CHRONOS_JUDGE_MODEL: "${CHRONOS_JUDGE_MODEL:-groq/openai/gpt-oss-20b}"
+      CHRONOS_FALLBACK_MODELS: "${CHRONOS_FALLBACK_MODELS:-groq/openai/gpt-oss-20b,groq/qwen/qwen3.8-27b,ollama/llama3.1}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
 
       CHRONOS_TAVILY_DAILY_CREDITS: "${CHRONOS_TAVILY_DAILY_CREDITS:-400}"
+      # Free model tiers meter tokens per MINUTE, which is the limit that
+      # actually binds. Keep the judge prompt small and the fan-out low.
+      # Pace model calls to stay inside a free tier's tokens-per-minute
+      # budget, per model. 0 disables pacing.
+      CHRONOS_MODEL_TPM: "${CHRONOS_MODEL_TPM:-8000}"
+      CHRONOS_VERIFY_DEADLINE_S: "${CHRONOS_VERIFY_DEADLINE_S:-90}"
+      CHRONOS_REASONING_EFFORT: "${CHRONOS_REASONING_EFFORT:-low}"
+      CHRONOS_JUDGE_SNIPPET_CHARS: "${CHRONOS_JUDGE_SNIPPET_CHARS:-800}"
+      CHRONOS_JUDGE_MAX_SOURCES: "${CHRONOS_JUDGE_MAX_SOURCES:-4}"
+      CHRONOS_CLAIM_CONCURRENCY: "${CHRONOS_CLAIM_CONCURRENCY:-2}"
       CHRONOS_DB_PATH: "/data/chronos.sqlite"
       CHRONOS_SWEEP_INTERVAL_S: "${CHRONOS_SWEEP_INTERVAL_S:-600}"
       CHRONOS_LOG_LEVEL: "${CHRONOS_LOG_LEVEL:-INFO}"
