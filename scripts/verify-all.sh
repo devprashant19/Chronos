@@ -362,6 +362,51 @@ else
   skip "console checks" "nothing serving on :5173"
 fi
 
+# --- the model path -------------------------------------------------------
+# Verified against mockllm, which answers Chronos's own extraction and judge
+# prompts with strict JSON. That exercises the JSON contract, Pydantic
+# validation, span repair and per-source judging without needing a key — the
+# path that otherwise only runs when someone has configured a model.
+check "model path: a model-produced claim list is accepted" python - <<'PY'
+import json, urllib.request
+
+body = json.dumps({
+    "answer": "The latest stable release of Python is 3.11, which came out in October 2022. "
+              "The capital of France is Paris.",
+    "prompt": "latest python version",
+    "mode": "annotate",
+}).encode()
+req = urllib.request.Request(
+    "http://localhost:8000/v1/verify", data=body,
+    headers={"Content-Type": "application/json"},
+)
+d = json.load(urllib.request.urlopen(req, timeout=120))
+
+# Whichever extractor ran, the report must say which one.
+assert d.get("extractor"), d
+assert d["claim_count"] >= 1, d
+# The timeless sentence must be separated from the version claim.
+classes = {c["class"] for c in d["claims"]}
+assert "version" in classes, classes
+PY
+
+check "model path: fallbacks are accepted in Bifrost's wire format" python - <<'PY'
+import json, urllib.error, urllib.request
+
+# A list of strings, not objects. Objects answer 400 Invalid request payload.
+body = json.dumps({
+    "model": "mockllm/chronos-demo",
+    "messages": [{"role": "user", "content": "hi"}],
+    "fallbacks": ["groq/llama-3.1-8b-instant"],
+}).encode()
+req = urllib.request.Request(
+    "http://localhost:8080/v1/chat/completions", data=body,
+    headers={"Content-Type": "application/json"},
+)
+with urllib.request.urlopen(req, timeout=60) as resp:
+    assert resp.status == 200, resp.status
+PY
+
 # --- the degrade path: Chronos must never break the gateway ---------------
 printf '  testing the degrade path (verifier stopped)\n'
 (cd deploy && docker compose stop verifier >/dev/null 2>&1)
