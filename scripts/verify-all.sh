@@ -341,6 +341,27 @@ d = json.load(urllib.request.urlopen(req, timeout=120))
 assert d.get('ok') is True, d
 PY
 
+# --- console --------------------------------------------------------------
+if curl -s -m 5 -o /dev/null http://localhost:5173/ 2>/dev/null; then
+  check "console: serves its shell" bash -c \
+    '[ "$(curl -s -m 10 -o /dev/null -w "%{http_code}" http://localhost:5173/)" = "200" ]'
+  check "console: the bundle is referenced" bash -c \
+    'curl -s -m 10 http://localhost:5173/ | grep -q "assets/index-.*\.js"'
+  check "console: measured results are served" bash -c \
+    '[ "$(curl -s -m 10 -o /dev/null -w "%{http_code}" http://localhost:5173/results.json)" = "200" ]'
+
+  # Without this the playground cannot read the verdict from a browser, which
+  # is the one thing that section exists to show.
+  check "console: x-chronos-* headers are CORS-exposed" bash -c \
+    'curl -s -m 30 -D - -o /dev/null -X POST -H "Origin: http://localhost:5173" \
+       -H "Content-Type: application/json" -H "x-bf-cache-key: verify-cors-$$" \
+       -d "{\"model\":\"mockllm/chronos-demo\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}" \
+       http://localhost:8080/v1/chat/completions \
+     | grep -i "access-control-expose-headers" | grep -q "x-chronos-verdict"'
+else
+  skip "console checks" "nothing serving on :5173"
+fi
+
 # --- the degrade path: Chronos must never break the gateway ---------------
 printf '  testing the degrade path (verifier stopped)\n'
 (cd deploy && docker compose stop verifier >/dev/null 2>&1)
