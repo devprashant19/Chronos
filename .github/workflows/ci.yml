@@ -139,7 +139,14 @@ jobs:
 
       - name: typecheck
         working-directory: console
-        run: npx tsc --noEmit
+        # Twice: the app under its own rules, then the tests with the node and
+        # vitest globals they need. Tests are excluded from the app config so
+        # they cannot widen what app code is allowed to import.
+        run: npm run typecheck
+
+      - name: tests
+        working-directory: console
+        run: npm test
 
       - name: build
         working-directory: console
