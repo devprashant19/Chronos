@@ -210,13 +210,23 @@ export const api = {
  */
 export async function chatThroughGateway(
   prompt: string,
-  cacheKey: string,
+  _cacheKey: string,
   model = "mockllm/chronos-demo",
 ): Promise<{ status: number; headers: Record<string, string>; body: unknown; ms: number }> {
   const started = performance.now();
+  // Deliberately NOT sending x-bf-cache-key.
+  //
+  // The gateway's CORS preflight publishes a fixed Access-Control-Allow-Headers
+  // list that does not include it, so a browser refuses to send the request at
+  // all -- "Failed to fetch", before anything reaches the gateway. curl never
+  // sees this, which is why it went unnoticed.
+  //
+  // The cache key is derived from the prompt instead, by the plugin, which is
+  // what CHRONOS_AUTO_CACHE_KEY exists for. Two identical prompts therefore
+  // still land on one cache entry, which is the whole point of the cycle.
   const res = await fetch(`${BIFROST_URL}/v1/chat/completions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-bf-cache-key": cacheKey },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model, messages: [{ role: "user", content: prompt }] }),
   });
   const headers: Record<string, string> = {};

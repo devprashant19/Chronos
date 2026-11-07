@@ -99,7 +99,20 @@ describe("chatThroughGateway", () => {
     expect(result.headers).not.toHaveProperty("set-cookie");
   });
 
-  it("sends the cache key the caller asked for, because the cycle depends on it", async () => {
+  /**
+   * The browser must NOT send x-bf-cache-key.
+   *
+   * The gateway's CORS preflight publishes a fixed Access-Control-Allow-Headers
+   * list and that header is not on it, so a browser refuses the request outright
+   * -- "Failed to fetch", before anything reaches the gateway. curl never sees
+   * it, which is exactly why it survived: every end-to-end check sends the
+   * header happily from a shell.
+   *
+   * The key is derived from the prompt by the plugin instead
+   * (CHRONOS_AUTO_CACHE_KEY), so two identical prompts still land on one cache
+   * entry and the miss/hit/evict cycle still works from a page.
+   */
+  it("does not send a header the gateway's CORS policy would refuse", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -107,7 +120,8 @@ describe("chatThroughGateway", () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(`${BIFROST_URL}/v1/chat/completions`);
-    expect(init.headers["x-bf-cache-key"]).toBe("demo-42");
+    expect(init.headers).not.toHaveProperty("x-bf-cache-key");
+    expect(Object.keys(init.headers)).toEqual(["Content-Type"]);
     expect(JSON.parse(init.body).messages[0].content).toMatch(/latest version of Python/);
   });
 

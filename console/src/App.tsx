@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BIFROST_URL, VERIFIER_URL } from "./api";
 import { useChronos } from "./useChronos";
 import Hero from "./sections/Hero";
+import RunIt from "./sections/RunIt";
 import Traffic from "./sections/Traffic";
 import Walkthrough from "./sections/Walkthrough";
 import Inspector from "./sections/Inspector";
@@ -13,6 +14,7 @@ import Briefing from "./sections/Briefing";
 
 const SECTIONS = [
   ["path", "Signal path"],
+  ["run", "Run it"],
   ["traffic", "Traffic"],
   ["inspect", "Inspector"],
   ["cache", "Cache"],
@@ -111,6 +113,8 @@ export default function App() {
         />
 
         <SignalPath />
+
+        <RunIt mode={mode} />
 
         <Traffic mode={mode} feed={feed} counters={counters} stats={stats} />
         <Inspector mode={mode} />

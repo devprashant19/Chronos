@@ -37,6 +37,12 @@ export const STEPS: Step[] = [
     look: "Follow one request through the gateway. Chronos is a plugin inside Bifrost, on four hooks — not a proxy in front of it.",
   },
   {
+    target: "run",
+    owner: "c",
+    title: "Drive the cycle yourself",
+    look: "Five steps with a button that advances them: ask, ask again and hit the cache, watch the claims get checked, read the verdict off the headers, watch the entry be deleted.",
+  },
+  {
     target: "traffic",
     owner: "c",
     title: "Every answer gets checked",

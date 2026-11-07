@@ -1,6 +1,6 @@
 # The console
 
-One page, an opening stage and seven sections, no routing. It is an instrument panel rather
+One page, an opening stage and eight sections, no routing. It is an instrument panel rather
 than a dashboard: everything on it is either a live reading or a recorded replay, and it says
 which.
 
@@ -23,6 +23,8 @@ text, which is the readable way to diff the copy.
 | **The cache.** What Chronos chose against a flat default, and a ledger of real evictions with their cache ids. | **The signal path, in dark mode.** Eight steps through one request, colour-coded by who owns each — Bifrost, Tavily, Chronos. |
 | ![The traffic feed: a live SSE stream of verified answers with verdicts and scores](screenshots/console-traffic.png) | ![The benchmark section showing a recorded request pair — a cache hit with x-chronos-verdict outdated, then a miss after eviction — above the StaleBench results read from bench/results.json](screenshots/console-bench.png) |
 | **Traffic.** Every verification as it finishes, over SSE. | **Playground and benchmark.** A real recorded exchange with its headers, then the numbers read straight from `bench/results.json`. |
+| ![The Run it section mid-cycle: five numbered steps with the first four ticked, a cached answer with its claims highlighted, and a score dial reading 38 beside the response headers](screenshots/console-run-it.png) | |
+| **Run it, mid-cycle.** Five steps a judge drives with one button. This is the real gateway: the headers beside it came off an actual response. | |
 | ![The guided walkthrough on step 4 of 8, a bar across the foot of the page reading "This is the product", with the inspector section ringed above it](screenshots/console-walkthrough.png) | |
 | **The walkthrough, step 4.** Eight steps that scroll the real page and ring the section being talked about. | |
 
@@ -79,11 +81,35 @@ The steps live in one exported array, so `Walkthrough.test.tsx` can assert that 
 them points at a section id that exists. A typo in a target fails the suite by name rather
 than producing a Next button that goes nowhere.
 
+## Run it: the driveable demo
+
+`#run` is the section a judge is meant to use. The rest of the console shows
+*parts* of Chronos; this shows the **cycle**, in order, with a button that
+advances it: ask a question, ask it again and get the cached answer, watch the
+claims get pulled out and checked, read the verdict off the headers, watch the
+entry be deleted.
+
+In **live** mode each step issues a real request through the gateway and reads
+the real `x-chronos-*` headers off the response. In **demo** mode the same five
+steps replay a recorded exchange through the same rendering path.
+
+**It never dead-ends.** If a live request fails — gateway down, CORS, an
+offline laptop — the recorded exchange stands in, the panel says *"Recorded"*
+and why, and the button still advances. That is the same rule the plugin
+follows: a failure of ours must not stop the thing in front of the user.
+
+The animation carries meaning rather than decorating: a packet travels the
+signal path while a request is in flight, claims light one at a time as they are
+checked, the score dial sweeps to its value, and the answer is struck through
+when its cache entry is deleted. All of it is a plain state change under
+`prefers-reduced-motion`.
+
 ## The sections
 
 | Anchor | Section | What it reads | Source |
 | :--- | :--- | :--- | :--- |
 | `#path` | Signal path | nothing; it is an explanation | `console/src/App.tsx` |
+| `#run` | Run it | nothing in demo mode; `POST /v1/chat/completions` through the gateway in live mode | `console/src/sections/RunIt.tsx` |
 | `#traffic` | Traffic | `GET /v1/stream` over SSE, `GET /v1/stats` | `console/src/sections/Traffic.tsx` |
 | `#inspect` | Inspector | `POST /v1/verify` on demand | `console/src/sections/Inspector.tsx` |
 | `#cache` | Cache | `GET /v1/cache/events`, `GET /v1/stats` | `console/src/sections/Cache.tsx` |
@@ -145,7 +171,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**85 tests**, in six files, run by `npm test` in `console/` and by
+**99 tests**, in seven files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |
@@ -153,6 +179,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 | `console/src/api.test.ts` | The data layer's quiet failures: a malformed SSE frame must not take the feed down, a 422 must carry the verifier's reason, and `chatThroughGateway` must keep the gateway's own headers and drop everything else |
 | `console/src/useChronos.test.ts` | Mode selection, the SSE lifecycle, the counters, and that a manual mode choice survives a probe that answers late |
 | `console/src/App.test.tsx` | That every section the nav points at renders, that no nav link points nowhere, that each claim is a selectable button with its subject and score in its label, that every term of the formula is shown, that a timeless claim is grey rather than green, and that the theme toggle works |
+| `console/src/sections/RunIt.test.tsx` | The driveable demo: that every stage is listed and marked as it advances, that demo mode sends no request at all, that the last step reaches a verdict and an eviction, and — the one that matters — that a failed live request falls back to the recorded exchange and says so rather than leaving a button that does nothing |
 | `console/src/sections/Hero.test.tsx` | The stage: what it says, that the counters count up and land on the real figures without overshooting, that motion is skipped under `prefers-reduced-motion`, and that the decay scope draws and reads off one curve per volatility class |
 | `console/src/sections/Walkthrough.test.tsx` | The opening stage and the tour: that every step points at a section that exists, that exactly one is ringed at a time, that nothing stays lit when it closes, that the last step finishes rather than running off the end, and that the arrow keys and Escape work |
 | `console/src/design.test.ts` | Fidelity against `design/chronos-console.html`: every `:root` token defined, with the same value, both dark-mode blocks present, every font stack ending in a generic family, and the seven sections in the reference's order |

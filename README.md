@@ -61,7 +61,7 @@ repository at `docs/screenshots/shots.json`. More of them, and the design they a
 You can open the console itself without installing anything. It works with **no backend**:
 when the verifier is unreachable it replays a recorded log and labels itself *"Recorded demo
 replay"* on the page. It opens on a full screen of argument and offers a **guided
-walkthrough** — eight steps that scroll the real page and ring the panel being discussed.
+walkthrough** — nine steps that scroll the real page and ring the panel being discussed.
 
 ```bash
 ./scripts/build-demo-site.sh          # needs Node; writes console/dist-demo
@@ -530,7 +530,7 @@ runs. It asserts specifics, not the absence of errors:
 | **The gateway survives Chronos failing** | the verifier is stopped mid-run and the gateway must keep answering |
 | Plugin logic | `go test -race ./...`: 50 test functions, 120 cases counting subtests |
 | Verifier logic | `pytest tests/`: 134 tests |
-| Console logic and rendering | 2 checks running `npm test` in `console/`: 85 tests, including a fidelity check against `design/chronos-console.html` |
+| Console logic and rendering | 2 checks running `npm test` in `console/`: 99 tests, including a fidelity check against `design/chronos-console.html` |
 | Repository hygiene | no `.env` tracked, no credential-shaped string in any tracked file |
 
 Quality, separately, is [measured above](#measured-results) rather than asserted.
@@ -546,7 +546,7 @@ Quality, separately, is [measured above](#measured-results) rather than asserted
    figure. A full `--limit 0` run would, and costs roughly 400 Tavily credits.
 3. **`guard` mode's regenerate and 409 paths have never run through the gateway.** They are
    unit-tested in `plugin/` only. An end-to-end check in `verify-all.sh` would settle it.
-4. **Nothing renders the console in a real browser engine.** Its 85 tests run under jsdom,
+4. **Nothing renders the console in a real browser engine.** Its 99 tests run under jsdom,
    which reports what the components produce rather than what a browser paints, so a CSS
    mistake — a panel that overflows, a colour with no contrast — passes all of them. The
    screenshots are the only evidence of that, and a person looks at them.

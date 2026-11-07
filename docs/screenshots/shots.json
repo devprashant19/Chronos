@@ -40,6 +40,37 @@
       ]
     },
     {
+      "name": "console-run-it",
+      "path": "/",
+      "scrollTo": "#run",
+      "steps": [
+        {
+          "click": "#run button.btn"
+        },
+        {
+          "wait": 600
+        },
+        {
+          "click": "#run button.btn"
+        },
+        {
+          "wait": 600
+        },
+        {
+          "click": "#run button.btn"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": "#run button.btn"
+        },
+        {
+          "wait": 1200
+        }
+      ]
+    },
+    {
       "name": "console-traffic",
       "path": "/",
       "scrollTo": "#traffic"

@@ -47,11 +47,15 @@ describe("what it says", () => {
     expect(h1).toHaveTextContent(/Chronos checks/i);
   });
 
-  it("names who owns each part, in the three product colours", () => {
+  it("carries one line of supporting copy, not a paragraph", () => {
+    // The hero is the first and sometimes only thing a judge reads. The
+    // ownership chips that used to live here say the same thing the signal
+    // path section says at length, so they moved there and this stayed short.
     const { container } = renderHero();
-    expect(container.querySelector(".own.b")).toHaveTextContent(/Bifrost/);
-    expect(container.querySelector(".own.t")).toHaveTextContent(/Tavily/);
-    expect(container.querySelector(".own.c")).toHaveTextContent(/Chronos/);
+    const lede = container.querySelector(".lede")!;
+
+    expect(lede.textContent!.length).toBeLessThan(180);
+    expect(container.querySelectorAll(".own")).toHaveLength(0);
   });
 
   it("offers both ways in, and a scroll cue", () => {

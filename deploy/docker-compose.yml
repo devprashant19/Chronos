@@ -78,6 +78,11 @@ services:
 
       # Plugin knobs. These override deploy/bifrost.config.json.
       CHRONOS_VERIFIER_URL: "http://verifier:8000"
+      # A browser cannot send x-bf-cache-key: it is not on the gateway's CORS
+      # allow-list, so the request is refused before it leaves the page. The
+      # plugin derives a key from the prompt instead, which is what keeps the
+      # console's own two identical requests on one cache entry.
+      CHRONOS_AUTO_CACHE_KEY: "${CHRONOS_AUTO_CACHE_KEY:-1}"
       CHRONOS_MODE: "${CHRONOS_MODE:-annotate}"
       CHRONOS_GUARD_THRESHOLD: "${CHRONOS_GUARD_THRESHOLD:-50}"
       CHRONOS_VERIFY_TIMEOUT_MS: "${CHRONOS_VERIFY_TIMEOUT_MS:-4000}"

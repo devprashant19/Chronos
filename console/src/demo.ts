@@ -51,7 +51,7 @@ export const DEMO_CLAIMS: ClaimVerdict[] = [
   {
     text: "The latest stable release of Python is 3.11, which came out in October 2022.",
     span_start: 0,
-    span_end: 75,
+    span_end: 76,
     subject: "Python",
     predicate: "latest version",
     stated_value: "3.11",
@@ -79,7 +79,7 @@ export const DEMO_CLAIMS: ClaimVerdict[] = [
   {
     text: "Python follows an annual release cadence, so a new feature release ships each October.",
     span_start: 76,
-    span_end: 162,
+    span_end: 163,
     subject: "Python",
     predicate: "release cadence",
     stated_value: "annual, each October",
@@ -98,7 +98,7 @@ export const DEMO_CLAIMS: ClaimVerdict[] = [
   {
     text: "GPT-4o costs $5.00 per million input tokens.",
     span_start: 163,
-    span_end: 207,
+    span_end: 208,
     subject: "OpenAI GPT-4o",
     predicate: "input token price",
     stated_value: "$5.00 per million",
@@ -124,7 +124,7 @@ export const DEMO_CLAIMS: ClaimVerdict[] = [
   {
     text: "The capital of France is Paris.",
     span_start: 208,
-    span_end: 239,
+    span_end: 240,
     subject: "France",
     predicate: "capital",
     stated_value: "Paris",

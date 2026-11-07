@@ -235,29 +235,20 @@ export default function Hero({
         </h1>
 
         <Reveal step={4} as="p" className="lede">
-          Semantic caching replays yesterday&rsquo;s answer to today&rsquo;s user. Chronos sits
-          inside Bifrost, pulls the time-sensitive facts out of every answer, checks them
-          against the live web with Tavily, and evicts cache entries whose facts have gone
-          stale.
+          A semantic cache replays yesterday&rsquo;s answer to today&rsquo;s user. Chronos checks
+          the facts and deletes the entries that have gone stale.
         </Reveal>
 
-        <Reveal step={5} className="owners-row">
-          <span className="own b">Bifrost &middot; gateway, cache, routing</span>
-          <span className="own t">Tavily &middot; live evidence</span>
-          <span className="own c">Chronos &middot; claims, scores, eviction</span>
-        </Reveal>
-
-        <Reveal step={6} className="hero-cta">
+        <Reveal step={5} className="hero-cta">
           <button className="btn" onClick={onStartTour}>
             Start the walkthrough
           </button>
           <button className="btn ghost" onClick={onScrollOn}>
             Explore on your own
           </button>
-          <span className="hint">8 steps &middot; about 2 minutes</span>
         </Reveal>
 
-        <Reveal step={7} className="counters">
+        <Reveal step={6} className="counters">
           <div className="counter">
             <b className="tab">{Math.round(answers).toLocaleString()}</b>
             <span>answers checked</span>
@@ -273,9 +264,9 @@ export default function Hero({
         </Reveal>
       </div>
 
-      {/* The instrument, cropped by the fold. Enough to say there is a real
-          thing down there; not enough to read. */}
-      <div className="cine-peek reveal" style={{ animationDelay: "300ms" }}>
+      {/* Shown whole. This chart is the argument -- a fact's value falls off at
+          a rate its class decides -- so it has to be readable, not teased. */}
+      <div className="cine-scope reveal" style={{ animationDelay: "300ms" }}>
         <DecayScope />
       </div>
 

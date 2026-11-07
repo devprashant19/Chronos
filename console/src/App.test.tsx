@@ -49,6 +49,16 @@ describe("the page", () => {
     }
   });
 
+  it("names who owns each part, in the three product colours", () => {
+    // Moved out of the hero when that was cut back; the property still has to
+    // hold somewhere, and the signal path is where ownership is explained.
+    const { container } = render(<App />);
+    const path = container.querySelector("#path") as HTMLElement;
+    expect(path.querySelector(".own.b")).toHaveTextContent(/Bifrost/);
+    expect(path.querySelector(".own.t")).toHaveTextContent(/Tavily/);
+    expect(path.querySelector(".own.c")).toHaveTextContent(/Chronos/);
+  });
+
   it("names itself, with the struck-through dial the design reference specifies", () => {
     const { container } = render(<App />);
     const brand = container.querySelector(".brand")!;

@@ -28,7 +28,7 @@ Level 1 needs nothing installed and no credentials.
 
 | | What you need | Time | What you get |
 | :--- | :--- | :--- | :--- |
-| **1. Open the demo site** | a browser, nothing installed | 2 min | The real console, replaying a recorded run, with the measured numbers in it |
+| **1. Open the demo site** | a browser, nothing installed | 3 min | The real console, and a five-step demo of the whole cycle you drive yourself |
 | **2. Run the stack** | Docker | ~8 min first build, 1 min after | Live data, and the miss → hit → evicted → miss cycle by hand |
 | **3. Run the checks** | Docker | ~12 min | 44 assertions, end to end |
 | **4. Run the benchmark** | Docker + a free Tavily key + a free Groq key | ~6 min | The quality numbers, reproduced |
@@ -49,6 +49,12 @@ npx http-server console/dist-demo -p 8099
 
 Open <http://localhost:8099>. The header should read **"Recorded demo replay"** — that is the
 fallback working, not a failure. Nothing on that page is presented as live.
+
+Scroll to **Run it**. Press **Start**, then **Next** four times. That is the whole product
+in five steps: ask a question, ask it again and hit the cache, watch the claims get checked,
+read the verdict off the response headers, watch the stale entry be deleted. With the stack
+running it sends real requests and shows real headers; without it, the same five steps replay
+a recorded exchange and say so.
 
 Press **Start the walkthrough**. Eight steps, about two minutes, in the order the product
 actually happens: the problem, where Chronos sits, answers being checked, the claims and the
@@ -167,7 +173,7 @@ subset is entirely `leadership`, the hardest class, and it is not a cross-class 
   through the gateway end to end.
 - **Streaming answers are not content-verified.** They get headers with verdict `pending`.
 - **Never run on macOS or Linux.** Windows with Docker Desktop throughout.
-- **Nothing renders the console in a real browser engine.** Its 85 tests run under jsdom,
+- **Nothing renders the console in a real browser engine.** Its 99 tests run under jsdom,
   so a CSS mistake passes all of them. The screenshots are the only evidence of that.
 
 The full list is in [README.md](README.md#not-verified-and-should-be).
