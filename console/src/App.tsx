@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { BIFROST_URL, VERIFIER_URL } from "./api";
 import { useChronos } from "./useChronos";
 import Traffic from "./sections/Traffic";
+import Walkthrough from "./sections/Walkthrough";
 import Inspector from "./sections/Inspector";
 import Cache from "./sections/Cache";
 import Playground from "./sections/Playground";
@@ -44,9 +45,28 @@ export default function App() {
     useChronos();
   const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
+  // The walkthrough is null when it is not running, so "not started" and
+  // "on step 0" are different states.
+  const [tourStep, setTourStep] = useState<number | null>(null);
+
+  // Drives the scroll cue at the bottom of the opening screen. It is the only
+  // thing telling a first-time viewer that the page continues.
+  const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     if (theme) document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollOn = useCallback(() => {
+    document.getElementById("path")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   return (
     <>
@@ -88,7 +108,7 @@ export default function App() {
       </header>
 
       <main>
-        <section className="hero wrap">
+        <section className="hero stage wrap">
           <div className="hero-grid">
             <div className="hero-copy">
               <p className="eyebrow">A freshness firewall for the Bifrost AI gateway</p>
@@ -125,9 +145,35 @@ export default function App() {
                   <span>Tavily calls saved by claim cache</span>
                 </div>
               </div>
+
+              <div className="hero-cta">
+                <button className="btn" onClick={() => setTourStep(0)}>
+                  Start the walkthrough
+                </button>
+                <button className="btn ghost" onClick={scrollOn}>
+                  Explore on your own
+                </button>
+                <span className="hint">8 steps &middot; about 2 minutes</span>
+              </div>
             </div>
 
             <DecayScope />
+          </div>
+
+          <div className="cue" data-hidden={scrolled || tourStep !== null}>
+            <button onClick={scrollOn} aria-label="Scroll to the signal path">
+              Scroll
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M8 3v9M4.5 8.5 8 12l3.5-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           </div>
         </section>
 
@@ -141,7 +187,17 @@ export default function App() {
         <Briefing mode={mode} />
       </main>
 
-      <footer className="wrap" style={{ padding: "40px 0 56px", borderTop: "1px solid var(--rule)", marginTop: 48 }}>
+      <footer
+        className="wrap"
+        style={{
+          padding: "40px 0 56px",
+          borderTop: "1px solid var(--rule)",
+          marginTop: 48,
+          // The walkthrough bar is fixed to the bottom; without this it covers
+          // the end of the page on the last step.
+          paddingBottom: tourStep !== null ? 200 : 56,
+        }}
+      >
         <p className="eyebrow" style={{ marginBottom: 8 }}>
           Chronos · Bifrost plugin + Tavily verification
         </p>
@@ -161,6 +217,10 @@ export default function App() {
           )}
         </p>
       </footer>
+
+      {tourStep !== null ? (
+        <Walkthrough index={tourStep} onIndex={setTourStep} onExit={() => setTourStep(null)} />
+      ) : null}
     </>
   );
 }
