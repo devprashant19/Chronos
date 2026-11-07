@@ -1,0 +1,15 @@
+{
+  "base": "http://localhost:5173",
+  "width": 1440,
+  "height": 980,
+  "scale": 1,
+  "dir": "docs/screenshots",
+  "shots": [
+    { "name": "console-hero",      "path": "/" },
+    { "name": "console-traffic",   "path": "/", "scrollTo": "#traffic" },
+    { "name": "console-inspector", "path": "/", "scrollTo": "#inspect" },
+    { "name": "console-cache",     "path": "/", "scrollTo": "#cache" },
+    { "name": "console-bench",     "path": "/", "scrollTo": "#bench" },
+    { "name": "console-dark",      "path": "/", "theme": "dark", "steps": [{ "click": "button[aria-label='Toggle colour scheme']" }], "scrollTo": "#path" }
+  ]
+}
