@@ -12,7 +12,7 @@
  * product cannot is a lie with a Next button.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface Step {
   /** The id of the section to scroll to, or null for the hero. */
@@ -154,49 +154,97 @@ export default function Walkthrough({
 
   const last = index === STEPS.length - 1;
 
+  // --- dragging ----------------------------------------------------------
+  // It used to be a bar across the foot of the page, which covered whatever
+  // step 1 was pointing at. It is a card on the right now, and draggable,
+  // because "the clear part of the screen" depends on the section.
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const drag = useRef<{ dx: number; dy: number } | null>(null);
+  const card = useRef<HTMLDivElement>(null);
+
+  const clamp = useCallback((x: number, y: number) => {
+    const el = card.current;
+    const w = el?.offsetWidth ?? 360;
+    const h = el?.offsetHeight ?? 260;
+    return {
+      x: Math.min(Math.max(8, x), Math.max(8, window.innerWidth - w - 8)),
+      y: Math.min(Math.max(64, y), Math.max(64, window.innerHeight - h - 8)),
+    };
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const el = card.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    drag.current = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!drag.current) return;
+    setPos(clamp(e.clientX - drag.current.dx, e.clientY - drag.current.dy));
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    drag.current = null;
+    (e.target as Element).releasePointerCapture?.(e.pointerId);
+  };
+
+  // Keep it on screen when the window changes size.
+  useEffect(() => {
+    const onResize = () => setPos((p) => (p ? clamp(p.x, p.y) : p));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [clamp]);
+
   return (
-    <aside className="tour" role="region" aria-label="Guided walkthrough">
-      <div className="wrap tour-in">
-        <div className="tour-meter" aria-hidden="true">
-          {STEPS.map((_, i) => (
-            <i key={i} className={i <= index ? "on" : ""} />
-          ))}
-        </div>
+    <aside
+      ref={card}
+      className="tour"
+      role="region"
+      aria-label="Guided walkthrough"
+      style={pos ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" } : undefined}
+    >
+      <div
+        className="tour-grip"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        title="Drag to move"
+      >
+        <span className="tour-dots" aria-hidden="true" />
+        <p className="eyebrow">
+          Step {index + 1} of {STEPS.length}
+          {step.owner ? (
+            <>
+              {" · "}
+              <span className={`own ${step.owner}`} style={{ padding: "2px 6px" }}>
+                {OWNER_LABEL[step.owner]}
+              </span>
+            </>
+          ) : null}
+        </p>
+        <button className="tour-x" onClick={onExit} aria-label="Close the walkthrough" title="Esc">
+          ✕
+        </button>
+      </div>
 
-        <div className="tour-body">
-          <div className="tour-text">
-            <p className="eyebrow">
-              Step {index + 1} of {STEPS.length}
-              {step.owner ? (
-                <>
-                  {" · "}
-                  <span className={`own ${step.owner}`} style={{ padding: "2px 6px" }}>
-                    {OWNER_LABEL[step.owner]}
-                  </span>
-                </>
-              ) : null}
-            </p>
-            <h3>{step.title}</h3>
-            <p className="tour-look">{step.look}</p>
-          </div>
+      <div className="tour-meter" aria-hidden="true">
+        {STEPS.map((_, i) => (
+          <i key={i} className={i <= index ? "on" : ""} />
+        ))}
+      </div>
 
-          <div className="tour-nav">
-            <button className="btn ghost" onClick={back} disabled={index === 0}>
-              Back
-            </button>
-            <button className="btn" onClick={next}>
-              {last ? "Finish" : "Next"}
-            </button>
-            <button
-              className="btn ghost"
-              onClick={onExit}
-              aria-label="Close the walkthrough"
-              title="Esc"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+      <div className="tour-body">
+        <h3>{step.title}</h3>
+        <p className="tour-look">{step.look}</p>
+      </div>
+
+      <div className="tour-nav">
+        <button className="btn ghost" onClick={back} disabled={index === 0}>
+          Back
+        </button>
+        <button className="btn" onClick={next}>
+          {last ? "Finish" : "Next"}
+        </button>
       </div>
     </aside>
   );

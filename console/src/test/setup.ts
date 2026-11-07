@@ -90,3 +90,30 @@ vi.stubGlobal("ResizeObserver", NoopObserver);
 // selected. Assigned unconditionally: the `in` guard narrows to `never` under
 // `strict`, which is a type error rather than a safeguard.
 Element.prototype.scrollIntoView = () => {};
+
+/**
+ * jsdom has no PointerEvent, and the walkthrough card is dragged with one.
+ * A MouseEvent carries clientX/clientY already, so this only needs to add the
+ * pointer fields and the name.
+ */
+if (typeof (globalThis as { PointerEvent?: unknown }).PointerEvent === "undefined") {
+  class FakePointerEvent extends MouseEvent {
+    pointerId: number;
+    pointerType: string;
+    isPrimary: boolean;
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 1;
+      this.pointerType = init.pointerType ?? "mouse";
+      this.isPrimary = init.isPrimary ?? true;
+    }
+  }
+  vi.stubGlobal("PointerEvent", FakePointerEvent);
+}
+
+// Pointer capture is part of the same API and equally absent.
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {};
+  Element.prototype.releasePointerCapture = () => {};
+  Element.prototype.hasPointerCapture = () => false;
+}

@@ -69,13 +69,18 @@ jsdom they do not — and when they disagree the count never reaches its target,
 most prominent number on the page quietly wrong. That was a real failure, caught by the test
 above being flaky rather than by looking at it.
 
-**The walkthrough** (`console/src/sections/Walkthrough.tsx`) is eight steps in the order the
+**The walkthrough** (`console/src/sections/Walkthrough.tsx`) is nine steps in the order the
 product happens: the problem, where Chronos sits, answers being checked, the claims and the
 score, the TTL policy and the eviction ledger, the headers on the response, the measured
 numbers, the briefing. Each step scrolls to a **real section and rings it** — there is
 nothing in the tour that is not already on the page, which is deliberate: a tour that shows
 something the product cannot do is a lie with a Next button. It is driveable with the arrow
 keys and closes on Escape, and it respects `prefers-reduced-motion`.
+
+It is a **card on the right, draggable by its grip**, and clamped so it cannot be dragged
+off screen. It began as a bar across the foot of the page, which covered whatever step one
+was pointing at — the thing a tour exists to show. Which part of the screen is clear depends
+on the section, so the reader moves it.
 
 The steps live in one exported array, so `Walkthrough.test.tsx` can assert that every one of
 them points at a section id that exists. A typo in a target fails the suite by name rather
@@ -103,6 +108,25 @@ signal path while a request is in flight, claims light one at a time as they are
 checked, the score dial sweeps to its value, and the answer is struck through
 when its cache entry is deleted. All of it is a plain state change under
 `prefers-reduced-motion`.
+
+## Motion
+
+None of it changes a colour: `design.test.ts` holds every `:root` token to
+`design/chronos-console.html`, so depth and response come from movement rather than from a
+bolder palette.
+
+| | |
+| :--- | :--- |
+| Sections | Fade and rise as the reader reaches them, driven by an `IntersectionObserver` (`console/src/useReveal.ts`) rather than a scroll handler, so a long page costs no per-frame layout read |
+| Nav links | An underline that grows from the left |
+| Buttons | Lift on hover and cast a shadow in their own colour |
+| Panels, chips, pills, counters | Lift or take an accent-coloured ring on hover |
+| The walkthrough card | Slides in, carries a gradient edge in the product colours, and has a grab cursor on its grip |
+| The live dot | Pulses, because it means something is connected |
+
+Every one of them is disabled under `prefers-reduced-motion`, including the scroll reveal —
+which is never applied in the first place there, so the page renders complete rather than
+hidden and waiting.
 
 ## The sections
 
@@ -171,7 +195,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**99 tests**, in seven files, run by `npm test` in `console/` and by
+**102 tests**, in seven files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |

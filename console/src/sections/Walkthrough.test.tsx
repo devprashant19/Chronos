@@ -180,6 +180,57 @@ describe("the walkthrough", () => {
     expect(container.querySelector(".tour")).toBeNull();
   });
 
+  it("is a card clear of the page, not a bar across the foot of it", async () => {
+    // It used to be fixed to the bottom and covered whatever step one was
+    // pointing at.
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    await startTour(user);
+
+    const card = container.querySelector(".tour") as HTMLElement;
+    expect(card).not.toBeNull();
+    expect(card.querySelector(".tour-grip")).not.toBeNull();
+  });
+
+  it("can be dragged, and stays on screen", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    await startTour(user);
+
+    const card = container.querySelector(".tour") as HTMLElement;
+    const grip = card.querySelector(".tour-grip") as HTMLElement;
+
+    await act(async () => {
+      grip.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 500, clientY: 300 }));
+      grip.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 200, clientY: 200 }));
+      grip.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+    });
+
+    // It moved off its default anchor and onto explicit coordinates.
+    expect(card.style.left).not.toBe("");
+    expect(card.style.top).not.toBe("");
+    expect(Number.parseFloat(card.style.left)).toBeGreaterThanOrEqual(8);
+    expect(Number.parseFloat(card.style.top)).toBeGreaterThanOrEqual(64);
+  });
+
+  it("refuses to be dragged off the edge", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    await startTour(user);
+
+    const card = container.querySelector(".tour") as HTMLElement;
+    const grip = card.querySelector(".tour-grip") as HTMLElement;
+
+    await act(async () => {
+      grip.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 100, clientY: 100 }));
+      grip.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: -9999, clientY: -9999 }));
+      grip.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+    });
+
+    expect(Number.parseFloat(card.style.left)).toBeGreaterThanOrEqual(8);
+    expect(Number.parseFloat(card.style.top)).toBeGreaterThanOrEqual(64);
+  });
+
   it("is driveable from the keyboard", async () => {
     const user = userEvent.setup();
     const { container } = render(<App />);

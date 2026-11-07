@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { BIFROST_URL, VERIFIER_URL } from "./api";
 import { useChronos } from "./useChronos";
+import { useReveal } from "./useReveal";
 import Hero from "./sections/Hero";
 import RunIt from "./sections/RunIt";
 import Traffic from "./sections/Traffic";
@@ -49,6 +50,8 @@ export default function App() {
   // Drives the scroll cue at the bottom of the opening screen. It is the only
   // thing telling a first-time viewer that the page continues.
   const [scrolled, setScrolled] = useState(false);
+
+  useReveal();
 
   useEffect(() => {
     if (theme) document.documentElement.setAttribute("data-theme", theme);

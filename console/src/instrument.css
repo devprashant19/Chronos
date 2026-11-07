@@ -288,7 +288,7 @@ main section{scroll-margin-top:72px}
 .hero-cta .hint{font:500 11.5px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
 
 /* The cue is the only thing telling a first-time viewer there is more below. */
-.cue{display:flex;justify-content:center;padding:6px 0 14px;transition:opacity .25s ease}
+.cue{display:flex;justify-content:center;padding:clamp(10px,1.2vw,20px) 0 clamp(18px,2vw,30px);transition:opacity .25s ease}
 .cue[data-hidden="true"]{opacity:0;pointer-events:none}
 .cue button{display:inline-flex;flex-direction:column;align-items:center;gap:5px;border:0;background:none;cursor:pointer;color:var(--ink-3);font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.14em;padding:4px 10px}
 .cue button:hover{color:var(--ink)}
@@ -299,24 +299,6 @@ main section{scroll-margin-top:72px}
 .tour-on{position:relative}
 .tour-on::after{content:"";position:absolute;inset:-10px -14px;border:1px solid var(--ink);border-radius:8px;pointer-events:none;animation:ringin .35s ease both}
 @keyframes ringin{from{opacity:0;transform:scale(.995)}to{opacity:1;transform:none}}
-
-.tour{position:fixed;left:0;right:0;bottom:0;z-index:12;background:var(--paper);border-top:1px solid var(--ink);box-shadow:0 -10px 28px rgba(0,0,0,.07);animation:tourup .25s ease both;padding-bottom:env(safe-area-inset-bottom,0px)}
-@keyframes tourup{from{transform:translateY(100%)}to{transform:none}}
-.tour-in{padding-block:12px 14px}
-.tour-meter{display:flex;gap:4px;margin-bottom:10px}
-.tour-meter i{height:2px;flex:1;background:var(--grid);border-radius:1px;transition:background .2s ease}
-.tour-meter i.on{background:var(--ink)}
-.tour-body{display:flex;align-items:flex-end;gap:24px}
-.tour-text{min-width:0;flex:1}
-.tour-text h3{font:800 clamp(19px,2.2vw,26px)/1.05 var(--display);margin:5px 0 4px}
-.tour-look{margin:0;font-size:14px;color:var(--ink-2);max-width:78ch}
-.tour-nav{display:flex;gap:8px;flex:none}
-.tour-nav .btn:disabled{opacity:.4;cursor:default}
-@media (max-width:760px){
-  .tour-body{flex-direction:column;align-items:stretch;gap:12px}
-  .tour-nav{justify-content:flex-end}
-  .tour-look{font-size:13.5px}
-}
 
 @media (prefers-reduced-motion:reduce){
   .cue svg,.tour,.tour-on::after{animation:none}
@@ -400,20 +382,20 @@ main section{scroll-margin-top:72px}
   mask-image:radial-gradient(70% 55% at 50% 40%,#000,transparent 75%);
 }
 
-.cine-in{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(9px,1.3vh,15px);padding:clamp(14px,3vh,34px) 0 0}
-.cine-in h1{font-size:clamp(36px,5.4vw,66px);line-height:.92;letter-spacing:-.01em;max-width:16ch;margin:0}
+.cine-in{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(20px,1.9vw,32px);padding:clamp(48px,5.2vw,92px) 0 clamp(8px,1vw,16px)}
+.cine-in h1{font-size:clamp(36px,5.4vw,66px);line-height:.98;letter-spacing:-.01em;max-width:16ch;margin:0}
 .cine-in .lede{max-width:62ch;font-size:clamp(15px,1.5vw,18px)}
 .cine-in .owners-row{justify-content:center}
 .cine-in .hero-cta{justify-content:center}
-.cine-in .counters{grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--rule);max-width:700px;width:100%}
-.cine-in .counter{padding:14px 12px 0;text-align:left}
+.cine-in .counters{grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--rule);max-width:700px;width:100%;margin-top:clamp(6px,0.8vw,14px)}
+.cine-in .counter{padding:20px 14px 0;text-align:left}
 
 /* The product, cropped by the fold: enough to say there is a real instrument
    down there, not enough to read. */
 /* Shown whole. It was cropped to a sliver so the opening fit one screen, and
    the chart that carries the whole argument became unreadable. One screen is
    not worth that. */
-.cine-scope{position:relative;z-index:1;width:min(760px,90vw);margin:clamp(12px,2.2vh,26px) auto clamp(6px,1.2vh,14px)}
+.cine-scope{position:relative;z-index:1;width:min(760px,90vw);margin:clamp(28px,3vw,48px) auto clamp(10px,1.2vw,20px)}
 .cine-scope .scope{box-shadow:0 10px 50px rgba(0,0,0,.40)}
 
 /* The header sits over the dark frame until you scroll. */
@@ -478,4 +460,95 @@ header.top.on-dark .btn[aria-pressed="true"]{background:#E6E9EE;color:#0E1115;bo
 @media (prefers-reduced-motion:reduce){
   .run-rail li.now i,.run-line .pkt.moving{animation:none}
   .run-line .pkt.moving{opacity:1;left:50%}
+}
+
+/* --- The walkthrough card ------------------------------------------------
+   It was a bar across the foot of the page and covered whatever step one was
+   pointing at. A card on the right, draggable by its grip, so the reader can
+   move it to whichever part of the screen is clear. */
+.tour{
+  position:fixed; right:22px; top:50%; transform:translateY(-50%);
+  width:min(360px,calc(100vw - 32px)); z-index:14;
+  background:color-mix(in srgb,var(--panel) 92%,transparent);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--rule); border-radius:12px;
+  box-shadow:0 18px 48px rgba(0,0,0,.28);
+  animation:tourin .28s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes tourin{from{opacity:0;transform:translateY(-50%) translateX(16px) scale(.98)}to{opacity:1}}
+/* An accent edge that runs the colour of the owner of the current step. */
+.tour::before{content:"";position:absolute;inset:-1px;border-radius:12px;padding:1px;
+  background:linear-gradient(150deg,var(--bifrost),var(--tavily),transparent 70%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.55}
+
+.tour-grip{display:flex;align-items:center;gap:10px;padding:12px 12px 8px;cursor:grab;touch-action:none}
+.tour-grip:active{cursor:grabbing}
+.tour-dots{width:14px;height:14px;flex:none;border-radius:3px;
+  background-image:radial-gradient(currentColor 1px,transparent 1px);background-size:5px 5px;
+  color:var(--ink-3);opacity:.9}
+.tour-grip .eyebrow{flex:1;margin:0}
+.tour-x{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:13px;line-height:1;padding:4px 6px;border-radius:4px;transition:color .18s ease,background .18s ease}
+.tour-x:hover{color:var(--ink);background:var(--grid)}
+
+.tour .tour-meter{display:flex;gap:3px;padding:0 12px}
+.tour .tour-meter i{height:2px;flex:1;background:var(--grid);border-radius:1px;transition:background .25s ease}
+.tour .tour-meter i.on{background:var(--ink)}
+.tour-body{padding:12px 14px 4px}
+.tour-body h3{font:800 clamp(18px,1.6vw,23px)/1.1 var(--display);margin:0 0 6px}
+.tour-look{margin:0;font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.tour-nav{display:flex;gap:8px;justify-content:flex-end;padding:12px 14px 14px}
+.tour-nav .btn:disabled{opacity:.4;cursor:default}
+@media (max-width:620px){.tour{right:8px;left:8px;width:auto;top:auto;bottom:10px;transform:none}
+  @keyframes tourin{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}}
+
+/* --- Motion and hover ----------------------------------------------------
+   The palette is held to design/chronos-console.html token for token by
+   design.test.ts, so none of this changes a colour. It adds depth and
+   response instead: things lift, glow, and answer the pointer. */
+
+/* Nav: an underline that grows from the left. */
+nav.sections a{position:relative;padding-bottom:2px}
+nav.sections a::after{content:"";position:absolute;left:0;bottom:0;height:1.5px;width:0;
+  background:currentColor;transition:width .22s cubic-bezier(.3,.8,.3,1)}
+nav.sections a:hover::after{width:100%}
+
+/* Buttons lift and cast their own colour. */
+.btn{transition:transform .16s cubic-bezier(.3,.8,.3,1),box-shadow .22s ease,opacity .16s ease,background .18s ease,border-color .18s ease}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px color-mix(in srgb,var(--ink) 22%,transparent)}
+.btn:active{transform:translateY(0);box-shadow:none}
+.btn.ghost:hover{box-shadow:0 6px 16px color-mix(in srgb,var(--ink) 12%,transparent);border-color:var(--ink)}
+
+/* Panels answer the pointer. */
+.panel{transition:border-color .22s ease,box-shadow .22s ease,transform .22s ease}
+.panel:hover{border-color:color-mix(in srgb,var(--rule) 40%,var(--ink))}
+
+/* Ownership chips and verdict pills glow faintly on hover. */
+.own,.pill{transition:box-shadow .2s ease,transform .2s ease}
+.own:hover,.pill:hover{transform:translateY(-1px)}
+.own.b:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--bifrost) 55%,transparent)}
+.own.t:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--tavily) 55%,transparent)}
+.own.c:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--ink-3) 70%,transparent)}
+
+/* The live dot actually pulses. */
+.mode-dot,.replay i{animation:livepulse 2.4s ease-in-out infinite}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* Sections arrive as you reach them. */
+.reveal-on-scroll{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.8,.3,1)}
+.reveal-on-scroll.seen{opacity:1;transform:none}
+
+/* Counters and metric tiles lift. */
+.counter,.metric{transition:transform .2s cubic-bezier(.3,.8,.3,1)}
+.counter:hover,.metric:hover{transform:translateY(-2px)}
+
+/* The run rail answers the pointer too. */
+.run-rail li{cursor:default}
+.run-rail li:hover{border-color:color-mix(in srgb,var(--rule) 40%,var(--ink))}
+
+@media (prefers-reduced-motion:reduce){
+  .cue svg,.tour,.tour-on::after,.mode-dot,.replay i{animation:none}
+  .btn:hover,.counter:hover,.metric:hover,.own:hover,.pill:hover{transform:none}
+  .reveal-on-scroll{opacity:1;transform:none;transition:none}
+  nav.sections a::after{transition:none}
 }
