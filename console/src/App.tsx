@@ -65,7 +65,7 @@ export default function App() {
 
   return (
     <>
-      <header className="top">
+      <header className={`top${scrolled ? "" : " on-dark"}`}>
         <div className="wrap">
           <div className="brand">
             {/* The reference mark, design/chronos-console.html line 249: a dial with
