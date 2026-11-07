@@ -149,6 +149,25 @@ else
   skip "verifier tests" "needs Docker and the $VERIFIER_IMAGE image"
 fi
 
+# ---------------------------------------------------------------------------
+section "console"
+# ---------------------------------------------------------------------------
+#
+# Run with the local toolchain rather than in a container: the suite takes a
+# few seconds, and an npm install inside a fresh image every run takes minutes.
+# Without node these skip rather than fail -- the console is the one part a
+# reviewer can leave out without losing the argument.
+
+CONSOLE="$REPO/console"
+if ! command -v npm >/dev/null 2>&1; then
+  skip "console checks" "no npm on PATH"
+elif [ ! -d "$CONSOLE/node_modules" ]; then
+  skip "console checks" "run 'npm install' in console/ first"
+else
+  check "console: typecheck, app and tests"     sh -c "cd \"$CONSOLE\" && npm run --silent typecheck"
+  check "console: unit and rendering tests"     sh -c "cd \"$CONSOLE\" && npm test --silent -- --reporter=dot"
+fi
+
 if [ "$UNIT_ONLY" -eq 1 ]; then
   section "summary (unit only)"
   printf '  %d passed, %d failed, %d skipped\n' "$PASS" "$FAIL" "$SKIP"
