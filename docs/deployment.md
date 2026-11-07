@@ -106,6 +106,29 @@ The gateway's log should contain the plugin's own init line. If it does not, the
 not loaded, and the gateway will keep answering perfectly well without it — which is why the
 check is explicit. `./scripts/verify-all.sh` asserts the same thing.
 
+## The console on its own, with no backend
+
+The console is a static bundle and the only thing it needs at runtime is itself. When the
+verifier does not answer its health probe it falls back to replaying a recorded log, and
+labels the page *"Recorded demo replay"* rather than showing an empty dashboard. So it can be
+hosted as a plain static site, which is the cheapest way to let someone see what Chronos does.
+
+```bash
+./scripts/build-demo-site.sh [outdir]     # default console/dist-demo
+npx http-server console/dist-demo -p 8099
+```
+
+Two things differ from the image build, both in that script:
+
+- `--base=./` makes every asset URL relative, so the folder works at any path rather than
+  only at a domain root. The benchmark panel's fetch of `results.json` resolves against
+  `import.meta.env.BASE_URL` for the same reason.
+- `bench/results.json` is copied in beside the bundle, so the benchmark panel shows the real
+  measured numbers instead of its "no results file" state.
+
+Hosting it changes nothing about honesty: the recorded traffic is labelled on the page, and
+the only numbers on it that are measurements come from `bench/results.json`.
+
 ## What does not work
 
 - **No Kubernetes manifests, no Helm chart, no cloud deployment of any kind.** Compose is

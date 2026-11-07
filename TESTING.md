@@ -16,6 +16,8 @@ Level 1 needs nothing installed and no credentials.
 > from how fast the answer's facts actually move, and deletes the cache entry behind any
 > answer it finds stale. It runs on free open-weights models and a free Tavily key, and the
 > whole stack runs with no credentials at all against a built-in mock provider.
+> The console builds to a static folder that runs with no backend
+> (`./scripts/build-demo-site.sh`), replaying a recorded log and labelled as such.
 > `./scripts/verify-all.sh` runs 44 checks end to end; on a 18-claim benchmark subset the
 > model path scores precision 0.80 and recall 0.667 against a rule-only baseline of 0.40 and
 > 0.20. Built during the event with Claude Code; see the README's disclosure.
@@ -26,28 +28,40 @@ Level 1 needs nothing installed and no credentials.
 
 | | What you need | Time | What you get |
 | :--- | :--- | :--- | :--- |
-| **1. Read the evidence** | a browser | 2 min | Real screenshots, real headers, real numbers, no setup |
-| **2. Run the stack** | Docker | ~8 min first build, 1 min after | The console on live data, and the miss → hit → evicted → miss cycle by hand |
+| **1. Open the demo site** | a browser, nothing installed | 2 min | The real console, replaying a recorded run, with the measured numbers in it |
+| **2. Run the stack** | Docker | ~8 min first build, 1 min after | Live data, and the miss → hit → evicted → miss cycle by hand |
 | **3. Run the checks** | Docker | ~12 min | 44 assertions, end to end |
 | **4. Run the benchmark** | Docker + a free Tavily key + a free Groq key | ~6 min | The quality numbers, reproduced |
 
-Levels 2 and 3 need **no API keys**. Only level 4 does, and both are free with no card.
+Levels 1 to 3 need **no API keys**. Only level 4 does, and both are free with no card.
 
 ---
 
 ## Level 1 — two minutes, nothing installed
 
-Look at these three, in this order:
+The console is a static bundle, and it works with **no backend at all**: when the verifier is
+unreachable it replays a recorded log and says so on the page. That is the demo site.
 
-1. **[docs/screenshots/console-inspector.png](docs/screenshots/console-inspector.png)** — a
-   cached answer with its claims lit up, one scored 36 and marked outdated, beside the score
-   with every term of the formula and the two pages that disagreed, quoted.
-2. **The headers** in [README.md](README.md#what-it-looks-like) — the actual response to the
-   second of three identical requests, showing `x-chronos-verdict: outdated` and the cache
-   entry being deleted.
-3. **[docs/architecture.png](docs/architecture.png)** — the whole system on one page.
+```bash
+./scripts/build-demo-site.sh          # needs Node; writes console/dist-demo
+npx http-server console/dist-demo -p 8099
+```
 
-If you only have two minutes, the first one is the part to look at. It is the product.
+Open <http://localhost:8099>. The header should read **"Recorded demo replay"** — that is the
+fallback working, not a failure. Nothing on that page is presented as live.
+
+The folder is plain static files with relative paths, so it can be dropped on any host, and
+it carries `bench/results.json`, which is why the Benchmark panel shows measured numbers
+rather than its "no results file" state.
+
+Scroll to **Inspector**. That one panel is the product: a cached answer with its claims lit
+up, one scored 36 and marked outdated, beside every term of the score and the two pages that
+disagreed, quoted.
+
+If you cannot run even that, the same three things are in the repository as images:
+[the inspector](docs/screenshots/console-inspector.png), the real response
+[headers](README.md#what-it-looks-like) from the second of three identical requests, and
+[the whole system on one page](docs/architecture.png).
 
 ---
 
