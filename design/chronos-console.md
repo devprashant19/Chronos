@@ -2,7 +2,7 @@ Chronos
 
 Recorded demo replay
 
-[Signal path](#path)[Traffic](#traffic)[Inspector](#inspect)[Cache](#cache)[Playground](#playground)[Benchmark](#bench)[Briefing](#brief)
+Signal path / Traffic / Inspector / Cache / Playground / Benchmark / Briefing
 
 A freshness firewall for the Bifrost AI gateway
 

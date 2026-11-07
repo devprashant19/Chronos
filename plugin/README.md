@@ -134,7 +134,7 @@ Each cost real debugging time and each is commented at the site.
 `HTTPTransportPreHook` is visible in `PreLLMHook` and `PostLLMHook`. The
 reverse is not true: a verdict set in `PostLLMHook` is **not** visible to
 `HTTPTransportResponseHeadersHook`, so no headers appeared at first. The hook
-ran and the verdict existed; `ctx.Value` in the headers hook simply came back
+ran and the verdict existed; `ctx.Value` in the headers hook came back
 empty, and `BifrostContextKeyRequestID` was absent there too, so it could not
 even be used as a correlation key.
 

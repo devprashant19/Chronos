@@ -5,8 +5,8 @@ Thanks for looking. Chronos is Apache-2.0 and contributions are welcome.
 ## Getting set up
 
 ```bash
-git clone <repo> && cd Chronos
-cp .env.example .env          # works with no keys
+git clone <repo> chronos && cd chronos
+cp .env.example deploy/.env   # optional; it works with no keys at all
 cd deploy && docker compose up --build
 ```
 
@@ -15,7 +15,7 @@ and the plugin together. Afterwards the layers are cached.
 
 ```bash
 ./scripts/verify-all.sh --unit     # fast: tests only, no stack
-./scripts/verify-all.sh            # everything, 39 checks
+./scripts/verify-all.sh            # everything, end to end
 ```
 
 ## Working on each piece
@@ -110,7 +110,7 @@ The dataset is generated, and CI fails if the committed copy has drifted. Edit
 
 **No invented numbers.** This is a project about stale facts; it cannot ship
 figures about itself that nobody measured. Every number in the README and the
-console comes from `bench/results.json`, written by the runner. If you have not
+console comes from a results file in `bench/`, written by the runner. If you have not
 measured something, say so, or say nothing. The console's benchmark panel shows
 "no results file" rather than a placeholder for exactly this reason.
 
