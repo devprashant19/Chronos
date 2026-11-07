@@ -3,33 +3,37 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: an instrument bench. Left-aligned panels on a cool paper ground; each section is one working instrument
    (decay scope, signal path, feed, inspector, cache ledger, terminal, bench results, brief). Product colour = ownership. */
 :root{
-  --paper:#ECEEF1; --panel:#F8F9FA; --ink:#13161B; --ink-2:#505967; --ink-3:#7B8492;
-  --rule:#C7CCD4; --grid:#DCE0E6;
-  --bifrost:#2744E0; --tavily:#A23F86; --chronos:#13161B;
-  --ok:#1C8752; --warn:#B57600; --bad:#C93A28;
-  --ok-t:rgba(28,135,82,.12); --warn-t:rgba(181,118,0,.14); --bad-t:rgba(201,58,40,.12); --bif-t:rgba(39,68,224,.10); --tav-t:rgba(162,63,134,.10);
+  --paper:#F4F2FB; --panel:#FFFFFF; --ink:#140F26; --ink-2:#4A4367; --ink-3:#7B73A0;
+  --rule:#D9D3F0; --grid:#E9E4F8;
+  --brand:#6D3BF5; --brand-2:#9B6BFF;
+  --bifrost:#4F32E0; --tavily:#B43C92; --chronos:#140F26;
+  --ok:#17855A; --warn:#B07400; --bad:#CE3552;
+  --ok-t:rgba(23,133,90,.12); --warn-t:rgba(176,116,0,.14); --bad-t:rgba(206,53,82,.12); --bif-t:rgba(79,50,224,.10); --tav-t:rgba(180,60,146,.10);
   --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --body:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#0E1115; --panel:#151920; --ink:#E6E9EE; --ink-2:#A3ACB9; --ink-3:#77808D;
-  --rule:#2A313B; --grid:#1F252D;
-  --bifrost:#7088FF; --tavily:#E27CC5; --chronos:#E6E9EE;
-  --ok:#4CC38A; --warn:#E5AE3B; --bad:#F06B56;
-  --ok-t:rgba(76,195,138,.14); --warn-t:rgba(229,174,59,.15); --bad-t:rgba(240,107,86,.15); --bif-t:rgba(112,136,255,.14); --tav-t:rgba(226,124,197,.13);
+  --paper:#08060F; --panel:#110D20; --ink:#EEEBF8; --ink-2:#ADA5C9; --ink-3:#7A7199;
+  --rule:#272042; --grid:#1A1533;
+  --brand:#8B5CF6; --brand-2:#B78BFF;
+  --bifrost:#8B7BFF; --tavily:#E980CF; --chronos:#EEEBF8;
+  --ok:#4FD39A; --warn:#F0B747; --bad:#FF6B8A;
+  --ok-t:rgba(79,211,154,.14); --warn-t:rgba(240,183,71,.15); --bad-t:rgba(255,107,138,.16); --bif-t:rgba(139,123,255,.16); --tav-t:rgba(233,128,207,.14);
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#0E1115; --panel:#151920; --ink:#E6E9EE; --ink-2:#A3ACB9; --ink-3:#77808D;
-  --rule:#2A313B; --grid:#1F252D;
-  --bifrost:#7088FF; --tavily:#E27CC5; --chronos:#E6E9EE;
-  --ok:#4CC38A; --warn:#E5AE3B; --bad:#F06B56;
-  --ok-t:rgba(76,195,138,.14); --warn-t:rgba(229,174,59,.15); --bad-t:rgba(240,107,86,.15); --bif-t:rgba(112,136,255,.14); --tav-t:rgba(226,124,197,.13);
+  --paper:#08060F; --panel:#110D20; --ink:#EEEBF8; --ink-2:#ADA5C9; --ink-3:#7A7199;
+  --rule:#272042; --grid:#1A1533;
+  --brand:#8B5CF6; --brand-2:#B78BFF;
+  --bifrost:#8B7BFF; --tavily:#E980CF; --chronos:#EEEBF8;
+  --ok:#4FD39A; --warn:#F0B747; --bad:#FF6B8A;
+  --ok-t:rgba(79,211,154,.14); --warn-t:rgba(240,183,71,.15); --bad-t:rgba(255,107,138,.16); --bif-t:rgba(139,123,255,.16); --tav-t:rgba(233,128,207,.14);
   color-scheme:dark}
 
 *{box-sizing:border-box}

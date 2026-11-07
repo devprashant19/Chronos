@@ -109,6 +109,28 @@ checked, the score dial sweeps to its value, and the answer is struck through
 when its cache entry is deleted. All of it is a plain state change under
 `prefers-reduced-motion`.
 
+## The opening scene
+
+Three stacked layers, all `pointer-events: none`, over an always-dark frame:
+
+| Layer | What it is |
+| :--- | :--- |
+| `::before` | The starfield. Eight dot sizes at eight densities so it does not read as a grid, breathing on a 7s cycle |
+| `.orb` | The sphere: a filled disc, a conic rim light on its upper-left edge, and a bloom that spills past it on a 14s breath |
+| `::after` | A vignette that sinks the edges, so it reads as a scene rather than a flat fill |
+
+All of it holds still under `prefers-reduced-motion`.
+
+### Responsive
+
+Checked by rendering, twice, at four sizes rather than by reasoning about breakpoints:
+
+| Width | What changes |
+| :--- | :--- |
+| 1536 and 1280 | The full scene; the chart and the scroll cue sit below the fold |
+| 834 (tablet) | Sphere widens relative to the viewport; headline drops to `8vw`; the whole hero plus the chart fits one screen |
+| 390 (phone) | Buttons stack full width, counters stack with rules between them, and the section nav becomes one horizontally scrolling row instead of wrapping to three and eating 170px before the page begins |
+
 ## Motion
 
 None of it changes a colour: `design.test.ts` holds every `:root` token to
@@ -163,20 +185,31 @@ Three product colours, used for nothing else. If a box is blue, Bifrost owns tha
 
 | Token | Light | Dark | Means |
 | :--- | :--- | :--- | :--- |
-| `--bifrost` | `#2744E0` | `#7088FF` | Bifrost owns it |
-| `--tavily` | `#A23F86` | `#E27CC5` | Tavily owns it |
-| `--chronos` | `#13161B` | `#E6E9EE` | Chronos owns it |
-| `--ok` | `#1C8752` | `#4CC38A` | `current` |
-| `--warn` | `#B57600` | `#E5AE3B` | `check` |
-| `--bad` | `#C93A28` | `#F06B56` | `outdated` |
-| `--paper` / `--panel` | `#ECEEF1` / `#F8F9FA` | `#0E1115` / `#151920` | Ground, and panels on it |
+| `--brand` | `#6D3BF5` | `#8B5CF6` | The violet the opening is built on. A **brand** colour, never an ownership one |
+| `--brand-2` | `#9B6BFF` | `#B78BFF` | Its lighter partner: hover, the rim light, the eyebrow |
+| `--bifrost` | `#4F32E0` | `#8B7BFF` | Bifrost owns it |
+| `--tavily` | `#B43C92` | `#E980CF` | Tavily owns it |
+| `--chronos` | `#140F26` | `#EEEBF8` | Chronos owns it |
+| `--ok` | `#17855A` | `#4FD39A` | `current` |
+| `--warn` | `#B07400` | `#F0B747` | `check` |
+| `--bad` | `#CE3552` | `#FF6B8A` | `outdated` |
+| `--paper` / `--panel` | `#F4F2FB` / `#FFFFFF` | `#08060F` / `#110D20` | Ground, and panels on it |
+
+The palette moved to violet deliberately, and **the reference moved with it** —
+`design/chronos-console.html` and `instrument.css` were rewritten in the same commit, so
+`design.test.ts` still holds them to each other token for token. The three ownership colours
+shifted hue but kept their jobs; the test pins their new values so the next change is
+deliberate too, and asserts that `--brand` is distinct from `--bifrost` because a brand
+colour must never be read as "Bifrost owns this".
 
 Dark mode follows `prefers-color-scheme` and is overridable with the header toggle, which
 sets `data-theme` on `:root`. Both are in the reference and both are in
 `console/src/instrument.css`.
 
-Type: `Big Shoulders Display` for headings, `Instrument Sans` for body, `IBM Plex Mono` for
-anything that is a value — ids, headers, scores, formulas. All three from Google Fonts, with
+Type: `Big Shoulders Display` for section headings, `Instrument Sans` for body and for the
+opening headline, **`Instrument Serif` italic for the headline's second line** — which is
+what turns a slogan into a sentence someone wrote — and `IBM Plex Mono` for anything that is
+a value — ids, headers, scores, formulas. All three from Google Fonts, with
 system fallbacks named so the layout holds if the fonts do not load.
 
 ## The mark
@@ -195,7 +228,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**102 tests**, in seven files, run by `npm test` in `console/` and by
+**104 tests**, in seven files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |

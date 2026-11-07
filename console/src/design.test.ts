@@ -62,9 +62,28 @@ describe("colour and type tokens", () => {
   it("keeps product colour meaning ownership", () => {
     // Bifrost blue, Tavily magenta, Chronos ink. Three colours used for
     // nothing else, which is what lets a reader tell who owns a step.
-    expect(ours["--bifrost"]).toBe("#2744E0");
-    expect(ours["--tavily"]).toBe("#A23F86");
-    expect(ours["--chronos"]).toBe("#13161B");
+    //
+    // The values moved when the palette went violet. They are still three
+    // distinct hues and they still mean the same three things; what matters
+    // is that they are pinned, so the next change is deliberate too.
+    expect(ours["--bifrost"]).toBe("#4F32E0");
+    expect(ours["--tavily"]).toBe("#B43C92");
+    expect(ours["--chronos"]).toBe("#140F26");
+    expect(new Set([ours["--bifrost"], ours["--tavily"], ours["--chronos"]]).size).toBe(3);
+  });
+
+  it("has a brand accent, distinct from the ownership colours", () => {
+    // The violet the opening is built on. It is a brand colour, not an
+    // ownership one: it must never be mistaken for "Bifrost owns this".
+    expect(ours["--brand"]).toBeDefined();
+    expect(ours["--brand-2"]).toBeDefined();
+    expect(ours["--brand"]).not.toBe(ours["--bifrost"]);
+  });
+
+  it("names a serif, because the headline's second line is one", () => {
+    expect(ours["--serif"]).toBeDefined();
+    expect(ours["--serif"]!.split(",").length).toBeGreaterThan(1);
+    expect(ours["--serif"]!.split(",").pop()!.trim()).toBe("serif");
   });
 
   it("keeps a verdict colour for each band", () => {

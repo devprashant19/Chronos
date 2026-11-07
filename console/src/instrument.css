@@ -9,28 +9,32 @@
 /* Layout: an instrument bench. Left-aligned panels on a cool paper ground; each section is one working instrument
    (decay scope, signal path, feed, inspector, cache ledger, terminal, bench results, brief). Product colour = ownership. */
 :root{
-  --paper:#ECEEF1; --panel:#F8F9FA; --ink:#13161B; --ink-2:#505967; --ink-3:#7B8492;
-  --rule:#C7CCD4; --grid:#DCE0E6;
-  --bifrost:#2744E0; --tavily:#A23F86; --chronos:#13161B;
-  --ok:#1C8752; --warn:#B57600; --bad:#C93A28;
-  --ok-t:rgba(28,135,82,.12); --warn-t:rgba(181,118,0,.14); --bad-t:rgba(201,58,40,.12); --bif-t:rgba(39,68,224,.10); --tav-t:rgba(162,63,134,.10);
+  --paper:#F4F2FB; --panel:#FFFFFF; --ink:#140F26; --ink-2:#4A4367; --ink-3:#7B73A0;
+  --rule:#D9D3F0; --grid:#E9E4F8;
+  --brand:#6D3BF5; --brand-2:#9B6BFF;
+  --bifrost:#4F32E0; --tavily:#B43C92; --chronos:#140F26;
+  --ok:#17855A; --warn:#B07400; --bad:#CE3552;
+  --ok-t:rgba(23,133,90,.12); --warn-t:rgba(176,116,0,.14); --bad-t:rgba(206,53,82,.12); --bif-t:rgba(79,50,224,.10); --tav-t:rgba(180,60,146,.10);
   --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --body:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#0E1115; --panel:#151920; --ink:#E6E9EE; --ink-2:#A3ACB9; --ink-3:#77808D;
-  --rule:#2A313B; --grid:#1F252D;
-  --bifrost:#7088FF; --tavily:#E27CC5; --chronos:#E6E9EE;
-  --ok:#4CC38A; --warn:#E5AE3B; --bad:#F06B56;
-  --ok-t:rgba(76,195,138,.14); --warn-t:rgba(229,174,59,.15); --bad-t:rgba(240,107,86,.15); --bif-t:rgba(112,136,255,.14); --tav-t:rgba(226,124,197,.13);
+  --paper:#08060F; --panel:#110D20; --ink:#EEEBF8; --ink-2:#ADA5C9; --ink-3:#7A7199;
+  --rule:#272042; --grid:#1A1533;
+  --brand:#8B5CF6; --brand-2:#B78BFF;
+  --bifrost:#8B7BFF; --tavily:#E980CF; --chronos:#EEEBF8;
+  --ok:#4FD39A; --warn:#F0B747; --bad:#FF6B8A;
+  --ok-t:rgba(79,211,154,.14); --warn-t:rgba(240,183,71,.15); --bad-t:rgba(255,107,138,.16); --bif-t:rgba(139,123,255,.16); --tav-t:rgba(233,128,207,.14);
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#0E1115; --panel:#151920; --ink:#E6E9EE; --ink-2:#A3ACB9; --ink-3:#77808D;
-  --rule:#2A313B; --grid:#1F252D;
-  --bifrost:#7088FF; --tavily:#E27CC5; --chronos:#E6E9EE;
-  --ok:#4CC38A; --warn:#E5AE3B; --bad:#F06B56;
-  --ok-t:rgba(76,195,138,.14); --warn-t:rgba(229,174,59,.15); --bad-t:rgba(240,107,86,.15); --bif-t:rgba(112,136,255,.14); --tav-t:rgba(226,124,197,.13);
+  --paper:#08060F; --panel:#110D20; --ink:#EEEBF8; --ink-2:#ADA5C9; --ink-3:#7A7199;
+  --rule:#272042; --grid:#1A1533;
+  --brand:#8B5CF6; --brand-2:#B78BFF;
+  --bifrost:#8B7BFF; --tavily:#E980CF; --chronos:#EEEBF8;
+  --ok:#4FD39A; --warn:#F0B747; --bad:#FF6B8A;
+  --ok-t:rgba(79,211,154,.14); --warn-t:rgba(240,183,71,.15); --bad-t:rgba(255,107,138,.16); --bif-t:rgba(139,123,255,.16); --tav-t:rgba(233,128,207,.14);
   color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -317,106 +321,6 @@ main section{scroll-margin-top:72px}
   .reveal{animation:none}
 }
 
-/* ---------------------------------------------------------------------------
-   The cinematic opening.
-
-   Full-bleed, always dark, whatever the page theme is. It is one frame: the
-   claim, the two ways in, and the product showing just enough of itself under
-   the fold to make you scroll.
-
-   Dark is done by re-pointing the palette tokens inside the section to the
-   reference's OWN dark values, not by inventing colours. Everything nested --
-   the scope panel, the pills, the buttons -- then renders dark for free and
-   stays consistent with the instrument panel below.
-   --------------------------------------------------------------------------- */
-.hero.cinematic{
-  --paper:#0E1115; --panel:#151920; --ink:#E6E9EE; --ink-2:#A3ACB9; --ink-3:#77808D;
-  --rule:#2A313B; --grid:#1F252D;
-  --bifrost:#7088FF; --tavily:#E27CC5; --chronos:#E6E9EE;
-  --ok:#4CC38A; --warn:#E5AE3B; --bad:#F06B56;
-  --ok-t:rgba(76,195,138,.14); --warn-t:rgba(229,174,59,.15); --bad-t:rgba(240,107,86,.15);
-  --bif-t:rgba(112,136,255,.14); --tav-t:rgba(226,124,197,.13);
-  color-scheme:dark;
-
-  /* Full-bleed: out of the page gutter, across the viewport. */
-  position:relative;
-  width:100vw;
-  max-width:100vw;
-  margin-left:calc(50% - 50vw);
-  margin-top:-1px;                      /* swallow the header's bottom rule */
-  background:var(--paper);
-  color:var(--ink);
-  overflow:hidden;
-  display:grid;
-  grid-template-rows:auto auto auto;  /* copy, the scope, the cue */
-  align-content:center;
-  /* At least a screen, but it GROWS: the decay scope is the argument and has
-     to be readable in full. The page continues below it. */
-  min-height:calc(100svh - 56px);
-  padding:0;
-}
-
-/* Three soft blooms in the product colours -- Bifrost, Tavily, Chronos red --
-   so the glow means something rather than being stock gradient. */
-.hero.cinematic::before{
-  content:"";position:absolute;inset:-25% -10% auto;height:120%;pointer-events:none;
-  background:
-    radial-gradient(42% 46% at 22% 32%, rgba(112,136,255,.20), transparent 70%),
-    radial-gradient(38% 42% at 78% 26%, rgba(226,124,197,.15), transparent 70%),
-    radial-gradient(46% 40% at 52% 72%, rgba(240,107,86,.12), transparent 72%);
-  filter:blur(18px);
-  animation:drift 22s ease-in-out infinite alternate;
-}
-@keyframes drift{
-  from{transform:translate3d(-2%,-1%,0) scale(1)}
-  to{transform:translate3d(2%,2%,0) scale(1.06)}
-}
-
-/* A hairline of grid, very faint, so it reads as an instrument and not a
-   landing page. */
-.hero.cinematic::after{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
-  background-size:64px 64px;
-  opacity:.25;
-  mask-image:radial-gradient(70% 55% at 50% 40%,#000,transparent 75%);
-}
-
-.cine-in{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(20px,1.9vw,32px);padding:clamp(48px,5.2vw,92px) 0 clamp(8px,1vw,16px)}
-.cine-in h1{font-size:clamp(36px,5.4vw,66px);line-height:.98;letter-spacing:-.01em;max-width:16ch;margin:0}
-.cine-in .lede{max-width:62ch;font-size:clamp(15px,1.5vw,18px)}
-.cine-in .owners-row{justify-content:center}
-.cine-in .hero-cta{justify-content:center}
-.cine-in .counters{grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--rule);max-width:700px;width:100%;margin-top:clamp(6px,0.8vw,14px)}
-.cine-in .counter{padding:20px 14px 0;text-align:left}
-
-/* The product, cropped by the fold: enough to say there is a real instrument
-   down there, not enough to read. */
-/* Shown whole. It was cropped to a sliver so the opening fit one screen, and
-   the chart that carries the whole argument became unreadable. One screen is
-   not worth that. */
-.cine-scope{position:relative;z-index:1;width:min(760px,90vw);margin:clamp(28px,3vw,48px) auto clamp(10px,1.2vw,20px)}
-.cine-scope .scope{box-shadow:0 10px 50px rgba(0,0,0,.40)}
-
-/* The header sits over the dark frame until you scroll. */
-header.top.on-dark{background:#0E1115;border-bottom-color:transparent;color:#E6E9EE}
-header.top.on-dark .brand{color:#E6E9EE}
-header.top.on-dark nav.sections a{color:#A3ACB9}
-header.top.on-dark nav.sections a:hover{color:#E6E9EE}
-header.top.on-dark .btn.ghost{color:#E6E9EE;border-color:#2A313B}
-header.top.on-dark .btn[aria-pressed="true"]{background:#E6E9EE;color:#0E1115;border-color:#E6E9EE}
-
-.hero.cinematic .cue button{color:var(--ink-3)}
-.hero.cinematic .cue button:hover{color:var(--ink)}
-
-@media (max-width:900px){
-  .hero.cinematic{min-height:auto;padding-bottom:8px}
-  .cine-in .counters{max-width:none}
-}
-@media (prefers-reduced-motion:reduce){
-  .hero.cinematic::before{animation:none}
-}
-
 /* --- Run it: the five-step driveable demo ------------------------------- */
 .run-rail{list-style:none;display:flex;gap:6px;padding:0;margin:0 0 18px;flex-wrap:wrap}
 .run-rail li{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--rule);border-radius:999px;font-size:13px;color:var(--ink-3);background:var(--panel);transition:color .25s ease,border-color .25s ease,background .25s ease}
@@ -551,4 +455,178 @@ nav.sections a:hover::after{width:100%}
   .btn:hover,.counter:hover,.metric:hover,.own:hover,.pill:hover{transform:none}
   .reveal-on-scroll{opacity:1;transform:none;transition:none}
   nav.sections a::after{transition:none}
+}
+
+/* ===========================================================================
+   The opening: a violet sphere over a starfield.
+
+   Always dark, whatever the page theme, because this is one frame rather than
+   a surface you read for long. Dark is done by re-pointing the palette tokens
+   to the reference's own dark values, so everything nested inherits it.
+
+   Three stacked layers, all pointer-events:none:
+     ::before  the starfield
+     .orb      the sphere, its rim light and its bloom
+     ::after   a vignette that sinks the edges
+   =========================================================================== */
+.hero.cinematic{
+  --paper:#08060F; --panel:#110D20; --ink:#EEEBF8; --ink-2:#ADA5C9; --ink-3:#7A7199;
+  --rule:#272042; --grid:#1A1533;
+  --brand:#8B5CF6; --brand-2:#B78BFF;
+  --bifrost:#8B7BFF; --tavily:#E980CF; --chronos:#EEEBF8;
+  --ok:#4FD39A; --warn:#F0B747; --bad:#FF6B8A;
+  --ok-t:rgba(79,211,154,.14); --warn-t:rgba(240,183,71,.15); --bad-t:rgba(255,107,138,.16);
+  --bif-t:rgba(139,123,255,.16); --tav-t:rgba(233,128,207,.14);
+  color-scheme:dark;
+
+  position:relative; isolation:isolate;
+  width:100vw; max-width:100vw; margin-left:calc(50% - 50vw); margin-top:-1px;
+  background:var(--paper); color:var(--ink);
+  overflow:hidden; display:grid; grid-template-rows:auto auto auto;
+  align-content:center; min-height:calc(100svh - 56px); padding:0;
+}
+
+/* Starfield. Several dot sizes at several densities so it does not read as a
+   regular grid. */
+.hero.cinematic::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    radial-gradient(1.4px 1.4px at 12% 18%, rgba(255,255,255,.85), transparent 60%),
+    radial-gradient(1.2px 1.2px at 78% 12%, rgba(255,255,255,.70), transparent 60%),
+    radial-gradient(1px 1px at 33% 72%, rgba(255,255,255,.60), transparent 60%),
+    radial-gradient(1.6px 1.6px at 62% 62%, rgba(255,255,255,.75), transparent 60%),
+    radial-gradient(1px 1px at 88% 44%, rgba(255,255,255,.55), transparent 60%),
+    radial-gradient(1px 1px at 5% 54%, rgba(255,255,255,.50), transparent 60%),
+    radial-gradient(1.2px 1.2px at 46% 8%, rgba(255,255,255,.60), transparent 60%),
+    radial-gradient(1px 1px at 24% 38%, rgba(255,255,255,.45), transparent 60%);
+  background-size:520px 420px,470px 380px,610px 510px,540px 460px,700px 560px,480px 400px,560px 470px,430px 360px;
+  opacity:.75; animation:twinkle 7s ease-in-out infinite;
+}
+@keyframes twinkle{0%,100%{opacity:.58}50%{opacity:.86}}
+
+/* The sphere: a filled disc, a rim light on its upper edge, and a bloom that
+   spills past it. */
+.orb{
+  position:absolute; z-index:0; pointer-events:none;
+  left:50%; top:46%; translate:-50% -50%;
+  width:min(116vh,104vw); aspect-ratio:1; border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,
+    rgba(146,101,250,.38) 0%, rgba(109,59,245,.22) 40%, rgba(72,34,170,.10) 64%, transparent 74%);
+  box-shadow:
+    0 0 0 1px rgba(196,166,255,.30) inset,
+    0 0 0 14px rgba(139,92,246,.05) inset,
+    0 0 180px 30px rgba(139,92,246,.22);
+  animation:breathe 14s ease-in-out infinite;
+}
+.orb::before{
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background:conic-gradient(from 196deg, transparent 0deg, rgba(214,189,255,.95) 58deg, rgba(167,139,250,.55) 120deg, rgba(139,92,246,.18) 185deg, transparent 240deg);
+  -webkit-mask:radial-gradient(circle, transparent 0 calc(50% - 2.5px), #000 calc(50% - 2.5px) 50%, transparent 50%);
+  mask:radial-gradient(circle, transparent 0 calc(50% - 2.5px), #000 calc(50% - 2.5px) 50%, transparent 50%);
+  opacity:1; filter:drop-shadow(0 0 10px rgba(183,139,255,.55));
+}
+.orb::after{
+  content:""; position:absolute; inset:-14%; border-radius:50%;
+  background:radial-gradient(circle, rgba(139,92,246,.22) 0%, transparent 62%);
+  filter:blur(34px);
+}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+
+/* Sinks the edges so the frame reads as a scene rather than a flat fill. */
+.hero.cinematic::after{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(130% 90% at 50% 36%, transparent 40%, rgba(5,4,10,.55) 78%, rgba(5,4,10,.92) 100%);
+}
+
+.cine-in{
+  position:relative; z-index:1; display:flex; flex-direction:column;
+  align-items:center; text-align:center;
+  gap:clamp(20px,1.9vw,32px);
+  padding:clamp(48px,5.2vw,92px) 0 clamp(8px,1vw,16px);
+}
+.cine-in .eyebrow{color:var(--brand-2);letter-spacing:.16em}
+.cine-in h1{
+  font-family:var(--body); font-weight:600;
+  font-size:clamp(34px,5.6vw,72px); line-height:1.02; letter-spacing:-.02em;
+  max-width:18ch; margin:0;
+}
+/* The second line is the reference's serif italic: it turns a slogan into a
+   sentence someone wrote. */
+.cine-in h1 .line.cut{
+  font-family:var(--serif); font-style:italic; font-weight:400;
+  color:var(--ink); letter-spacing:-.01em;
+  font-size:1.06em; line-height:1.12;
+}
+.cine-in .lede{max-width:56ch; font-size:clamp(14.5px,1.25vw,17px); color:var(--ink-2)}
+.cine-in .hero-cta{justify-content:center; gap:12px}
+.cine-in .counters{grid-template-columns:repeat(3,minmax(0,1fr)); border-top:1px solid var(--rule); max-width:700px; width:100%; margin-top:clamp(6px,.8vw,14px)}
+.cine-in .counter{padding:20px 14px 0; text-align:left}
+.cine-in .counter + .counter{border-left:1px solid var(--rule)}
+
+/* The brand button, in the accent rather than in ink. */
+.hero.cinematic .btn{border-color:transparent; background:var(--brand); color:#fff; font-weight:600; padding:11px 18px; border-radius:8px}
+.hero.cinematic .btn:hover{background:var(--brand-2); box-shadow:0 10px 30px rgba(139,92,246,.35)}
+.hero.cinematic .btn.ghost{background:rgba(255,255,255,.055); color:var(--ink); border:1px solid var(--rule)}
+.hero.cinematic .btn.ghost:hover{background:rgba(255,255,255,.10); border-color:var(--brand-2); box-shadow:0 10px 26px rgba(139,92,246,.18)}
+
+/* The instrument, floating under the fold like the reference's dashboard. */
+.cine-scope{position:relative; z-index:1; width:min(880px,92vw); margin:clamp(28px,3vw,48px) auto clamp(10px,1.2vw,20px)}
+.cine-scope .scope{
+  border-radius:14px; border-color:rgba(167,139,250,.22);
+  background:linear-gradient(180deg, rgba(23,17,45,.92), rgba(12,9,24,.92));
+  box-shadow:0 28px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(167,139,250,.10), 0 -1px 0 rgba(183,139,255,.22) inset;
+}
+
+.hero.cinematic .cue button{color:var(--ink-3)}
+.hero.cinematic .cue button:hover{color:var(--brand-2)}
+
+/* Header riding over the frame. */
+header.top.on-dark{background:rgba(8,6,15,.72); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom-color:rgba(167,139,250,.14); color:#EEEBF8}
+header.top.on-dark .brand{color:#EEEBF8}
+header.top.on-dark nav.sections a{color:#ADA5C9}
+header.top.on-dark nav.sections a:hover{color:#EEEBF8}
+header.top.on-dark .replay{color:#ADA5C9}
+header.top.on-dark .eyebrow{color:#ADA5C9}
+header.top.on-dark .btn{background:#8B5CF6; border-color:transparent; color:#fff}
+header.top.on-dark .btn.ghost{background:transparent; color:#EEEBF8; border-color:#272042}
+header.top.on-dark .btn[aria-pressed="true"]{background:#8B5CF6; color:#fff; border-color:#8B5CF6}
+
+/* --- responsive ---------------------------------------------------------- */
+@media (max-width:900px){
+  .hero.cinematic{min-height:auto; padding-bottom:10px}
+  .orb{width:min(112vh,150vw); top:40%}
+  .cine-in{padding-top:clamp(36px,9vw,64px)}
+  .cine-in h1{font-size:clamp(30px,8vw,46px); max-width:16ch}
+  .cine-in .lede{max-width:48ch}
+  .cine-scope{width:94vw}
+}
+@media (max-width:620px){
+  .cine-in .hero-cta{flex-direction:column; align-items:stretch; width:min(320px,86vw)}
+  .cine-in .hero-cta .btn{justify-content:center; width:100%}
+  .cine-in .counters{grid-template-columns:1fr; max-width:86vw}
+  .cine-in .counter + .counter{border-left:0; border-top:1px solid var(--rule)}
+  .cine-in .counter{padding:14px 0 0}
+  .cine-in h1{font-size:clamp(28px,9vw,40px)}
+  .cine-in .lede{font-size:14.5px; max-width:40ch}
+}
+@media (prefers-reduced-motion:reduce){
+  .hero.cinematic::before,.orb{animation:none}
+}
+
+/* On a phone the section nav wrapped to three rows and took 170px of screen
+   before the page even began. One row that scrolls instead. */
+@media (max-width:760px){
+  /* wrap stays on: the nav needs a row of its own. nowrap squashed it and it
+     spilled out of the header instead. */
+  header.top .wrap{flex-wrap:wrap;gap:10px 12px;row-gap:8px}
+  nav.sections{order:3;flex:1 0 100%;min-width:0;display:flex;flex-wrap:nowrap;gap:18px;
+    overflow-x:auto;overscroll-behavior-x:contain;
+    scrollbar-width:none;-ms-overflow-style:none;padding-bottom:2px}
+  nav.sections::-webkit-scrollbar{display:none}
+  nav.sections a{white-space:nowrap;flex:none}
+  header.top .replay{order:2}
+  .cine-in .eyebrow{font-size:10px;letter-spacing:.1em}
+}
+@media (max-width:460px){
+  header.top .replay{display:none}   /* the Live/Demo buttons already say it */
 }
