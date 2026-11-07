@@ -1,0 +1,5 @@
+*
+!.gitignore
+# plan.json is the contract scripts/docs/check-docs.mjs holds the docs to in CI,
+# so it is committed. Everything else here is working notes.
+!plan.json

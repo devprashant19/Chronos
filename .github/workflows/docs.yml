@@ -1,0 +1,23 @@
+name: Docs
+
+on:
+  push:
+    paths: ["**/*.md", "package.json", "scripts/docs/**", ".github/workflows/docs.yml"]
+  pull_request:
+    paths: ["**/*.md", "package.json", "scripts/docs/**", ".github/workflows/docs.yml"]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Links, commands, paths, numbers and voice
+        run: node scripts/docs/check-docs.mjs
+      - name: Diagrams, with the real mermaid parser
+        # No --require: without a Chromium on the runner this prints
+        # "NOT CHECKED" and exits 0 rather than failing a build for the
+        # wrong reason. It has not been run on a GitHub runner.
+        run: node scripts/docs/check-mermaid.mjs

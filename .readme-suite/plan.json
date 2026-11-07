@@ -1,0 +1,33 @@
+{
+  "project": "Chronos",
+  "kinds": ["web-app", "service"],
+  "size": "medium",
+  "situation": "hackathon submission; the plugin is also an upstream-PR candidate",
+  "note": "Reviewed by hand against the code. The survey's guesses that were wrong are corrected here: it reported no persistent model (there is Redis plus SQLite, covered in ARCHITECTURE.md section 5), no attack surface (the eviction path holds an admin token), and 36 routes (18, counted twice).",
+  "docs": [
+    { "path": "README.md", "why": "every project" },
+    { "path": "TESTING.md", "why": "a hackathon submission: a judge has to be able to see the point without doing the setup. First page written, per the skill's guidance for submissions" },
+    { "path": "ARCHITECTURE.md", "why": "five processes, two stores and a plugin loaded into someone else's binary" },
+    { "path": "AGENTS.md", "why": "two languages share one header name and one scoring contract; an agent that changes either side alone breaks the loop guard silently" },
+    { "path": "CONTRIBUTING.md", "why": "already exists, and the plugin is meant to be proposed upstream" },
+    { "path": "docs/README.md", "why": "indexes the pages in docs/" },
+    { "path": "docs/development.md", "why": "setup, the five suites and what each needs" },
+    { "path": "docs/api.md", "why": "the verifier is an HTTP service the plugin and the console both call" },
+    { "path": "docs/environment.md", "why": "25 variables across Go, Python and Vite" },
+    { "path": "docs/deployment.md", "why": "the image build is the hardest part of the project and fails in ways worth writing down" },
+    { "path": "docs/security.md", "why": "handles third-party keys, fetches attacker-influenced web pages, and holds a gateway admin token" },
+    { "path": "docs/ui.md", "why": "the console is judged against a fixed design reference" },
+    { "path": "docs/troubleshooting.md", "why": "nine failures happened during the build and each has an exact error string" }
+  ],
+  "skipped": [
+    { "path": "docs/cli.md", "why": "the only commands are scripts/verify-all.sh and scripts/check-model.sh; docs/development.md covers both" },
+    { "path": "docs/usage.md", "why": "not a library; nothing imports it" },
+    { "path": "docs/data-model.md", "why": "two shapes persist — a report row in SQLite and a claim-cache entry in Redis. docs/api.md owns the report schema and ARCHITECTURE.md section 5 owns where state lives; a third page would be the same fields a third time" },
+    { "path": "docs/model.md", "why": "nothing is trained here. The models are hosted, and bench/ measures the system rather than a model" },
+    { "path": "docs/runtime.md", "why": "the one engine that would earn its own page is the plugin, and plugin/README.md already is that page, written as a pull-request description" },
+    { "path": "docs/decisions.md", "why": "the README carries five; past five they move here" },
+    { "path": "docs/glossary.md", "why": "the two coined words, claim and volatility class, are defined where they first appear" },
+    { "path": "SECURITY.md", "why": "one author, no release process and no security contact to promise a response time against. docs/security.md holds the threat model, which is the part that is true" },
+    { "path": "CHANGELOG.md", "why": "no tags and nothing upgrades by version yet" }
+  ]
+}
