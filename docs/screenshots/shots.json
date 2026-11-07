@@ -5,11 +5,70 @@
   "scale": 1,
   "dir": "docs/screenshots",
   "shots": [
-    { "name": "console-hero",      "path": "/" },
-    { "name": "console-traffic",   "path": "/", "scrollTo": "#traffic" },
-    { "name": "console-inspector", "path": "/", "scrollTo": "#inspect" },
-    { "name": "console-cache",     "path": "/", "scrollTo": "#cache" },
-    { "name": "console-bench",     "path": "/", "scrollTo": "#bench" },
-    { "name": "console-dark",      "path": "/", "theme": "dark", "steps": [{ "click": "button[aria-label='Toggle colour scheme']" }], "scrollTo": "#path" }
+    {
+      "name": "console-hero",
+      "path": "/"
+    },
+    {
+      "name": "console-walkthrough",
+      "path": "/",
+      "steps": [
+        {
+          "click": "text=Start the walkthrough"
+        },
+        {
+          "wait": 500
+        },
+        {
+          "click": "button:has-text('Next')"
+        },
+        {
+          "wait": 400
+        },
+        {
+          "click": "button:has-text('Next')"
+        },
+        {
+          "wait": 400
+        },
+        {
+          "click": "button:has-text('Next')"
+        },
+        {
+          "wait": 1400
+        }
+      ]
+    },
+    {
+      "name": "console-traffic",
+      "path": "/",
+      "scrollTo": "#traffic"
+    },
+    {
+      "name": "console-inspector",
+      "path": "/",
+      "scrollTo": "#inspect"
+    },
+    {
+      "name": "console-cache",
+      "path": "/",
+      "scrollTo": "#cache"
+    },
+    {
+      "name": "console-bench",
+      "path": "/",
+      "scrollTo": "#bench"
+    },
+    {
+      "name": "console-dark",
+      "path": "/",
+      "theme": "dark",
+      "steps": [
+        {
+          "click": "button[aria-label='Toggle colour scheme']"
+        }
+      ],
+      "scrollTo": "#path"
+    }
   ]
 }
