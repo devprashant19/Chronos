@@ -23,7 +23,17 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Resolve the output directory against the caller's directory BEFORE changing
+# into console/. Without this a relative argument -- which is what a hosting
+# provider's build command passes -- lands in console/console/dist-demo, the
+# build "succeeds", and the publish directory is empty.
 OUT="${1:-$REPO/console/dist-demo}"
+case "$OUT" in
+  /*|[A-Za-z]:[\/]*) ;;                 # already absolute, POSIX or Windows
+  *) OUT="$(pwd)/$OUT" ;;
+esac
+mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
 
 cd "$REPO/console"
 
