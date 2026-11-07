@@ -1,7 +1,11 @@
 # The console
 
-One page, seven sections, no routing. It is an instrument panel rather than a dashboard:
-everything on it is either a live reading or a recorded replay, and it says which.
+One page, an opening stage and seven sections, no routing. It is an instrument panel rather
+than a dashboard: everything on it is either a live reading or a recorded replay, and it says
+which.
+
+The page opens on a full screen of argument rather than in the middle of a dashboard, and
+offers two ways in: a guided walkthrough, or scrolling. Both are described below.
 
 The design is not mine to change. `design/chronos-console.html` is the reference the console
 is built to match — tokens, type scale, layout and motion — and `console/src/instrument.css`
@@ -19,10 +23,38 @@ text, which is the readable way to diff the copy.
 | **The cache.** What Chronos chose against a flat default, and a ledger of real evictions with their cache ids. | **The signal path, in dark mode.** Eight steps through one request, colour-coded by who owns each — Bifrost, Tavily, Chronos. |
 | ![The traffic feed: a live SSE stream of verified answers with verdicts and scores](screenshots/console-traffic.png) | ![The benchmark section showing a recorded request pair — a cache hit with x-chronos-verdict outdated, then a miss after eviction — above the StaleBench results read from bench/results.json](screenshots/console-bench.png) |
 | **Traffic.** Every verification as it finishes, over SSE. | **Playground and benchmark.** A real recorded exchange with its headers, then the numbers read straight from `bench/results.json`. |
+| ![The guided walkthrough on step 4 of 8, a bar across the foot of the page reading "This is the product", with the inspector section ringed above it](screenshots/console-walkthrough.png) | |
+| **The walkthrough, step 4.** Eight steps that scroll the real page and ring the section being talked about. | |
 
 Every one of these is regenerated from the running console by
 `node <readme-suite>/scripts/shots.mjs --file docs/screenshots/shots.json`, with the shot
 list kept in the repo at `docs/screenshots/shots.json`. They are captures, not mock-ups.
+
+## The opening stage and the walkthrough
+
+These two are the one place the console deliberately goes past
+`design/chronos-console.html`, which was written before either existed. They use its tokens
+and nothing else — no new colours, no new type — so the instrument panel below the fold is
+unchanged, and `design.test.ts` still holds every token to the reference.
+
+**The stage** is the existing hero at `min-height: calc(100svh - 72px)`, so the first thing a
+viewer sees is the claim and the decay chart rather than half a traffic feed. `min-height`,
+not `height`: it grows rather than clipping when the header wraps. Under it sit two calls to
+action and an animated scroll cue, which is the only thing telling a first-time viewer that
+the page continues; the cue hides itself once `window.scrollY` passes 40, and during the
+walkthrough.
+
+**The walkthrough** (`console/src/sections/Walkthrough.tsx`) is eight steps in the order the
+product happens: the problem, where Chronos sits, answers being checked, the claims and the
+score, the TTL policy and the eviction ledger, the headers on the response, the measured
+numbers, the briefing. Each step scrolls to a **real section and rings it** — there is
+nothing in the tour that is not already on the page, which is deliberate: a tour that shows
+something the product cannot do is a lie with a Next button. It is driveable with the arrow
+keys and closes on Escape, and it respects `prefers-reduced-motion`.
+
+The steps live in one exported array, so `Walkthrough.test.tsx` can assert that every one of
+them points at a section id that exists. A typo in a target fails the suite by name rather
+than producing a Next button that goes nowhere.
 
 ## The sections
 
@@ -90,7 +122,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**57 tests**, in four files, run by `npm test` in `console/` and by
+**73 tests**, in five files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |
@@ -98,6 +130,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 | `console/src/api.test.ts` | The data layer's quiet failures: a malformed SSE frame must not take the feed down, a 422 must carry the verifier's reason, and `chatThroughGateway` must keep the gateway's own headers and drop everything else |
 | `console/src/useChronos.test.ts` | Mode selection, the SSE lifecycle, the counters, and that a manual mode choice survives a probe that answers late |
 | `console/src/App.test.tsx` | That every section the nav points at renders, that no nav link points nowhere, that each claim is a selectable button with its subject and score in its label, that every term of the formula is shown, that a timeless claim is grey rather than green, and that the theme toggle works |
+| `console/src/sections/Walkthrough.test.tsx` | The opening stage and the tour: that every step points at a section that exists, that exactly one is ringed at a time, that nothing stays lit when it closes, that the last step finishes rather than running off the end, and that the arrow keys and Escape work |
 | `console/src/design.test.ts` | Fidelity against `design/chronos-console.html`: every `:root` token defined, with the same value, both dark-mode blocks present, every font stack ending in a generic family, and the seven sections in the reference's order |
 
 Writing these found one real bug, which is the argument for having them.
