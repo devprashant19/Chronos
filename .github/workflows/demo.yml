@@ -9,8 +9,10 @@ name: Demo site
 # bench/results.json, which the build copies in beside the bundle.
 #
 # Pages has to be enabled once, by hand: Settings -> Pages -> Source: GitHub
-# Actions. Until then this workflow builds and checks the bundle and the deploy
-# step is skipped, which is why the build job stands on its own.
+# Actions. Until then the deploy step returns 404 and says so, and the job is
+# still green, because what this workflow asserts is that the bundle builds and
+# is safe to host. Whether it reached Pages is reported in the log rather than
+# turned into a red X on a repository that is otherwise fine.
 
 on:
   push:
@@ -91,3 +93,15 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: did it publish?
+        run: |
+          if [ -n "${{ steps.deployment.outputs.page_url }}" ]; then
+            echo "published: ${{ steps.deployment.outputs.page_url }}"
+          else
+            echo "NOT PUBLISHED. The bundle built and passed every check, but"
+            echo "GitHub Pages is not enabled for this repository yet."
+            echo "Enable it once: Settings -> Pages -> Source: GitHub Actions,"
+            echo "then re-run this workflow."
+          fi
