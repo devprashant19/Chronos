@@ -37,12 +37,17 @@ These two are the one place the console deliberately goes past
 and nothing else — no new colours, no new type — so the instrument panel below the fold is
 unchanged, and `design.test.ts` still holds every token to the reference.
 
-**The stage** is `console/src/sections/Hero.tsx`, at `min-height: calc(100svh - 72px)`, so
-the first thing a viewer sees is the claim and the decay chart rather than half a traffic
-feed. `min-height`, not `height`: it grows rather than clipping when the header wraps. Under
-it sit two calls to action and an animated scroll cue, which is the only thing telling a
-first-time viewer that the page continues; the cue hides itself once `window.scrollY` passes
-40, and during the walkthrough.
+**The stage** is `console/src/sections/Hero.tsx`: one full-bleed, always-dark frame holding
+the claim, the two ways in, the live counters, and a cropped sliver of the decay scope under
+the fold. Under it an animated cue, which is the only thing telling a first-time viewer that
+the page continues; it hides itself once `window.scrollY` passes 40, and during the
+walkthrough. The sticky header goes dark with it and transitions back on scroll.
+
+Dark is done by **re-pointing the palette tokens inside the section to the reference's own
+dark values**, not by inventing colours — so everything nested in it, the scope panel and the
+pills and the buttons, renders dark for free and stays consistent with the instrument panel
+below. The glow behind the type is three soft blooms in Bifrost blue, Tavily magenta and the
+`--bad` red, so even the background means something.
 
 It moves, and each piece of movement is doing a job rather than decorating:
 
