@@ -168,6 +168,71 @@ else
   check "console: unit and rendering tests"     sh -c "cd \"$CONSOLE\" && npm test --silent -- --reporter=dot"
 fi
 
+# ---------------------------------------------------------------------------
+section "demo site"
+# ---------------------------------------------------------------------------
+#
+# The static bundle a judge opens with nothing installed. Its whole value is
+# that it works with no backend, off any host -- which is exactly the sort of
+# thing that rots silently, because the console in this repo is always served
+# by nginx at "/" with a verifier behind it. These checks assert the three
+# ways it would break: an absolute asset path, a missing file, or the
+# measured results not being shipped beside it.
+
+DEMO_TMP="$(mktemp -d)"
+DEMO_OUT="$DEMO_TMP/demo-site"
+if ! command -v npm >/dev/null 2>&1; then
+  skip "demo site" "no npm on PATH"
+elif [ ! -d "$REPO/console/node_modules" ]; then
+  skip "demo site" "run 'npm install' in console/ first"
+else
+  if out=$(bash "$REPO/scripts/build-demo-site.sh" "$DEMO_OUT" 2>&1); then
+    ok "demo site: builds"
+
+    index="$DEMO_OUT/index.html"
+
+    # A leading-slash asset path works on a domain root and 404s anywhere
+    # else, which is most places someone would host this.
+    if grep -qE '(src|href)="/[^/]' "$index"; then
+      bad "demo site: asset paths are relative" "$(grep -oE '(src|href)="/[^"]*' "$index" | head -2 | tr '
+' ' ')"
+    else
+      ok "demo site: asset paths are relative, so it works off a domain root"
+    fi
+
+    # Every local file index.html points at must actually be in the bundle.
+    missing=""
+    for ref in $(grep -oE '(src|href)="\./[^"]+"' "$index" | sed 's/.*"\.\///;s/"$//'); do
+      [ -f "$DEMO_OUT/$ref" ] || missing="$missing $ref"
+    done
+    if [ -n "$missing" ]; then
+      bad "demo site: every referenced asset is present" "missing:$missing"
+    else
+      ok "demo site: every referenced asset is present"
+    fi
+
+    # Without this the benchmark panel correctly says "no results file", which
+    # is honest and not what we want to hand a judge.
+    if [ -f "$DEMO_OUT/results.json" ] && python -c "import json,sys;d=json.load(open(sys.argv[1]));sys.exit(0 if d.get('modes') else 1)" "$DEMO_OUT/results.json" 2>/dev/null; then
+      ok "demo site: ships the measured benchmark results"
+    else
+      bad "demo site: ships the measured benchmark results" "results.json missing or not a results file"
+    fi
+
+    # It gets hosted publicly. Nothing in it may look like a credential.
+    if grep -rIqE '(sk-[A-Za-z0-9]{20,}|tvly-(dev-)?[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,})' "$DEMO_OUT" 2>/dev/null; then
+      bad "demo site: carries no credentials"
+    else
+      ok "demo site: carries no credentials"
+    fi
+  else
+    bad "demo site: builds" "$(printf '%s' "$out" | tail -3 | tr '
+' ' ')"
+    skip "demo site contents" "the build failed"
+  fi
+  rm -rf "$DEMO_TMP"
+fi
+
 if [ "$UNIT_ONLY" -eq 1 ]; then
   section "summary (unit only)"
   printf '  %d passed, %d failed, %d skipped\n' "$PASS" "$FAIL" "$SKIP"
@@ -231,7 +296,7 @@ check "plugin reported its own init line" bash -c \
 
 # --- P0: an answer comes back through the gateway -------------------------
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP" ${DEMO_TMP:+"$DEMO_TMP"}' EXIT
 
 curl -s -m 60 -o "$TMP/p0.json" http://localhost:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
