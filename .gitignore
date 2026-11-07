@@ -24,6 +24,8 @@ verifier/data/
 node_modules/
 console/dist/
 .vite/
+# written by `tsc -b`
+*.tsbuildinfo
 
 # docker / runtime
 deploy/data/
