@@ -1,0 +1,11 @@
+{
+  // The same strictness as the app, plus the two things only tests need: the
+  // vitest globals and node's own modules. `exclude: []` undoes the parent's
+  // exclusion, so this config sees the test files and the app together.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vitest/globals", "node"]
+  },
+  "include": ["src", "vitest.config.ts"],
+  "exclude": []
+}

@@ -16,5 +16,9 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Tests are not shipped, and they need node and the vitest globals. Keeping
+  // them out here means app code still cannot import either by accident;
+  // tsconfig.test.json checks them under the same strictness.
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test"]
 }
