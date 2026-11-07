@@ -132,10 +132,26 @@ the only numbers on it that are measurements come from `bench/results.json`.
 ### Publishing it
 
 `.github/workflows/demo.yml` builds the bundle on every push that touches the console, the
-results file or the build script, and publishes it to GitHub Pages. **Pages has to be turned
-on once by hand** — Settings, then Pages, then Source: GitHub Actions. Until that is done the
-workflow still builds and checks the bundle; only the deploy step is skipped, which is why
-the build is its own job.
+results file or the build script, and publishes it to GitHub Pages.
+
+**Pages has to be turned on once by hand.** Settings, then Pages, then Source: *GitHub
+Actions*. Until that is done the deploy step returns `404 Not Found` with *"Ensure GitHub
+Pages has been enabled"*; the build job still runs and still asserts everything below, and
+the run stays green, because what this workflow is for is proving the bundle is safe to host.
+Whether it reached Pages is printed in the log.
+
+The published URL is `https://<user>.github.io/<repo>/` — a **subpath**, not a domain root,
+which is the reason `--base=./` matters. Serving the bundle from a `/Chronos/` prefix was
+checked by hand: the page, `results.json`, the favicon and the hashed assets all resolve, and
+with no backend running the header reads *"Recorded demo replay"*.
+
+Three alternatives, same bundle, no changes:
+
+| Host | What to do |
+| :--- | :--- |
+| Netlify | Drag `console/dist-demo` onto the dashboard, or point a site at this repo with build `./scripts/build-demo-site.sh console/dist-demo` and publish directory `console/dist-demo` |
+| Vercel | Same build command, output directory `console/dist-demo`, framework preset *Other* |
+| Anything else | It is a folder of static files. `scp` it, put it in an S3 bucket, open `index.html` from a USB stick |
 
 Before it goes anywhere public the workflow repeats three of the checks from
 `scripts/verify-all.sh`: that no asset path is absolute, that the measured results are beside
