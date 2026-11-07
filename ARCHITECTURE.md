@@ -350,4 +350,4 @@ No results here; they are the [README's](README.md#what-is-verified-and-what-is-
 | The plugin loads, caches, evicts, annotates, degrades | `./scripts/verify-all.sh` | The whole stack, end to end |
 | Which models a key can actually reach | `./scripts/check-model.sh --all` | Answer, JSON mode, parseable JSON |
 | Quality against hand-labelled claims | `python bench/runner.py` | Not pass/fail: a measurement |
-| The console | nothing | A real gap; see [docs/ui.md](docs/ui.md#how-it-is-checked) |
+| The console | `npm test` in `console/` | Its data layer, its state hook, what each section renders, and its fidelity to the design reference. Not what a browser paints: see [docs/ui.md](docs/ui.md#how-it-is-checked) |

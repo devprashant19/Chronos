@@ -63,12 +63,18 @@ Inside the verifier, the pipeline reads top to bottom:
 | Go | `go test ./...` in `plugin/` | Go 1.27.3 | 50 test functions, 120 cases counting subtests: config precedence, classification, header assembly, the result store's bounds and TTL, eviction, payload shaping, the loop guard |
 | Go race | `go test -race ./...` in `plugin/` | the same | The result store is read from one hook and written from another |
 | Python | `pytest tests/` in `verifier/` | `requirements-dev.txt` | 134 tests: scoring, extraction, the rule judge, the claim cache and API, the pacer, page text |
-| Console | `npm run typecheck` in `console/` | Node 22 | Types only. There are no console tests |
-| End to end | `./scripts/verify-all.sh` | Docker | 42 checks against a running stack |
+| Console | `npm test` in `console/` | Node 22 | 57 tests: the data layer, the state hook, what each section renders, and fidelity against the design reference |
+| Console types | `npm run typecheck` in `console/` | Node 22 | The app, then the tests under their own config |
+| End to end | `./scripts/verify-all.sh` | Docker | 44 checks: the suites above, then the stack |
 | Benchmark | `python bench/runner.py` | a running verifier | Quality against StaleBench. Not a pass/fail suite |
 
-`./scripts/verify-all.sh --unit` runs the first three without bringing the stack up.
+`./scripts/verify-all.sh --unit` runs the test suites without bringing the stack up, and
 `--no-build` reuses the existing images, which is what you want while iterating.
+
+The two console checks run with your local toolchain rather than in a container, because a
+container would mean an `npm install` on every run. In a fresh clone they **skip**, with
+`run 'npm install' in console/ first`; everything else still runs. That is deliberate — the
+console is the one part a reviewer can leave out without losing the argument.
 
 The end-to-end checks assert specifics rather than the absence of errors: that the gateway
 loaded `chronos.so`, that a second identical request is a cache hit, that Chronos set a
@@ -107,9 +113,9 @@ nobody can argue with, which defeats the point.
 
 ## Before opening a pull request
 
-1. `./scripts/verify-all.sh` — all 42, from a clean stack.
+1. `./scripts/verify-all.sh` — all 44, from a clean stack.
 2. `go vet ./...` in `plugin/`, and `ruff check` in `verifier/`.
-3. `npm run typecheck` in `console/` if you touched it.
+3. `npm run typecheck` and `npm test` in `console/` if you touched it.
 4. Read [../AGENTS.md](../AGENTS.md). It lists the rules the code cannot enforce — the ones
    that break quietly rather than loudly.
 5. No keys, no `.env`, no local paths. `verify-all.sh` checks the first two.

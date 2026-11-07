@@ -145,8 +145,8 @@ Everyday commands:
 
 | | |
 |---|---|
-| `./scripts/verify-all.sh` | 42 end-to-end checks |
-| `./scripts/verify-all.sh --unit` | the three test suites, no Docker stack |
+| `./scripts/verify-all.sh` | every check, end to end |
+| `./scripts/verify-all.sh --unit` | the test suites only, no Docker stack |
 | `./scripts/check-model.sh --all` | which models your key can actually reach today |
 | `python bench/runner.py --limit 18 --audit` | the quality benchmark |
 
@@ -163,6 +163,10 @@ All 44 environment variables: [docs/environment.md](docs/environment.md).
 Real output, trimmed to the end:
 
 ```
+== console ==
+  PASS console: typecheck, app and tests
+  PASS console: unit and rendering tests
+
 == stack ==
   PASS plugin .so is in the image and dynamically linked
   PASS gateway loaded chronos.so
@@ -177,7 +181,7 @@ Real output, trimmed to the end:
   PASS degrade path: the gateway still answers with the verifier down
 
 == summary ==
-  42 passed, 0 failed, 0 skipped
+  44 passed, 0 failed, 0 skipped
 ```
 
 Each check prints what it asserted, so a pass means something specific rather than the absence
@@ -499,7 +503,7 @@ Reproduce: [TESTING.md § level 4](TESTING.md#level-4--reproduce-the-numbers).
 
 ## What is verified, and what is not
 
-`./scripts/verify-all.sh` — **42 checks, 42 passing** on this machine, and the same script CI
+`./scripts/verify-all.sh` — **44 checks, 44 passing** on this machine, and the same script CI
 runs. It asserts specifics, not the absence of errors:
 
 | What was checked | Evidence |
@@ -513,13 +517,14 @@ runs. It asserts specifics, not the absence of errors:
 | **The gateway survives Chronos failing** | the verifier is stopped mid-run and the gateway must keep answering |
 | Plugin logic | `go test -race ./...`: 50 test functions, 120 cases counting subtests |
 | Verifier logic | `pytest tests/`: 134 tests |
+| Console logic and rendering | 2 checks running `npm test` in `console/`: 57 tests, including a fidelity check against `design/chronos-console.html` |
 | Repository hygiene | no `.env` tracked, no credential-shaped string in any tracked file |
 
 Quality, separately, is [measured above](#measured-results) rather than asserted.
 
 ### Not verified, and should be
 
-1. **Two of the 42 checks depend on a live web search and are genuinely flaky.** On 7 Nov,
+1. **Two of the 44 checks depend on a live web search and are genuinely flaky.** On 7 Nov,
    one run had `P4: the cached stale answer was caught` fail with `verdict=unverifiable`
    because the search returned nothing that addressed the claim; the next run passed with
    `outdated`, score 39. Recorded evidence for those two checks would fix it, at the cost of
@@ -528,9 +533,10 @@ Quality, separately, is [measured above](#measured-results) rather than asserted
    figure. A full `--limit 0` run would, and costs roughly 400 Tavily credits.
 3. **`guard` mode's regenerate and 409 paths have never run through the gateway.** They are
    unit-tested in `plugin/` only. An end-to-end check in `verify-all.sh` would settle it.
-4. **The console has no tests at all.** Four assertions in `verify-all.sh` prove nginx serves
-   it and the headers reach a browser; nothing proves a section renders. A rendering
-   assertion, or a visual diff against `design/chronos-console.html`, would.
+4. **Nothing renders the console in a real browser engine.** Its 57 tests run under jsdom,
+   which reports what the components produce rather than what a browser paints, so a CSS
+   mistake — a panel that overflows, a colour with no contrast — passes all of them. The
+   screenshots are the only evidence of that, and a person looks at them.
 5. **No load testing of any kind.** The highest concurrency exercised is 2 claims and 3
    Tavily calls. What breaks first is probably the verifier's own event loop under SSE
    subscribers, and no test would catch it today.

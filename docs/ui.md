@@ -90,18 +90,41 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-There are **no tests for the console**. It is checked three ways, none of which is a unit
-test, and that is a real gap:
+**57 tests**, in four files, run by `npm test` in `console/` and by
+`scripts/verify-all.sh`.
 
-- `npm run typecheck` in `console/`, which `scripts/verify-all.sh` does not currently run.
-- Four checks in `scripts/verify-all.sh`: that nginx serves the shell, that the built bundle
-  is referenced, that `public/results.json` is served, and that the gateway publishes the
-  nine `x-chronos-*` headers on `Access-Control-Expose-Headers` — without which the console
-  would show blanks in a browser while `curl` looked fine.
-- The screenshots above, which are looked at.
+| File | Covers |
+| :--- | :--- |
+| `console/src/api.test.ts` | The data layer's quiet failures: a malformed SSE frame must not take the feed down, a 422 must carry the verifier's reason, and `chatThroughGateway` must keep the gateway's own headers and drop everything else |
+| `console/src/useChronos.test.ts` | Mode selection, the SSE lifecycle, the counters, and that a manual mode choice survives a probe that answers late |
+| `console/src/App.test.tsx` | That every section the nav points at renders, that no nav link points nowhere, that each claim is a selectable button with its subject and score in its label, that every term of the formula is shown, that a timeless claim is grey rather than green, and that the theme toggle works |
+| `console/src/design.test.ts` | Fidelity against `design/chronos-console.html`: every `:root` token defined, with the same value, both dark-mode blocks present, every font stack ending in a generic family, and the seven sections in the reference's order |
 
-No rendering assertion, no interaction test, no visual diff against the reference. A section
-could break and only a person would notice.
+Writing these found one real bug, which is the argument for having them.
+`useChronos` decided whether to switch the console from demo to live by reading
+a `modeLocked` flag held in state, from inside an async callback — so it read
+the value captured on the *first* render, which is always `false`. The lock was
+a no-op, and a probe that answered late overruled a mode the operator had
+already picked. The comment above it described the behaviour it was supposed to
+have rather than the behaviour it had. It is a `useRef` now, and
+`console/src/useChronos.test.ts` holds it there.
+
+The fidelity test is the one worth explaining. It is not a pixel diff — it
+compares the values that are literally the same text in two files, which is the
+part that drifts without anyone noticing. Changing `--bifrost` in
+`instrument.css` alone fails it by name.
+
+Alongside the suite, four checks in `scripts/verify-all.sh` prove the deployed
+thing works: that nginx serves the shell, that the built bundle is referenced,
+that `public/results.json` is served, and that the gateway publishes the nine
+`x-chronos-*` headers on `Access-Control-Expose-Headers` — without which the
+console would show blanks in a browser while `curl` looked fine.
+
+**What is still not checked:** nothing renders in a real browser engine. jsdom
+reports what the components produce, not what a browser paints, so a CSS
+mistake — a panel that overflows, a colour with no contrast — would pass every
+one of these. The screenshots above are the only evidence of that, and they are
+looked at by a person.
 
 ## Changing it
 

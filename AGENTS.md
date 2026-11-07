@@ -74,7 +74,13 @@ verifier mid-run. If you add a hook, add its failure path first.
 `verifier/chronos/models.py`. A score with a term nobody can see is a number nobody can argue
 with, and arguing with the number is what the product is for.
 
-**12. Never commit a key.** `.env` is gitignored and `scripts/verify-all.sh` fails on a
+**12. `console/src/instrument.css` is lifted from `design/chronos-console.html`, and a test
+holds it there.**
+`console/src/design.test.ts` compares every `:root` token in the two files. If you change a
+colour, change the reference and re-extract; do not edit one side. The slash in the brand
+mark went missing for exactly this reason and nothing caught it.
+
+**13. Never commit a key.** `.env` is gitignored and `scripts/verify-all.sh` fails on a
 tracked `.env` or a tracked string shaped like `sk-`, `tvly-` or `gsk_`. Do not read a real
 `.env` to write documentation; use `.env.example`.
 
@@ -139,14 +145,14 @@ All five are checks in `scripts/verify-all.sh`.
 ## Commands
 
 ```bash
-./scripts/verify-all.sh              # 42 checks, needs Docker
-./scripts/verify-all.sh --unit       # the three test suites only
+./scripts/verify-all.sh              # 44 checks, needs Docker
+./scripts/verify-all.sh --unit       # the test suites only, no stack
 ./scripts/verify-all.sh --no-build   # reuse images while iterating
 ./scripts/check-model.sh --all       # which models your key reaches today
 python bench/runner.py --limit 18 --audit
 ```
 
-Two of the 42 depend on a live Tavily search and are genuinely flaky; see
+Two of the 44 depend on a live Tavily search and are genuinely flaky; see
 [docs/troubleshooting.md](docs/troubleshooting.md#verification-and-benchmarking) before
 assuming you broke something.
 

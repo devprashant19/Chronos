@@ -16,7 +16,7 @@ Level 1 needs nothing installed and no credentials.
 > from how fast the answer's facts actually move, and deletes the cache entry behind any
 > answer it finds stale. It runs on free open-weights models and a free Tavily key, and the
 > whole stack runs with no credentials at all against a built-in mock provider.
-> `./scripts/verify-all.sh` runs 42 end-to-end checks; on a 18-claim benchmark subset the
+> `./scripts/verify-all.sh` runs 44 checks end to end; on a 18-claim benchmark subset the
 > model path scores precision 0.80 and recall 0.667 against a rule-only baseline of 0.40 and
 > 0.20. Built during the event with Claude Code; see the README's disclosure.
 
@@ -28,7 +28,7 @@ Level 1 needs nothing installed and no credentials.
 | :--- | :--- | :--- | :--- |
 | **1. Read the evidence** | a browser | 2 min | Real screenshots, real headers, real numbers, no setup |
 | **2. Run the stack** | Docker | ~8 min first build, 1 min after | The console on live data, and the miss → hit → evicted → miss cycle by hand |
-| **3. Run the checks** | Docker | ~9 min | 42 end-to-end assertions |
+| **3. Run the checks** | Docker | ~12 min | 44 assertions, end to end |
 | **4. Run the benchmark** | Docker + a free Tavily key + a free Groq key | ~6 min | The quality numbers, reproduced |
 
 Levels 2 and 3 need **no API keys**. Only level 4 does, and both are free with no card.
@@ -99,10 +99,10 @@ three requests behave the same way.
 
 ```bash
 ./scripts/verify-all.sh            # everything, needs Docker
-./scripts/verify-all.sh --unit     # the three test suites only, no stack
+./scripts/verify-all.sh --unit     # the test suites only, no stack
 ```
 
-42 checks. Each one prints what it asserted, so a pass means something specific rather than
+44 checks. Each one prints what it asserted, so a pass means something specific rather than
 "no errors": that the gateway loaded `chronos.so`, that a second identical request is a cache
 hit, that Chronos set a six-hour TTL for a `version` claim, that a stale cached answer is
 caught and evicted and the next request misses, that the nine headers are exposed to a
@@ -137,7 +137,7 @@ subset is entirely `leadership`, the hardest class, and it is not a cross-class 
 
 ## Known limits, before you find them
 
-- **Two of the 42 checks depend on a live web search and are genuinely flaky.** On 7 Nov one
+- **Two of the 44 checks depend on a live web search and are genuinely flaky.** On 7 Nov one
   run had them fail with `verdict=unverifiable`; the next run passed with `outdated`, score
   39. The script says so itself: *"live search results vary; re-run if transient"*.
 - **The benchmark numbers move between runs** for the same reason.
@@ -147,8 +147,8 @@ subset is entirely `leadership`, the hardest class, and it is not a cross-class 
   through the gateway end to end.
 - **Streaming answers are not content-verified.** They get headers with verdict `pending`.
 - **Never run on macOS or Linux.** Windows with Docker Desktop throughout.
-- **The console has no tests.** It is checked by four assertions in `verify-all.sh`, a type
-  check, and looking at it.
+- **Nothing renders the console in a real browser engine.** Its 57 tests run under jsdom,
+  so a CSS mistake passes all of them. The screenshots are the only evidence of that.
 
 The full list is in [README.md](README.md#not-verified-and-should-be).
 
