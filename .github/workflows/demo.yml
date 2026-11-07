@@ -1,0 +1,93 @@
+name: Demo site
+
+# Builds the keyless console bundle and publishes it to GitHub Pages, so the
+# repository hosts its own demo rather than depending on anyone's laptop.
+#
+# The bundle needs no backend: when the verifier is unreachable the console
+# replays a recorded log and labels the page "Recorded demo replay". Nothing on
+# it is presented as live, and the only measured numbers on it come from
+# bench/results.json, which the build copies in beside the bundle.
+#
+# Pages has to be enabled once, by hand: Settings -> Pages -> Source: GitHub
+# Actions. Until then this workflow builds and checks the bundle and the deploy
+# step is skipped, which is why the build job stands on its own.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "console/**"
+      - "bench/results.json"
+      - "scripts/build-demo-site.sh"
+      - ".github/workflows/demo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; never cancel one half-done.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: install
+        working-directory: console
+        run: npm install --no-audit --no-fund
+
+      - name: tests
+        working-directory: console
+        run: npm test
+
+      - name: build the demo bundle
+        run: ./scripts/build-demo-site.sh "$GITHUB_WORKSPACE/demo-site"
+
+      # The same three properties scripts/verify-all.sh asserts. They are
+      # repeated here because this job is the one that puts the bundle on the
+      # public internet, and it must not depend on someone having run the full
+      # suite first.
+      - name: it works off a domain root
+        run: |
+          if grep -qE '(src|href)="/[^/]' demo-site/index.html; then
+            echo "absolute asset paths: the bundle only works at a domain root"
+            grep -oE '(src|href)="/[^\"]*' demo-site/index.html | head
+            exit 1
+          fi
+
+      - name: it ships the measured results
+        run: |
+          python3 -c "import json,sys; d=json.load(open('demo-site/results.json')); sys.exit(0 if d.get('modes') else 1)"
+
+      - name: it carries no credentials
+        run: |
+          if grep -rIqE '(sk-[A-Za-z0-9]{20,}|tvly-(dev-)?[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,})' demo-site; then
+            echo "a credential-shaped string is in the bundle"
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo-site
+
+  deploy:
+    name: Publish to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
