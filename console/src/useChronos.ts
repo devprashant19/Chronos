@@ -45,8 +45,13 @@ export function useChronos() {
   // Demo mode is the default when the verifier is not reachable, which is
   // decided by the probe below rather than guessed.
   const [mode, setMode] = useState<Mode>("demo");
-  const [modeLocked, setModeLocked] = useState(false);
   const [connection, setConnection] = useState<Connection>("demo");
+
+  // A ref, not state: the probe below is async, and a value captured in its
+  // closure would be the one from the first render, which is always false.
+  // That made the lock a no-op and let a late probe response overrule a mode
+  // the operator had already picked.
+  const modeLocked = useRef(false);
 
   const [feed, setFeed] = useState<FeedEvent[]>([]);
   const [counters, setCounters] = useState<LiveCounters>(EMPTY_COUNTERS);
@@ -66,7 +71,7 @@ export function useChronos() {
         const health = await api.health();
         if (cancelled) return;
         setProbe({ reachable: true, offline: health.offline_demo, tavily: health.tavily_configured });
-        if (!modeLocked) setMode("live");
+        if (!modeLocked.current) setMode("live");
       } catch {
         if (cancelled) return;
         setProbe({ reachable: false, offline: true, tavily: false });
@@ -75,9 +80,8 @@ export function useChronos() {
     return () => {
       cancelled = true;
     };
-    // modeLocked intentionally omitted: the probe runs once, and a manual
-    // choice afterwards must not be overridden by a late response.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Runs once. The lock it reads is a ref for the reason given at its
+    // declaration, so this effect has no reactive dependency on it.
   }, []);
 
   // --- fold an event into the counters ------------------------------------
@@ -155,7 +159,7 @@ export function useChronos() {
   }, [mode, ingest]);
 
   const chooseMode = useCallback((next: Mode) => {
-    setModeLocked(true);
+    modeLocked.current = true;
     setMode(next);
   }, []);
 
