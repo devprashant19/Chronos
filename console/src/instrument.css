@@ -45,7 +45,7 @@ button{font:inherit;color:inherit}
 
 /* top bar */
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
-header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--paper);border-bottom:1px solid var(--rule)}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--paper);border-bottom:1px solid var(--rule);transition:background-color .25s ease,border-color .25s ease,color .25s ease}
 header.top .wrap{display:flex;align-items:center;gap:20px;padding-block:10px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;font:800 24px/1 var(--display);letter-spacing:.04em;text-transform:uppercase}
 .brand svg{flex:none}
@@ -268,7 +268,7 @@ main section{scroll-margin-top:72px}
 .hero-cta .hint{font:500 11.5px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
 
 /* The cue is the only thing telling a first-time viewer there is more below. */
-.cue{display:flex;justify-content:center;padding:10px 0 20px;transition:opacity .25s ease}
+.cue{display:flex;justify-content:center;padding:6px 0 14px;transition:opacity .25s ease}
 .cue[data-hidden="true"]{opacity:0;pointer-events:none}
 .cue button{display:inline-flex;flex-direction:column;align-items:center;gap:5px;border:0;background:none;cursor:pointer;color:var(--ink-3);font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.14em;padding:4px 10px}
 .cue button:hover{color:var(--ink)}
@@ -313,4 +313,101 @@ main section{scroll-margin-top:72px}
 
 @media (prefers-reduced-motion:reduce){
   .reveal{animation:none}
+}
+
+/* ---------------------------------------------------------------------------
+   The cinematic opening.
+
+   Full-bleed, always dark, whatever the page theme is. It is one frame: the
+   claim, the two ways in, and the product showing just enough of itself under
+   the fold to make you scroll.
+
+   Dark is done by re-pointing the palette tokens inside the section to the
+   reference's OWN dark values, not by inventing colours. Everything nested --
+   the scope panel, the pills, the buttons -- then renders dark for free and
+   stays consistent with the instrument panel below.
+   --------------------------------------------------------------------------- */
+.hero.cinematic{
+  --paper:#0E1115; --panel:#151920; --ink:#E6E9EE; --ink-2:#A3ACB9; --ink-3:#77808D;
+  --rule:#2A313B; --grid:#1F252D;
+  --bifrost:#7088FF; --tavily:#E27CC5; --chronos:#E6E9EE;
+  --ok:#4CC38A; --warn:#E5AE3B; --bad:#F06B56;
+  --ok-t:rgba(76,195,138,.14); --warn-t:rgba(229,174,59,.15); --bad-t:rgba(240,107,86,.15);
+  --bif-t:rgba(112,136,255,.14); --tav-t:rgba(226,124,197,.13);
+  color-scheme:dark;
+
+  /* Full-bleed: out of the page gutter, across the viewport. */
+  position:relative;
+  width:100vw;
+  max-width:100vw;
+  margin-left:calc(50% - 50vw);
+  margin-top:-1px;                      /* swallow the header's bottom rule */
+  background:var(--paper);
+  color:var(--ink);
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:1fr auto auto;   /* copy, the peek, the cue */
+  min-height:calc(100svh - 56px);
+  padding:0;
+}
+
+/* Three soft blooms in the product colours -- Bifrost, Tavily, Chronos red --
+   so the glow means something rather than being stock gradient. */
+.hero.cinematic::before{
+  content:"";position:absolute;inset:-25% -10% auto;height:120%;pointer-events:none;
+  background:
+    radial-gradient(42% 46% at 22% 32%, rgba(112,136,255,.20), transparent 70%),
+    radial-gradient(38% 42% at 78% 26%, rgba(226,124,197,.15), transparent 70%),
+    radial-gradient(46% 40% at 52% 72%, rgba(240,107,86,.12), transparent 72%);
+  filter:blur(18px);
+  animation:drift 22s ease-in-out infinite alternate;
+}
+@keyframes drift{
+  from{transform:translate3d(-2%,-1%,0) scale(1)}
+  to{transform:translate3d(2%,2%,0) scale(1.06)}
+}
+
+/* A hairline of grid, very faint, so it reads as an instrument and not a
+   landing page. */
+.hero.cinematic::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:64px 64px;
+  opacity:.25;
+  mask-image:radial-gradient(70% 55% at 50% 40%,#000,transparent 75%);
+}
+
+.cine-in{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(10px,1.6vh,18px);padding:clamp(18px,4vh,46px) 0 0}
+.cine-in h1{font-size:clamp(38px,6.2vw,76px);line-height:.92;letter-spacing:-.01em;max-width:16ch;margin:0}
+.cine-in .lede{max-width:62ch;font-size:clamp(15px,1.5vw,18px)}
+.cine-in .owners-row{justify-content:center}
+.cine-in .hero-cta{justify-content:center}
+.cine-in .counters{grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--rule);max-width:700px;width:100%}
+.cine-in .counter{padding:14px 12px 0;text-align:left}
+
+/* The product, cropped by the fold: enough to say there is a real instrument
+   down there, not enough to read. */
+.cine-peek{position:relative;z-index:1;width:min(980px,92vw);margin:clamp(12px,2.6vh,30px) auto 0;
+  max-height:clamp(96px,15vh,170px);overflow:hidden;
+  -webkit-mask-image:linear-gradient(#000 52%,transparent);mask-image:linear-gradient(#000 52%,transparent)}
+.cine-peek .scope{box-shadow:0 -18px 60px rgba(0,0,0,.45)}
+.cine-peek .scope-legend,.cine-peek .readout{opacity:.9}
+
+/* The header sits over the dark frame until you scroll. */
+header.top.on-dark{background:#0E1115;border-bottom-color:transparent;color:#E6E9EE}
+header.top.on-dark .brand{color:#E6E9EE}
+header.top.on-dark nav.sections a{color:#A3ACB9}
+header.top.on-dark nav.sections a:hover{color:#E6E9EE}
+header.top.on-dark .btn.ghost{color:#E6E9EE;border-color:#2A313B}
+header.top.on-dark .btn[aria-pressed="true"]{background:#E6E9EE;color:#0E1115;border-color:#E6E9EE}
+
+.hero.cinematic .cue button{color:var(--ink-3)}
+.hero.cinematic .cue button:hover{color:var(--ink)}
+
+@media (max-width:900px){
+  .hero.cinematic{min-height:auto;padding-bottom:8px}
+  .cine-in .counters{max-width:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .hero.cinematic::before{animation:none}
 }

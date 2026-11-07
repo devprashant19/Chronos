@@ -219,63 +219,64 @@ export default function Hero({
   const saving = useCountUp(headline.cacheSaving * 100);
 
   return (
-    <section className="hero stage wrap">
-      <div className="hero-grid">
-        <div className="hero-copy">
-          <Reveal step={0} as="p" className="eyebrow">
-            A freshness firewall for the Bifrost AI gateway
-          </Reveal>
+    <section className="hero stage cinematic">
+      <div className="wrap cine-in">
+        <Reveal step={0} as="p" className="eyebrow">
+          A freshness firewall for the Bifrost AI gateway
+        </Reveal>
 
-          <h1 style={{ fontSize: "clamp(34px,5.2vw,64px)", lineHeight: 0.95 }}>
-            <span className="reveal line" style={{ animationDelay: "90ms" }}>
-              Your cache remembers.
-            </span>
-            <span className="reveal line cut" style={{ animationDelay: "210ms" }}>
-              Chronos checks.
-            </span>
-          </h1>
+        <h1>
+          <span className="reveal line" style={{ animationDelay: "90ms" }}>
+            Your cache remembers.
+          </span>
+          <span className="reveal line cut" style={{ animationDelay: "210ms" }}>
+            Chronos checks.
+          </span>
+        </h1>
 
-          <Reveal step={4} as="p" className="lede">
-            Semantic caching replays yesterday&rsquo;s answer to today&rsquo;s user. Chronos sits
-            inside Bifrost, pulls the time-sensitive facts out of every answer, checks them against
-            the live web with Tavily, and evicts cache entries whose facts have gone stale.
-          </Reveal>
+        <Reveal step={4} as="p" className="lede">
+          Semantic caching replays yesterday&rsquo;s answer to today&rsquo;s user. Chronos sits
+          inside Bifrost, pulls the time-sensitive facts out of every answer, checks them
+          against the live web with Tavily, and evicts cache entries whose facts have gone
+          stale.
+        </Reveal>
 
-          <Reveal step={5} className="owners-row">
-            <span className="own b">Bifrost &middot; gateway, cache, routing</span>
-            <span className="own t">Tavily &middot; live evidence</span>
-            <span className="own c">Chronos &middot; claims, scores, eviction</span>
-          </Reveal>
+        <Reveal step={5} className="owners-row">
+          <span className="own b">Bifrost &middot; gateway, cache, routing</span>
+          <span className="own t">Tavily &middot; live evidence</span>
+          <span className="own c">Chronos &middot; claims, scores, eviction</span>
+        </Reveal>
 
-          <Reveal step={6} className="counters">
-            <div className="counter">
-              <b className="tab">{Math.round(answers).toLocaleString()}</b>
-              <span>answers checked</span>
-            </div>
-            <div className="counter">
-              <b className="tab">{Math.round(stale).toLocaleString()}</b>
-              <span>stale cache hits stopped</span>
-            </div>
-            <div className="counter">
-              <b className="tab">{Math.round(saving)}%</b>
-              <span>Tavily calls saved by claim cache</span>
-            </div>
-          </Reveal>
+        <Reveal step={6} className="hero-cta">
+          <button className="btn" onClick={onStartTour}>
+            Start the walkthrough
+          </button>
+          <button className="btn ghost" onClick={onScrollOn}>
+            Explore on your own
+          </button>
+          <span className="hint">8 steps &middot; about 2 minutes</span>
+        </Reveal>
 
-          <Reveal step={7} className="hero-cta">
-            <button className="btn" onClick={onStartTour}>
-              Start the walkthrough
-            </button>
-            <button className="btn ghost" onClick={onScrollOn}>
-              Explore on your own
-            </button>
-            <span className="hint">8 steps &middot; about 2 minutes</span>
-          </Reveal>
-        </div>
+        <Reveal step={7} className="counters">
+          <div className="counter">
+            <b className="tab">{Math.round(answers).toLocaleString()}</b>
+            <span>answers checked</span>
+          </div>
+          <div className="counter">
+            <b className="tab">{Math.round(stale).toLocaleString()}</b>
+            <span>stale cache hits stopped</span>
+          </div>
+          <div className="counter">
+            <b className="tab">{Math.round(saving)}%</b>
+            <span>Tavily calls saved by claim cache</span>
+          </div>
+        </Reveal>
+      </div>
 
-        <div className="reveal" style={{ animationDelay: "240ms" }}>
-          <DecayScope />
-        </div>
+      {/* The instrument, cropped by the fold. Enough to say there is a real
+          thing down there; not enough to read. */}
+      <div className="cine-peek reveal" style={{ animationDelay: "300ms" }}>
+        <DecayScope />
       </div>
 
       <div className="cue" data-hidden={cueHidden}>
