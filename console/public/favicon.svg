@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Chronos">
+  <title>Chronos</title>
+  <!-- Source of truth for the project mark. Colours are the console's own
+       tokens (design/chronos-console.html): --chronos #13161B, --paper
+       #ECEEF1, --bad #C93A28. The red quadrant is the span of time an answer
+       has already spent in cache; the dial is what Chronos keeps looking at. -->
+  <rect width="64" height="64" rx="14" fill="#13161B"/>
+  <path d="M32 32V13A19 19 0 0 1 51 32Z" fill="#C93A28"/>
+  <circle cx="32" cy="32" r="19" fill="none" stroke="#ECEEF1" stroke-width="4"/>
+  <path d="M32 32V17" stroke="#ECEEF1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M32 32l9 9" stroke="#ECEEF1" stroke-width="4" stroke-linecap="round"/>
+</svg>
