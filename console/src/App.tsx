@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { BIFROST_URL, VERIFIER_URL } from "./api";
 import { useChronos } from "./useChronos";
+import Hero from "./sections/Hero";
 import Traffic from "./sections/Traffic";
 import Walkthrough from "./sections/Walkthrough";
 import Inspector from "./sections/Inspector";
@@ -33,12 +34,6 @@ const STEPS: Array<{ owner: "b" | "t" | "c"; title: string; body: string }> = [
 ];
 
 /** Decay curves: how much of a cached fact's value survives over 7 days. */
-const CURVES: Array<{ label: string; cls: string; colour: string; halfLifeHours: number }> = [
-  { label: "Market", cls: "market", colour: "var(--bad)", halfLifeHours: 0.25 },
-  { label: "Pricing", cls: "pricing", colour: "var(--warn)", halfLifeHours: 6 },
-  { label: "Leadership", cls: "leadership", colour: "var(--bifrost)", halfLifeHours: 24 },
-  { label: "Timeless", cls: "timeless", colour: "var(--ok)", halfLifeHours: Infinity },
-];
 
 export default function App() {
   const { mode, chooseMode, connection, probe, feed, counters, stats, cacheEvents, headline } =
@@ -108,74 +103,12 @@ export default function App() {
       </header>
 
       <main>
-        <section className="hero stage wrap">
-          <div className="hero-grid">
-            <div className="hero-copy">
-              <p className="eyebrow">A freshness firewall for the Bifrost AI gateway</p>
-              <h1 style={{ fontSize: "clamp(34px,5.2vw,64px)", lineHeight: 0.95 }}>
-                Your cache remembers.
-                <br />
-                <span className="cut">Chronos checks.</span>
-              </h1>
-              <p className="lede">
-                Semantic caching replays yesterday&rsquo;s answer to today&rsquo;s user. Chronos sits
-                inside Bifrost, pulls the time-sensitive facts out of every answer, checks them
-                against the live web with Tavily, and evicts cache entries whose facts have gone
-                stale.
-              </p>
-              <div className="owners" style={{ marginTop: 0, gridTemplateColumns: "1fr", border: 0, background: "none" }}>
-                <div style={{ padding: 0, flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-                  <span className="own b">Bifrost · gateway, cache, routing</span>
-                  <span className="own t">Tavily · live evidence</span>
-                  <span className="own c">Chronos · claims, scores, eviction</span>
-                </div>
-              </div>
-
-              <div className="counters">
-                <div className="counter">
-                  <b className="tab">{headline.answers.toLocaleString()}</b>
-                  <span>answers checked</span>
-                </div>
-                <div className="counter">
-                  <b className="tab">{headline.stalePrevented.toLocaleString()}</b>
-                  <span>stale cache hits stopped</span>
-                </div>
-                <div className="counter">
-                  <b className="tab">{Math.round(headline.cacheSaving * 100)}%</b>
-                  <span>Tavily calls saved by claim cache</span>
-                </div>
-              </div>
-
-              <div className="hero-cta">
-                <button className="btn" onClick={() => setTourStep(0)}>
-                  Start the walkthrough
-                </button>
-                <button className="btn ghost" onClick={scrollOn}>
-                  Explore on your own
-                </button>
-                <span className="hint">8 steps &middot; about 2 minutes</span>
-              </div>
-            </div>
-
-            <DecayScope />
-          </div>
-
-          <div className="cue" data-hidden={scrolled || tourStep !== null}>
-            <button onClick={scrollOn} aria-label="Scroll to the signal path">
-              Scroll
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M8 3v9M4.5 8.5 8 12l3.5-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-        </section>
+        <Hero
+          headline={headline}
+          onStartTour={() => setTourStep(0)}
+          onScrollOn={scrollOn}
+          cueHidden={scrolled || tourStep !== null}
+        />
 
         <SignalPath />
 
@@ -284,94 +217,6 @@ function ModeSwitch({
  * read — at day 3 a market fact is worthless and a definition is untouched,
  * which is the whole argument for a per-class TTL.
  */
-function DecayScope() {
-  const [hours, setHours] = useState(0);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setHours((h) => (h >= 168 ? 0 : h + 1.4));
-    }, 60);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const W = 520;
-  const H = 230;
-  const PAD = { l: 34, r: 12, t: 12, b: 26 };
-  const plotW = W - PAD.l - PAD.r;
-  const plotH = H - PAD.t - PAD.b;
-
-  const x = (h: number) => PAD.l + (h / 168) * plotW;
-  const y = (v: number) => PAD.t + (1 - v) * plotH;
-
-  const value = (halfLife: number, h: number) =>
-    halfLife === Infinity ? 1 : Math.pow(0.5, h / halfLife);
-
-  const paths = useMemo(
-    () =>
-      CURVES.map((curve) => {
-        const points: string[] = [];
-        for (let h = 0; h <= 168; h += 1.5) {
-          points.push(`${x(h).toFixed(1)},${y(value(curve.halfLifeHours, h)).toFixed(1)}`);
-        }
-        return { ...curve, d: `M${points.join("L")}` };
-      }),
-    [],
-  );
-
-  return (
-    <div className="panel scope">
-      <div className="scope-head">
-        <h2 style={{ fontSize: 20 }}>How fast a cached fact goes stale</h2>
-        <span className="eyebrow">Day {(hours / 24).toFixed(1)} since cached</span>
-      </div>
-
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Decay of cached fact value by volatility class over seven days">
-        {[0, 0.25, 0.5, 0.75, 1].map((v) => (
-          <g key={v}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke="var(--grid)" strokeWidth="1" />
-            <text x={PAD.l - 6} y={y(v) + 3.5} textAnchor="end" fontSize="9" fill="var(--ink-3)" className="mono">
-              {Math.round(v * 100)}
-            </text>
-          </g>
-        ))}
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((d) => (
-          <text key={d} x={x(d * 24)} y={H - 8} textAnchor="middle" fontSize="9" fill="var(--ink-3)" className="mono">
-            {d}d
-          </text>
-        ))}
-
-        {/* A flat 7-day cache lifetime, for contrast: it never declines. */}
-        <line
-          x1={PAD.l}
-          x2={W - PAD.r}
-          y1={y(1)}
-          y2={y(1)}
-          stroke="var(--ink-3)"
-          strokeWidth="1.5"
-          strokeDasharray="3 3"
-        />
-
-        {paths.map((p) => (
-          <path key={p.cls} d={p.d} fill="none" stroke={p.colour} strokeWidth="2" strokeLinecap="round" />
-        ))}
-
-        <line x1={x(hours)} x2={x(hours)} y1={PAD.t} y2={H - PAD.b} stroke="var(--ink)" strokeWidth="1.5" />
-        {paths.map((p) => (
-          <circle key={`${p.cls}-dot`} cx={x(hours)} cy={y(value(p.halfLifeHours, hours))} r="3.5" fill={p.colour} />
-        ))}
-      </svg>
-
-      <div className="readout">
-        {CURVES.map((c) => (
-          <div key={c.cls} style={{ ["--c" as string]: c.colour }}>
-            <b className="tab">{Math.round(value(c.halfLifeHours, hours) * 100)}%</b>
-            {c.label}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /** The eight-step signal path, auto-advancing, each step owned by a product. */
 function SignalPath() {
