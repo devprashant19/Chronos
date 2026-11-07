@@ -301,3 +301,16 @@ main section{scroll-margin-top:72px}
 @media (prefers-reduced-motion:reduce){
   .cue svg,.tour,.tour-on::after{animation:none}
 }
+
+/* Hero reveal: the copy arrives in reading order so the eye is led down to
+   the two buttons, rather than landing in the middle of a wall of type. */
+.reveal{animation:revealin .5s cubic-bezier(.2,.7,.3,1) both}
+@keyframes revealin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.hero h1 .line{display:block}
+.owners-row{display:flex;gap:8px;flex-wrap:wrap}
+/* Counters are counting up, so the width must not jitter as digits change. */
+.counter b{font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  .reveal{animation:none}
+}
