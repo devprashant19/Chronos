@@ -69,8 +69,11 @@ export default function Benchmark() {
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
-    // Served as a static asset next to the console build.
-    fetch("/results.json")
+    // Served as a static asset next to the console build. Resolved against
+    // the build's base rather than the site root, so the same bundle works
+    // under nginx at "/" and unpacked anywhere else, which is what lets the
+    // keyless demo be hosted as a plain static site.
+    fetch(`${import.meta.env.BASE_URL}results.json`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((data: Results) => setResults(data))
       .catch(() => setMissing(true));
