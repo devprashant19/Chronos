@@ -129,6 +129,23 @@ Two things differ from the image build, both in that script:
 Hosting it changes nothing about honesty: the recorded traffic is labelled on the page, and
 the only numbers on it that are measurements come from `bench/results.json`.
 
+### Publishing it
+
+`.github/workflows/demo.yml` builds the bundle on every push that touches the console, the
+results file or the build script, and publishes it to GitHub Pages. **Pages has to be turned
+on once by hand** — Settings, then Pages, then Source: GitHub Actions. Until that is done the
+workflow still builds and checks the bundle; only the deploy step is skipped, which is why
+the build is its own job.
+
+Before it goes anywhere public the workflow repeats three of the checks from
+`scripts/verify-all.sh`: that no asset path is absolute, that the measured results are beside
+the bundle, and that nothing credential-shaped is in it. They are duplicated on purpose —
+this is the job that puts the files on the open internet, and it must not depend on someone
+having run the full suite first.
+
+Any static host works the same way. The bundle is a folder with relative paths and no
+server-side anything.
+
 ## What does not work
 
 - **No Kubernetes manifests, no Helm chart, no cloud deployment of any kind.** Compose is

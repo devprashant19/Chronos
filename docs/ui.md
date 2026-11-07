@@ -37,12 +37,30 @@ These two are the one place the console deliberately goes past
 and nothing else — no new colours, no new type — so the instrument panel below the fold is
 unchanged, and `design.test.ts` still holds every token to the reference.
 
-**The stage** is the existing hero at `min-height: calc(100svh - 72px)`, so the first thing a
-viewer sees is the claim and the decay chart rather than half a traffic feed. `min-height`,
-not `height`: it grows rather than clipping when the header wraps. Under it sit two calls to
-action and an animated scroll cue, which is the only thing telling a first-time viewer that
-the page continues; the cue hides itself once `window.scrollY` passes 40, and during the
-walkthrough.
+**The stage** is `console/src/sections/Hero.tsx`, at `min-height: calc(100svh - 72px)`, so
+the first thing a viewer sees is the claim and the decay chart rather than half a traffic
+feed. `min-height`, not `height`: it grows rather than clipping when the header wraps. Under
+it sit two calls to action and an animated scroll cue, which is the only thing telling a
+first-time viewer that the page continues; the cue hides itself once `window.scrollY` passes
+40, and during the walkthrough.
+
+It moves, and each piece of movement is doing a job rather than decorating:
+
+| | |
+| :--- | :--- |
+| The copy reveals in reading order | So the eye is led down to the two buttons instead of landing in the middle of a wall of type |
+| The counters count up | They are real figures from `/v1/stats`, or the recorded log in demo mode. Watching them arrive says "running system" in a way a static number cannot |
+| The decay scope sweeps a week | That curve **is** the argument — a fact's value falls off at a rate its class decides — so it is the one thing on the page that must not be a still image |
+
+All three are off under `prefers-reduced-motion`: the copy appears, the counters show their
+final values, and the scope holds at day three, which is the point the argument reads
+clearest. Nothing is lost but the movement, and `Hero.test.tsx` holds it to that.
+
+The count-up reads elapsed time from `performance.now()` rather than from the timestamp the
+host hands `requestAnimationFrame`. The two are not guaranteed to share an origin — under
+jsdom they do not — and when they disagree the count never reaches its target, leaving the
+most prominent number on the page quietly wrong. That was a real failure, caught by the test
+above being flaky rather than by looking at it.
 
 **The walkthrough** (`console/src/sections/Walkthrough.tsx`) is eight steps in the order the
 product happens: the problem, where Chronos sits, answers being checked, the claims and the
@@ -122,7 +140,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**73 tests**, in five files, run by `npm test` in `console/` and by
+**85 tests**, in six files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |
@@ -130,6 +148,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 | `console/src/api.test.ts` | The data layer's quiet failures: a malformed SSE frame must not take the feed down, a 422 must carry the verifier's reason, and `chatThroughGateway` must keep the gateway's own headers and drop everything else |
 | `console/src/useChronos.test.ts` | Mode selection, the SSE lifecycle, the counters, and that a manual mode choice survives a probe that answers late |
 | `console/src/App.test.tsx` | That every section the nav points at renders, that no nav link points nowhere, that each claim is a selectable button with its subject and score in its label, that every term of the formula is shown, that a timeless claim is grey rather than green, and that the theme toggle works |
+| `console/src/sections/Hero.test.tsx` | The stage: what it says, that the counters count up and land on the real figures without overshooting, that motion is skipped under `prefers-reduced-motion`, and that the decay scope draws and reads off one curve per volatility class |
 | `console/src/sections/Walkthrough.test.tsx` | The opening stage and the tour: that every step points at a section that exists, that exactly one is ringed at a time, that nothing stays lit when it closes, that the last step finishes rather than running off the end, and that the arrow keys and Escape work |
 | `console/src/design.test.ts` | Fidelity against `design/chronos-console.html`: every `:root` token defined, with the same value, both dark-mode blocks present, every font stack ending in a generic family, and the seven sections in the reference's order |
 
