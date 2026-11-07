@@ -23,6 +23,7 @@ verifier/data/
 # node
 node_modules/
 console/dist/
+console/dist-demo/
 .vite/
 # written by `tsc -b`
 *.tsbuildinfo
