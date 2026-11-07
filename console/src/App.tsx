@@ -53,9 +53,15 @@ export default function App() {
       <header className="top">
         <div className="wrap">
           <div className="brand">
-            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
-              <circle cx="11" cy="11" r="9.25" fill="none" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M11 5.5V11l4 2.4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            {/* The reference mark, design/chronos-console.html line 249: a dial with
+                the hour hand, struck through in --bad. The slash is the point of
+                the product and is not decoration, so it is kept here. It fills in
+                below about 32px, which is why the favicon and app tile
+                (design/icon.svg) redraw the same idea as a red quadrant instead. */}
+            <svg width="22" height="22" viewBox="0 0 26 26" aria-hidden="true">
+              <circle cx="13" cy="13" r="11.5" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M13 5v8l5.5 3.2" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="square" />
+              <path d="M3 21 23 5" stroke="var(--bad)" strokeWidth="2" />
             </svg>
             Chronos
           </div>
