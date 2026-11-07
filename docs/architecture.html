@@ -1,0 +1,118 @@
+<!doctype html>
+<!--
+  The one-page architecture diagram. Colours and type are the console's own tokens
+  (design/chronos-console.html). Render it with:
+
+    node <readme-suite>/scripts/render-page.mjs --in docs/architecture.html \
+      --out docs/architecture.png --width 1600 --height 1000 --scale 1
+
+  Edit this file, never the PNG.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chronos architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper:#ECEEF1; --panel:#F8F9FA; --ink:#13161B; --ink-2:#505967; --ink-3:#7B8492;
+    --rule:#C7CCD4; --bifrost:#2744E0; --tavily:#A23F86; --bad:#C93A28; --ok:#1C8752;
+    --bif-t:rgba(39,68,224,.08); --tav-t:rgba(162,63,134,.08); --bad-t:rgba(201,58,40,.09);
+    --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+    --body:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0}
+  html,body{width:1600px;height:1000px;background:var(--paper);color:var(--ink);font:17px/1.4 var(--body)}
+  main{height:100%;padding:36px 56px 26px;display:grid;grid-template-rows:auto 1fr auto;gap:20px}
+  h1{font:800 54px/1 var(--display);letter-spacing:.01em}
+  header .kicker{font:500 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:9px}
+  header p{color:var(--ink-2);font-size:20px;margin-top:8px;max-width:1180px}
+  .layers{display:grid;gap:14px;grid-auto-rows:1fr;align-content:stretch}
+  .layer{display:grid;grid-template-columns:168px 1fr;gap:18px;align-items:stretch}
+  .layer>h2{font:600 12px/1.3 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);align-self:center}
+  .boxes{display:flex;gap:14px}
+  .box{flex:1;background:var(--panel);border:1.5px solid var(--rule);border-radius:10px;padding:13px 17px;display:flex;flex-direction:column;justify-content:center}
+  .box strong{font-size:19px;letter-spacing:-.01em}
+  .box span{color:var(--ink-2);font-size:14.5px;margin-top:4px}
+  .box code{font:500 13px/1.5 var(--mono);color:var(--ink-3);margin-top:5px;display:block}
+  .box.key{background:#fff;border:2px solid var(--ink);box-shadow:0 2px 0 var(--rule)}
+  .box.bif{background:var(--bif-t);border-color:rgba(39,68,224,.35)}
+  .box.bif strong{color:var(--bifrost)}
+  .box.tav{background:var(--tav-t);border-color:rgba(162,63,134,.35)}
+  .box.tav strong{color:var(--tavily)}
+  .box.evict{background:var(--bad-t);border-color:rgba(201,58,40,.35)}
+  .box.evict strong{color:var(--bad)}
+  .tag{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+  footer{border-top:1.5px solid var(--rule);padding-top:13px;display:flex;gap:30px;align-items:flex-start}
+  footer div{font-size:14.5px;line-height:1.36;color:var(--ink-2);flex:1}
+  footer b{color:var(--ink);display:block;font-size:14px;margin-bottom:2px}
+  footer .accent b{color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="kicker">Chronos &middot; one page</div>
+    <h1>A FRESHNESS FIREWALL INSIDE THE GATEWAY</h1>
+    <p>Chronos is a Go plugin compiled into Bifrost's own binary, plus a Python service that does the
+      slow work out of band. Every answer &mdash; fresh or replayed from the semantic cache &mdash; has its
+      time-sensitive claims pulled out, checked against the live web, and scored. A cache entry behind
+      an answer that has gone stale is deleted.</p>
+  </header>
+
+  <section class="layers">
+    <div class="layer">
+      <h2>Client</h2>
+      <div class="boxes">
+        <div class="box"><span class="tag">any OpenAI SDK</span><strong>Caller</strong><span>Reads the verdict off nine response headers. No SDK change, no new endpoint.</span><code>x-chronos-verdict, -score, -ttl, -report, &hellip;</code></div>
+        <div class="box"><span class="tag">localhost:5173</span><strong>Console</strong><span>Vite + React. Live SSE feed, or a recorded replay in demo mode.</span><code>console/src/</code></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <h2>Gateway &middot; :8080</h2>
+      <div class="boxes">
+        <div class="box key"><span class="tag">four hooks, placement pre_builtin</span><strong>chronos.so</strong><span>Classifies volatility, sets the per-request cache TTL, reads the cache outcome, writes the headers, evicts.</span><code>plugin/main.go</code></div>
+        <div class="box bif"><strong>Bifrost</strong><span>Routing, virtual keys, budgets, fallbacks, logs.</span><code>transports/v2.4.0</code></div>
+        <div class="box bif"><strong>Semantic cache</strong><span>Bifrost's own. Chronos drives it; it does not reimplement it.</span><code>semanticcache v1.7.4</code></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <h2>Verifier &middot; :8000</h2>
+      <div class="boxes">
+        <div class="box"><strong>Extract</strong><span>Typed claims with exact spans, from a model, or from rules.</span><code>verifier/chronos/extract.py</code></div>
+        <div class="box"><strong>Verify</strong><span>One search + page extract per claim-cache miss. Paced to a token budget.</span><code>verifier/chronos/verify.py</code></div>
+        <div class="box"><strong>Score</strong><span>S = 100(0.45A + 0.25R + 0.15Q + 0.15C)(1 &minus; 0.5VD), with the breakdown kept.</span><code>verifier/chronos/score.py</code></div>
+        <div class="box evict"><strong>Evict</strong><span>DELETE /api/cache/clear/{cache_id} when a served answer is outdated.</span><code>plugin/evict.go</code></div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <h2>Outside &amp; on disk</h2>
+      <div class="boxes">
+        <div class="box tav"><strong>Tavily</strong><span>search + extract. Metered against a daily credit budget; never called for a timeless claim.</span></div>
+        <div class="box bif"><strong>Models</strong><span>Open-weights on Groq, routed back through Bifrost so Chronos's own spend has its own key.</span></div>
+        <div class="box"><strong>Redis</strong><span>db0 the cache's vector store, db1 the claim cache.</span><code>redis-stack 7.4.0</code></div>
+        <div class="box"><strong>SQLite</strong><span>One row per report, so a verdict outlives the process.</span><code>verifier/chronos/store.py</code></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="accent"><b>The decision that shapes everything else</b>
+      The plugin compiles as a package of Bifrost's own transports module &mdash; same go.mod, same
+      toolchain, same flags &mdash; so a Go plugin ABI mismatch is structurally impossible.</div>
+    <div><b>What it costs</b>
+      The image builds the gateway from source: several minutes the first time. The gateway must be
+      linked dynamically, so a static build is rejected during the build.</div>
+    <div><b>Added latency</b>
+      A fresh answer is verified in a goroutine and waits for nothing. A cache hit &mdash; the only
+      answer that can be stale &mdash; is checked inline: 28&nbsp;ms with a warm claim cache.</div>
+  </footer>
+</main>
+</body>
+</html>
