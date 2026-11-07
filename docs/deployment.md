@@ -147,10 +147,26 @@ with no backend running the header reads *"Recorded demo replay"*.
 
 Three alternatives, same bundle, no changes:
 
+**Vercel, from the web UI.** Import the repository at <https://vercel.com/new>. Vercel scans
+the tree and offers each application it finds separately — it detects the Vite console, the
+Go plugin and both FastAPI services. Take the one labelled **console (Vite)** and press
+*Import single project*; that sets the root directory to `console` and every other default is
+correct. Nothing else to configure and no environment variables, because the demo has no
+backend.
+
+There is deliberately **no `vercel.json`** in this repository. One was added and then removed:
+Vercel's multi-application detection ignores a root-level classic config for a repository
+shaped like this one, so the file declared a build that never ran. The single-project import
+above is the route that was actually tested.
+
+That route builds with Vite's default base, so asset paths are absolute and it is served from
+a domain root — which is what Vercel gives you. `console/public/results.json` is committed
+and identical to `bench/results.json`, so the benchmark panel shows the measured numbers
+without `build-demo-site.sh` being involved at all.
+
 | Host | What to do |
 | :--- | :--- |
 | Netlify | Drag `console/dist-demo` onto the dashboard, or point a site at this repo with build `./scripts/build-demo-site.sh console/dist-demo` and publish directory `console/dist-demo` |
-| Vercel | Same build command, output directory `console/dist-demo`, framework preset *Other* |
 | Anything else | It is a folder of static files. `scp` it, put it in an S3 bucket, open `index.html` from a USB stick |
 
 Before it goes anywhere public the workflow repeats three of the checks from
