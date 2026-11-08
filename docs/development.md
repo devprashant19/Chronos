@@ -64,7 +64,7 @@ Inside the verifier, the pipeline reads top to bottom:
 | Go | `go test ./...` in `plugin/` | Go 1.27.3 | 55 test functions, 90 results counting subtests in `go test -v`: config precedence, classification, header assembly, the result store's bounds and TTL, eviction, payload shaping, the loop guard |
 | Go race | `go test -race ./...` in `plugin/` | the same | The result store is read from one hook and written from another |
 | Python | `pytest tests/` in `verifier/` | `requirements-dev.txt` | 185 tests: scoring, extraction, the rule judge, the claim cache and API, the pacer, page text, and the injection, ambiguous-subject and retention guards |
-| Console | `npm test` in `console/` | Node 22 | 125 tests: the data layer, the state hook, what each section renders, the animated hero, the walkthrough, fidelity against the design reference, and the layout and labelling faults found by looking at screenshots |
+| Console | `npm test` in `console/` | Node 22 | 131 tests: the data layer, the state hook, what each section renders, the animated hero, the walkthrough, fidelity against the design reference, and the layout and labelling faults found by looking at screenshots |
 | Console types | `npm run typecheck` in `console/` | Node 22 | The app, then the tests under their own config |
 | End to end | `./scripts/verify-all.sh` | Docker | 52 checks: the suites above, then the stack |
 | Benchmark | `python bench/runner.py` | a running verifier | Quality against StaleBench. Not a pass/fail suite |

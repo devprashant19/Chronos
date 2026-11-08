@@ -181,7 +181,7 @@ subset is entirely `leadership`, the hardest class, and it is not a cross-class 
   in Go tests, because the demo gateway runs in `annotate`.
 - **Streaming answers are not content-verified.** They get headers with verdict `pending`.
 - **Never run on macOS or Linux.** Windows with Docker Desktop throughout.
-- **Nothing renders the console in a real browser engine.** Its 125 tests run under jsdom,
+- **Nothing renders the console in a real browser engine.** Its 131 tests run under jsdom,
   so a CSS mistake passes all of them. The screenshots are the only evidence of that.
 
 The full list is in [README.md](README.md#not-verified-and-should-be).

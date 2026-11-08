@@ -1,8 +1,32 @@
+<div align="center">
+
+<img src="docs/icon.png" width="96" alt="The Chronos mark: a clock dial with its last quarter-hour filled in red">
+
 # Chronos
 
-![The Chronos mark: a clock dial with its last quarter-hour filled in red](docs/icon.png)
-
 **A freshness firewall for the Bifrost AI gateway.**
+
+*Your cache remembers. Chronos checks.*
+
+[![CI](https://github.com/devprashant19/Chronos/actions/workflows/ci.yml/badge.svg)](https://github.com/devprashant19/Chronos/actions/workflows/ci.yml)
+[![Docs](https://github.com/devprashant19/Chronos/actions/workflows/docs.yml/badge.svg)](https://github.com/devprashant19/Chronos/actions/workflows/docs.yml)
+[![Live demo](https://img.shields.io/badge/demo-live-6D3BF5)](https://chronos-sable-one.vercel.app/)
+[![Licence: Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-4F32E0)](LICENSE)
+![Go](https://img.shields.io/badge/Go-plugin-00ADD8?logo=go&logoColor=white)
+![Python](https://img.shields.io/badge/Python-FastAPI-3776AB?logo=python&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-React-3178C6?logo=typescript&logoColor=white)
+
+[**Live demo**](https://chronos-sable-one.vercel.app/) ·
+[**See it work**](TESTING.md) ·
+[**How it works**](ARCHITECTURE.md) ·
+[**Every decision**](DESIGN.md) ·
+[**Docs**](docs/README.md)
+
+<img src="docs/screenshots/console-hero.png" width="860" alt="The Chronos console: a dark stage with a rotating violet globe, the headline Your cache remembers, Chronos checks, and live counters of answers checked and stale cache hits stopped">
+
+</div>
+
+---
 
 *Semantic caching is the cheapest win in an LLM stack and the easiest way to serve a
 confidently wrong answer.*
@@ -19,32 +43,25 @@ reports the verdict in response headers, sets the cache TTL from how fast the an
 actually move, and **deletes the cache entry behind any answer it finds has gone stale**.
 
 It is not a fact checker. It has no opinion about anything without a date, it will not rewrite
-an answer, and it is not a proxy in front of a gateway — it is a plugin compiled into one.
+an answer unless asked to, and it is not a proxy in front of a gateway — it is a plugin
+compiled into one.
 
-**Start here:** [try the live demo](https://chronos-sable-one.vercel.app/) ·
-[see it work](TESTING.md) · [what is verified](#what-is-verified-and-what-is-not) ·
-[how it works](ARCHITECTURE.md) · [all the docs](docs/README.md)
-
----
+| At a glance | |
+| :--- | :--- |
+| **What it protects** | Every app behind the gateway, with no code change in any of them |
+| **How** | A Go plugin on four Bifrost hooks, a Python verifier, Tavily for evidence |
+| **What a stale cache hit gets** | Caught inline, verdict in the headers, cache entry deleted |
+| **Proof** | 52 end-to-end checks passing, 20 features recorded working against the live stack, a 120-claim benchmark |
 
 ## Contents
 
-[What it looks like](#what-it-looks-like) ·
-[Run it](#run-it) ·
-[Prove it](#prove-it-rather-than-read-about-it) ·
-**[The signature mechanism](#a-cache-hit-is-the-only-answer-that-can-be-stale)** ·
-[Architecture](#architecture) ·
-[How Bifrost is used](#how-bifrost-is-used) ·
-[How Tavily is used](#how-tavily-is-used) ·
-[Scoring](#scoring) ·
-[Volatility policy](#volatility-policy) ·
-[Modes](#modes) ·
-[Free models](#free-models-and-living-inside-a-free-tier) ·
-**[Measured results](#measured-results)** ·
-**[What is verified, and what is not](#what-is-verified-and-what-is-not)** ·
-[Design decisions](#design-decisions-worth-explaining) ·
-[Layout](#repository-layout) ·
-[Documentation](#documentation)
+| See it | Understand it | Trust it |
+| :--- | :--- | :--- |
+| [What it looks like](#what-it-looks-like) | [**The signature mechanism**](#a-cache-hit-is-the-only-answer-that-can-be-stale) | [**Measured results**](#measured-results) |
+| [Run it](#run-it) | [Architecture](#architecture) | [**What is verified, and what is not**](#what-is-verified-and-what-is-not) |
+| [Prove it](#prove-it-rather-than-read-about-it) | [How Bifrost is used](#how-bifrost-is-used) · [How Tavily is used](#how-tavily-is-used) | [Design decisions](#design-decisions-worth-explaining) |
+| | [Scoring](#scoring) · [Volatility policy](#volatility-policy) · [Modes](#modes) | [Repository layout](#repository-layout) |
+| | [Free models](#free-models-and-living-inside-a-free-tier) | [Documentation](#documentation) |
 
 ---
 
@@ -63,20 +80,14 @@ demo and is labelled so on screen.
 
 | | |
 |---|---|
-| ![The opening: a dark stage with a rotating violet globe, the headline "Your cache remembers. Chronos checks.", two buttons, and three live counters reading 4,748 answers checked, 33 stale cache hits stopped and 79% of Tavily calls saved](docs/screenshots/console-hero.png) | ![The five-step cycle finished in live mode: the cached Python answer struck through, the note "DELETE /api/cache/clear/610663b3…", and a score dial at 35 with the real headers x-chronos-verdict outdated and x-bifrost-cache-hit true](docs/screenshots/console-run-it-evicted.png) |
-| **The opening.** The counters are read from the running verifier, not typed. | **Run it, step five, live.** A real cache hit, verdict `outdated` at 35, and the entry deleted through the gateway's own cache API. This is the product in one screen. |
+| ![Every feature, working: twenty cards marked working and one measured, recorded against the live stack with live Tavily and the gpt-oss-20b judge, each showing the real headers or counters that came back](docs/screenshots/console-proof.png) | ![The five-step cycle finished in live mode: the cached Python answer struck through, the note "DELETE /api/cache/clear/610663b3…", and a score dial at 35 with the real headers x-chronos-verdict outdated and x-bifrost-cache-hit true](docs/screenshots/console-run-it-evicted.png) |
+| **Every feature, working.** Each card is one feature run against the live stack, with what came back. Twenty working on 8 Nov; six re-run live from the browser. | **Run it, step five, live.** A real cache hit, verdict `outdated` at 35, and the entry deleted through the gateway's own cache API. This is the product in one screen. |
 | ![The inspector after a live check: three claims highlighted in an answer, the Python version claim scored 39 with every term of the formula, and sources quoted, including python.org marked as contradicting it](docs/screenshots/console-inspector-live.png) | ![The playground: two raw responses side by side, the first a cache hit with x-chronos-verdict outdated and score 35, the second a cache miss after eviction with verdict pending](docs/screenshots/console-playground.png) |
 | **Inside one answer, live.** Each claim is scored with every term visible, and the pages that disagreed are quoted with their dates. | **Raw traffic.** The same question twice, headers printed exactly as the browser received them: caught on the hit, evicted, then a miss. |
 | ![The cache section: seven volatility classes with their TTLs as bars against a flat 24-hour default, from 15 minutes for market to 7 days for timeless, beside a timeline and ledger of evictions with cache ids](docs/screenshots/console-cache.png) | ![The benchmark section read from bench/results.json: precision 0.40, recall 0.20, a 100% timeless skip rate, latency p50 841 ms, and Tavily credits per thousand answers falling from 3000 cold to 1833 warm](docs/screenshots/console-bench.png) |
 | **One flat TTL fits no fact.** What Chronos chose for each class, and every stale hit it stopped. | **Measured, not promised.** The rule engine's own weak numbers, read from the results file, not typed. |
 | ![The signal path with step six held: Tavily brings the evidence, its box ringed in magenta, and the other seven steps listed with their owners](docs/screenshots/console-signal-path.png) | ![Briefing mode in the recorded demo: three columns of verified lines, unconfirmed lines with their reasons, and open questions to ask in the meeting](docs/screenshots/console-briefing.png) |
 | **Who does what.** Eight steps of one request, coloured by owner. | **Briefing mode.** The same engine checking its own brief; what it could not confirm becomes a question. |
-
-![Every feature, working: twenty cards marked working and one measured, recorded against the live stack with live Tavily and the gpt-oss-20b judge, each showing the real headers or counters that came back, such as x-bifrost-cache-hit true and x-chronos-verdict outdated at 34](docs/screenshots/console-proof.png)
-
-**Every feature, working.** Each card is one feature run against the live stack by
-`scripts/record-proof.py`, with what came back: twenty working and the benchmark measured, on
-8 Nov. In Live mode six of them re-run from the browser; here all six passed again.
 
 More, including phone layouts and dark mode, with the design they are built to:
 [docs/ui.md](docs/ui.md). Every image is regenerated by the readme-suite's `shots.mjs` from the
@@ -549,7 +560,7 @@ runs. It asserts specifics, not the absence of errors:
 | **The gateway survives Chronos failing** | the verifier is stopped mid-run and the gateway must keep answering |
 | Plugin logic | `go test -race ./...`: 55 test functions, 90 results counting subtests in `go test -v` |
 | Verifier logic | `pytest tests/`: 185 tests |
-| Console logic and rendering | 2 checks running `npm test` in `console/`: 125 tests, including a fidelity check against `design/chronos-console.html` |
+| Console logic and rendering | 2 checks running `npm test` in `console/`: 131 tests, including a fidelity check against `design/chronos-console.html` |
 | The injection and ambiguous-subject guards, and retention | 2 checks: both guards are reported in `/v1/stats`, and `answers_checked` equals stored plus pruned reports. The guards' behaviour is in `pytest`, against a judge that obeys every instruction it reads |
 | Repository hygiene | no `.env` tracked, no credential-shaped string in any tracked file |
 
@@ -573,7 +584,7 @@ Quality, separately, is [measured above](#measured-results) rather than asserted
    The verifier half has also run live, rewriting a stale Python answer with its evidence; the
    console's "Every feature" section shows the result. The gateway half has run only in Go
    tests, because the demo gateway runs in `annotate`.
-4. **Nothing renders the console in a real browser engine.** Its 125 tests run under jsdom,
+4. **Nothing renders the console in a real browser engine.** Its 131 tests run under jsdom,
    which reports what the components produce rather than what a browser paints, so a CSS
    mistake — a panel that overflows, a colour with no contrast — passes all of them. The
    screenshots are the only evidence of that, and a person looks at them. That is not a

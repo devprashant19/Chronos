@@ -197,9 +197,10 @@ server-side anything.
   refuses a public origin reaching a loopback address. The request fails before it leaves the
   tab. So on an `https` origin with an `http` verifier URL the console does not probe at all
   (`api.blockedByBrowser` in `console/src/api.ts`) — before 8 Nov it probed anyway and logged
-  a CORS error on every page load. Pressing Live there makes the panels report the verifier
-  unreachable, and Run it falls back to its labelled recording. For live data, run the stack
-  and open <http://localhost:5173>.
+  a CORS error on every page load. Pressing Live there keeps the page in Demo and says why,
+  in a notice at the foot of the screen. Until 8 Nov it switched anyway and opened a stream that
+  could never connect, so the header sat on "Live · reconnecting" with no reason given. For live
+  data, run the stack and open <http://localhost:5173>.
 
 Nothing here is authenticated inside the compose network. Read
 [security.md](security.md) before putting any of it on a network you do not own.

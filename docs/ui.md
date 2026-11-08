@@ -211,6 +211,36 @@ The switch in the header picks between two sources of everything on the page.
 work with no stack running and no keys. The console falls back to it whenever the verifier
 cannot be reached, rather than showing an empty page or an error.
 
+**Live on the hosted demo stays Demo, and says why.** An `https` page may not reach a plain-`http`
+verifier on `localhost`, so pressing Live there would open a stream that can never connect.
+Until 8 Nov it did, and the header sat on "Live · reconnecting" with no reason. Now the button
+carries a tooltip, the page stays in Demo, and the notice explains what Live needs. On
+`localhost`, where Live works, a verifier that goes away reads "Live · verifier unreachable,
+retrying".
+
+## Every click says what it changed
+
+`console/src/announce.tsx`. Each control puts one plain sentence in a notice at the foot of the
+screen: what Live or Demo now means for every panel, which step of Run it you are on and what
+it showed, which claim the score drawer is now explaining, what the Playground is about to
+send, how many lines the brief came back with. A control that takes you somewhere else on
+the page — a nav link, "Explore on your own", "See it on this page" — scrolls to the section
+and rings it in the brand violet for 2.6 seconds, a colour no product owns.
+
+The notice is a polite live region, so a screen reader hears the same sentence. It clears
+itself after six seconds, or on a click. The sentence for each section lives once, in
+`console/src/sectionInfo.ts`, so it reads the same whichever link brought you there.
+`Announce.test.tsx` holds the Live refusal, the nav ring and the signal path's message to it.
+
+## Every feature, in one row
+
+`#proof` replays `public/proof.json`, the recorded run of every feature. Twenty-one cards take
+the height of one: they sit in a single row that scrolls sideways and snaps card by card, with
+arrows and an "N–M of 21" counter, and fade at both edges so the row reads as continuing. Each
+card shows its first three values, long ones cut to three lines with the full value on hover,
+and keeps the rest and the explanation behind "All N values, and why". In Live mode the six
+checks a browser can make re-run in place and are ringed in amber.
+
 ## Colour means ownership
 
 Three product colours, used for nothing else. If a box is blue, Bifrost owns that step.
@@ -260,7 +290,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**125 tests**, in eleven files, run by `npm test` in `console/` and by
+**131 tests**, in twelve files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |
