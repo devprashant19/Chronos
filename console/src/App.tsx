@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { BIFROST_URL, VERIFIER_URL } from "./api";
+import { api, BIFROST_URL, VERIFIER_URL } from "./api";
+import { AnnounceProvider, useAnnounce } from "./announce";
+import { SECTIONS, arrivalMessage } from "./sectionInfo";
 import { useChronos } from "./useChronos";
 import { useReveal } from "./useReveal";
 import Hero from "./sections/Hero";
@@ -14,17 +16,6 @@ import Benchmark from "./sections/Benchmark";
 import Briefing from "./sections/Briefing";
 import Proof from "./sections/Proof";
 
-const SECTIONS = [
-  ["path", "Signal path"],
-  ["run", "Run it"],
-  ["traffic", "Traffic"],
-  ["inspect", "Inspector"],
-  ["cache", "Cache"],
-  ["playground", "Playground"],
-  ["bench", "Benchmark"],
-  ["brief", "Briefing"],
-  ["proof", "Every feature"],
-] as const;
 
 /** The eight steps one request takes, and who owns each. */
 const STEPS: Array<{ owner: "b" | "t" | "c"; title: string; body: string }> = [
@@ -33,16 +24,34 @@ const STEPS: Array<{ owner: "b" | "t" | "c"; title: string; body: string }> = [
   { owner: "b", title: "The semantic cache is consulted", body: "Bifrost looks the request up under its cache key. A hit returns an answer written at some earlier time, which is the moment staleness can be served." },
   { owner: "b", title: "On a miss, the provider is called", body: "Normal gateway routing, with fallbacks. On a hit this step is skipped entirely — no tokens spent." },
   { owner: "c", title: "Chronos extracts the time-sensitive claims", body: "PostLLMHook, after the cache has had its say. Each claim gets a subject, a predicate, the value the answer stated, and a volatility class. Timeless sentences are skipped." },
-  { owner: "t", title: "Tavily brings the evidence", body: "One advanced search per claim-cache miss, official domains first, then extract for the full page text of the top three results. A claim-cache hit costs nothing." },
+  { owner: "t", title: "Tavily brings the evidence", body: "One advanced search per claim-cache miss, then extract for the full page text of the top three results. Source quality is weighed after retrieval, never by narrowing the search. A claim-cache hit costs nothing." },
   { owner: "c", title: "Each claim is judged and scored 0–100", body: "Agreement, recency, source quality and judge confidence, discounted by how fast this kind of fact moves and how long ago it was checked." },
   { owner: "b", title: "The verdict rides back on the response", body: "x-chronos-* headers are written before headers commit, so streaming clients see them too. An outdated cached answer is evicted with DELETE /api/cache/clear/{cache_id}." },
 ];
 
 /** Decay curves: how much of a cached fact's value survives over 7 days. */
 
+/** Said when Live is pressed on a page the browser will not let reach the verifier. */
+export const LIVE_BLOCKED =
+  "Live needs Chronos running on your own machine. This page is served over https, so your browser will not let it reach a verifier at " +
+  VERIFIER_URL +
+  ", which is why Live could only say reconnecting. Staying in Demo: everything here is a recorded replay. To go live, run the stack and open http://localhost:5173.";
+export const DEMO_CHOSEN = "Demo: traffic, counters and reports on this page are now a recorded replay, labelled as such.";
+export const LIVE_CHOSEN =
+  "Live: connecting to your stack. Traffic, counters and reports now come from the running verifier, and Run it and the Playground send real requests.";
+
 export default function App() {
+  return (
+    <AnnounceProvider>
+      <Page />
+    </AnnounceProvider>
+  );
+}
+
+function Page() {
   const { mode, chooseMode, connection, probe, feed, counters, stats, cacheEvents, headline } =
     useChronos();
+  const { announce } = useAnnounce();
   const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
   // The walkthrough is null when it is not running, so "not started" and
@@ -67,8 +76,23 @@ export default function App() {
   }, []);
 
   const scrollOn = useCallback(() => {
-    document.getElementById("path")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
+    announce(arrivalMessage("path"), "path");
+  }, [announce]);
+
+  // Every mode change is said out loud, and a Live the browser would refuse
+  // is explained rather than attempted: before 8 Nov it opened a stream that
+  // could never connect and the header sat on "reconnecting" with no reason.
+  const pickMode = useCallback(
+    (next: "live" | "demo") => {
+      if (next === "live" && api.blockedByBrowser()) {
+        announce(LIVE_BLOCKED);
+        return;
+      }
+      chooseMode(next);
+      announce(next === "demo" ? DEMO_CHOSEN : LIVE_CHOSEN);
+    },
+    [announce, chooseMode],
+  );
 
   return (
     <>
@@ -90,18 +114,30 @@ export default function App() {
 
           <nav className="sections">
             {SECTIONS.map(([id, label]) => (
-              <a key={id} href={`#${id}`}>
+              <a
+                key={id}
+                href={`#${id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.history.replaceState(null, "", `#${id}`);
+                  announce(arrivalMessage(id), id);
+                }}
+              >
                 {label}
               </a>
             ))}
           </nav>
 
-          <ModeSwitch mode={mode} chooseMode={chooseMode} connection={connection} probe={probe} />
+          <ModeSwitch mode={mode} chooseMode={pickMode} connection={connection} probe={probe} />
 
           <button
             className="btn ghost"
             style={{ padding: "5px 9px", fontSize: 12 }}
-            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+            onClick={() => {
+              const next = theme === "dark" ? "light" : "dark";
+              setTheme(next);
+              announce(next === "dark" ? "Dark theme. The colours keep their meaning: blue is Bifrost, pink is Tavily." : "Light theme. The colours keep their meaning: blue is Bifrost, pink is Tavily.");
+            }}
             aria-label="Toggle colour scheme"
           >
             {theme === "dark" ? "Light" : "Dark"}
@@ -189,8 +225,9 @@ function ModeSwitch({
             ? "Live · Tavily"
             : "Live"
         : connection === "error"
-          ? "Live · reconnecting"
+          ? "Live · verifier unreachable, retrying"
           : "Live · connecting";
+  const liveBlocked = api.blockedByBrowser();
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -203,6 +240,7 @@ function ModeSwitch({
           className="btn ghost"
           style={{ padding: "5px 9px", fontSize: 12 }}
           aria-pressed={mode === "live"}
+          title={liveBlocked ? "Needs Chronos running on your machine: open http://localhost:5173" : "Read from your running stack"}
           onClick={() => chooseMode("live")}
         >
           Live
@@ -232,6 +270,7 @@ function ModeSwitch({
 function SignalPath() {
   const [active, setActive] = useState(0);
   const [auto, setAuto] = useState(true);
+  const { announce } = useAnnounce();
 
   useEffect(() => {
     if (!auto) return;
@@ -272,6 +311,7 @@ function SignalPath() {
                   onClick={() => {
                     setActive(i);
                     setAuto(false);
+                    announce(`Holding step ${i + 1} of ${STEPS.length}: ${step.title}. ${ownerLabel(step.owner)} owns it. Press Play to let it advance again.`);
                   }}
                   aria-current={i === active}
                 >
@@ -287,7 +327,14 @@ function SignalPath() {
             ))}
           </ol>
           <div className="steps-foot">
-            <button className="btn ghost" onClick={() => setAuto((a) => !a)} aria-pressed={auto}>
+            <button
+              className="btn ghost"
+              onClick={() => {
+                setAuto(!auto);
+                announce(auto ? `Paused on step ${active + 1}: ${STEPS[active].title}.` : "Playing: the path advances one step every 3.4 seconds.");
+              }}
+              aria-pressed={auto}
+            >
               {auto ? "Pause" : "Play"}
             </button>
             <span className="eyebrow">
@@ -313,7 +360,7 @@ function SignalPath() {
           <span className="own t">Tavily</span>
           <h3 style={{ margin: 0, fontSize: 17 }}>The live web, as evidence</h3>
           <ul>
-            <li>Search with a recent date window, official domains first</li>
+            <li>Search the live web, the last 30 days for fast-moving facts</li>
             <li>Extract pulls the page text the judge actually reads</li>
             <li>Powers the meeting briefing</li>
             <li>Only called on a claim-cache miss</li>

@@ -653,3 +653,41 @@ header.top.on-dark .btn[aria-pressed="true"]{background:#8B5CF6; color:#fff; bor
 
 @media (max-width:900px){ .globe{width:min(96vh,132vw); top:40%} }
 @media (prefers-reduced-motion:reduce){ .globe-mer{animation:none} }
+
+/* --- said and shown: what a click changed (announce.tsx) ------------------ */
+/* A section a click took you to is ringed for a moment, in the brand colour so
+   it never reads as an ownership colour. */
+.flash{position:relative}
+.flash::after{content:"";position:absolute;inset:-8px -12px;border:2px solid var(--brand-2);border-radius:10px;pointer-events:none;
+  box-shadow:0 0 0 6px color-mix(in srgb,var(--brand) 18%,transparent);animation:flashring 2.6s ease both}
+@keyframes flashring{0%{opacity:0;transform:scale(.985)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
+.notice{position:fixed;left:16px;bottom:16px;z-index:60;max-width:min(560px,calc(100vw - 32px));pointer-events:none}
+.notice p{pointer-events:auto;cursor:pointer;margin:0;padding:12px 14px;border-radius:10px;font-size:13.5px;line-height:1.45;
+  background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-left:3px solid var(--brand);
+  box-shadow:0 10px 30px rgba(10,6,25,.18);animation:noticein .28s ease both}
+@keyframes noticein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* --- every feature: one row of cards, scrolled sideways (Proof.tsx) ------- */
+.proof-rail{display:flex;gap:14px;align-items:flex-start;overflow-x:auto;overscroll-behavior-x:contain;
+  scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:6px 6px 14px;scroll-padding-inline:6px;
+  --fade-l:#000;--fade-r:transparent;
+  -webkit-mask-image:linear-gradient(90deg,var(--fade-l) 0,#000 32px,#000 calc(100% - 48px),var(--fade-r) 100%);
+          mask-image:linear-gradient(90deg,var(--fade-l) 0,#000 32px,#000 calc(100% - 48px),var(--fade-r) 100%);
+  scrollbar-width:thin}
+/* Fade only the side that has more cards to scroll to. */
+.proof-rail.more-left{--fade-l:transparent}
+.proof-rail.at-end{--fade-r:#000}
+.proof-rail:focus-visible{outline:2px solid var(--brand);outline-offset:4px}
+.proof-card{flex:0 0 min(300px,82vw);scroll-snap-align:start;padding:14px 15px;min-width:0;
+  transition:transform .2s ease,box-shadow .2s ease}
+.proof-card:hover{transform:translateY(-2px)}
+.proof-card .clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.proof-card details summary{cursor:pointer;font-size:12.5px;color:var(--ink-2);margin-top:8px}
+.proof-card.is-live{box-shadow:0 0 0 2px var(--warn)}
+.rail-nav{display:flex;gap:6px;align-items:center}
+.rail-nav button{min-width:36px}
+@media (prefers-reduced-motion:reduce){
+  .flash::after,.notice p{animation:none}
+  .proof-rail{scroll-behavior:auto}
+  .proof-card{transition:none}
+}

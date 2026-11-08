@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api, type ClaimVerdict, type VerifyReport } from "../api";
 import { DEMO_ANSWER, DEMO_REPORT } from "../demo";
+import { useAnnounce } from "../announce";
 
 const PRESETS: Array<{ label: string; text: string }> = [
   { label: "Stale version", text: DEMO_ANSWER },
@@ -51,6 +52,7 @@ export default function Inspector({ mode }: { mode: "live" | "demo" }) {
   const [log, setLog] = useState<Array<{ tone: string; line: string }>>([]);
 
   const answerRef = useRef<HTMLDivElement>(null);
+  const { announce } = useAnnounce();
 
   useEffect(() => {
     if (mode === "demo") {
@@ -132,6 +134,7 @@ export default function Inspector({ mode }: { mode: "live" | "demo" }) {
               setText(p.text);
               setReport(null);
               setLog([]);
+              announce(`Loaded the "${p.label}" example into the answer box. Press Check this answer to score its claims.`);
             }}
           >
             {p.label}
@@ -176,7 +179,13 @@ export default function Inspector({ mode }: { mode: "live" | "demo" }) {
                           ? "time"
                           : CLASS_OF_VERDICT[claims[seg.claimIndex].verdict] ?? "warn"
                       } ${seg.claimIndex === selected ? "sel" : ""}`}
-                      onClick={() => setSelected(seg.claimIndex!)}
+                      onClick={() => {
+                        const c = claims[seg.claimIndex!];
+                        setSelected(seg.claimIndex!);
+                        announce(
+                          `Showing ${c.subject}, ${c.predicate}: ${c.verdict}, scored ${Math.round(c.score)}. The score drawer beside the answer shows every term and the pages behind it.`,
+                        );
+                      }}
                       aria-label={`Claim: ${claims[seg.claimIndex].subject} ${claims[seg.claimIndex].predicate}, scored ${Math.round(claims[seg.claimIndex].score)}`}
                     >
                       {seg.text}
@@ -219,7 +228,18 @@ export default function Inspector({ mode }: { mode: "live" | "demo" }) {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <button className="btn" onClick={run} disabled={busy}>
+            <button
+              className="btn"
+              onClick={() => {
+                announce(
+                  mode === "live"
+                    ? "Checking the answer live: claims are extracted, searched with Tavily and scored. The log below fills in as it goes."
+                    : "Replaying a recorded check: the claims light up and the score drawer fills in. Switch to Live to check it for real.",
+                );
+                void run();
+              }}
+              disabled={busy}
+            >
               {busy ? "Checking…" : report ? "Check again" : "Check this answer"}
             </button>
             {report ? (
@@ -228,6 +248,7 @@ export default function Inspector({ mode }: { mode: "live" | "demo" }) {
                 onClick={() => {
                   setReport(null);
                   setLog([]);
+                  announce("The answer is editable again. Change any sentence, then check it.");
                 }}
               >
                 Edit the answer

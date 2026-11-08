@@ -15,6 +15,7 @@
 import { useCallback, useState } from "react";
 
 import { BIFROST_URL, chatThroughGateway } from "../api";
+import { useAnnounce } from "../announce";
 
 interface Exchange {
   label: string;
@@ -67,6 +68,7 @@ const RECORDED: Exchange[] = [
 ];
 
 export default function Playground({ mode }: { mode: "live" | "demo" }) {
+  const { announce } = useAnnounce();
   const [exchanges, setExchanges] = useState<Exchange[]>(mode === "demo" ? RECORDED : []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +77,11 @@ export default function Playground({ mode }: { mode: "live" | "demo" }) {
     setBusy(true);
     setError(null);
     setExchanges([]);
+    announce(
+      mode === "demo"
+        ? "Replaying a recorded exchange: the same question twice, with the headers the browser received each time."
+        : "Sending the same question twice through the gateway. Two panels appear below with the raw headers: a cache hit caught as outdated, then a miss after the eviction.",
+    );
 
     if (mode === "demo") {
       setExchanges([RECORDED[0]]);
@@ -124,7 +131,7 @@ export default function Playground({ mode }: { mode: "live" | "demo" }) {
     } finally {
       setBusy(false);
     }
-  }, [mode]);
+  }, [mode, announce]);
 
   return (
     <section id="playground" className="wrap" style={{ paddingBlock: 36 }}>

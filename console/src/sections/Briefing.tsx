@@ -11,8 +11,10 @@ import { useCallback, useState } from "react";
 
 import { api, type Brief, type BriefLine } from "../api";
 import { DEMO_BRIEF } from "../demo";
+import { useAnnounce } from "../announce";
 
 export default function Briefing({ mode }: { mode: "live" | "demo" }) {
+  const { announce } = useAnnounce();
   const [subject, setSubject] = useState("Bifrost (Maxim AI)");
   const [meeting, setMeeting] = useState("Thu 12 Nov 2026 · 10:30 IST");
   const [brief, setBrief] = useState<Brief | null>(mode === "demo" ? DEMO_BRIEF : null);
@@ -25,11 +27,19 @@ export default function Briefing({ mode }: { mode: "live" | "demo" }) {
     setError(null);
     setBrief(null);
     setRevealed(0);
+    announce(
+      mode === "demo"
+        ? "Replaying a recorded brief: it assembles line by line into verified, unconfirmed and open questions."
+        : "Building the brief live: searching the last 30 days and checking each fact. This takes a minute or two on a free tier.",
+    );
 
     try {
       const result = mode === "demo" ? DEMO_BRIEF : await api.brief(subject, meeting);
       if (mode === "demo") await new Promise((r) => setTimeout(r, 600));
       setBrief(result);
+      announce(
+        `Brief ready: ${result.verified.length} verified, ${result.unconfirmed.length} unconfirmed, ${result.open_questions.length} open questions to ask.`,
+      );
 
       // Reveal line by line, so the brief visibly assembles itself.
       const total = result.verified.length + result.unconfirmed.length + result.open_questions.length;
@@ -42,7 +52,7 @@ export default function Briefing({ mode }: { mode: "live" | "demo" }) {
     } finally {
       setBusy(false);
     }
-  }, [mode, subject, meeting]);
+  }, [mode, subject, meeting, announce]);
 
   let cursor = 0;
   const show = () => {

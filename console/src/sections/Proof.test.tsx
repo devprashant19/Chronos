@@ -74,7 +74,7 @@ describe("every feature, working", () => {
       vi.spyOn(LIVE_CHECKS, id).mockResolvedValue({ status: "pass", evidence: [{ label: "tavily_credits", value: "0" }] });
     }
     render(<Proof mode="live" />);
-    const button = await screen.findByRole("button", { name: /Re-run \d+ of them live/ });
+    const button = await screen.findByRole("button", { name: /Re-run \d+ live/ });
     await userEvent.click(button);
 
     // The recorded failure for "timeless" is replaced by the live result.

@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { chatThroughGateway, type ClaimVerdict } from "../api";
+import { useAnnounce } from "../announce";
 import { DEMO_CLAIMS } from "../demo";
 
 export type Phase = "idle" | "asking" | "answered" | "repeat" | "cached" | "checking" | "verdict" | "evicted" | "fresh";
@@ -111,6 +112,7 @@ export default function RunIt({ mode }: { mode: "live" | "demo" }) {
   /** Set when a live call failed and the recorded exchange stood in for it. */
   const [fellBack, setFellBack] = useState(false);
   const timers = useRef<number[]>([]);
+  const { announce } = useAnnounce();
 
   const claims: ClaimVerdict[] = useMemo(() => DEMO_CLAIMS.slice(0, 2), []);
   const reduced = prefersReducedMotion();
@@ -191,6 +193,7 @@ export default function RunIt({ mode }: { mode: "live" | "demo" }) {
       if (next === 4) setEvicted(true);
 
       setStage(next);
+      announce(`Run it, step ${next + 1} of ${STAGES.length}: ${STAGES[next].title}. ${STAGES[next].says}`);
     } catch (e) {
       // Anything unexpected still advances; the panel reports it rather than
       // leaving the reader on a button that does nothing.
@@ -199,7 +202,7 @@ export default function RunIt({ mode }: { mode: "live" | "demo" }) {
     } finally {
       setBusy(false);
     }
-  }, [stage, mode, claims, reduced, headers, fellBack, reset]);
+  }, [stage, mode, claims, reduced, headers, fellBack, reset, announce]);
 
   const started = stage >= 0;
   const score = Number(headers["x-chronos-score"] ?? RECORDED.headers["x-chronos-score"]);
@@ -330,7 +333,13 @@ export default function RunIt({ mode }: { mode: "live" | "demo" }) {
           {!started ? "Start" : stage >= STAGES.length - 1 ? "Run it again" : `Next — ${STAGES[stage + 1]?.title ?? ""}`}
         </button>
         {started ? (
-          <button className="btn ghost" onClick={reset}>
+          <button
+            className="btn ghost"
+            onClick={() => {
+              reset();
+              announce("Run it is back at the start. Press Start to ask the question again.");
+            }}
+          >
             Reset
           </button>
         ) : null}
