@@ -381,3 +381,19 @@ def test_retention_has_a_floor_longer_than_any_cached_answer():
     assert MIN_RETENTION_DAYS * 24 > 24
     assert Settings(report_retention_days_raw=0).report_retention_days == 0
     assert Settings(report_retention_days_raw=90).report_retention_days == 90
+
+
+# ---------------------------------------------------------------------------
+# model-call headers
+# ---------------------------------------------------------------------------
+
+
+def test_a_non_ascii_subject_cannot_break_the_judges_cache_header():
+    """A U+2011 hyphen in a subject failed the whole judge call on 8 Nov."""
+    from chronos.llm import header_safe
+
+    for subject in ("Bifrost‑gateway", "Zürich", "Nestlé", "日本"):
+        value = header_safe(f"chronos-judge:{subject}")
+        value.encode("ascii")  # raises if anything non-ASCII survived
+    # An ASCII key is unchanged, so existing gateway cache entries still match.
+    assert header_safe("chronos-judge:OpenAI GPT-4o") == "chronos-judge:OpenAI GPT-4o"

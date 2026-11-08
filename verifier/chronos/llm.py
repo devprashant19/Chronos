@@ -20,6 +20,7 @@ import contextlib
 import json
 import logging
 from typing import Any
+from urllib.parse import quote
 
 from .pacer import TokenPacer, estimate_tokens
 from .settings import Settings, get_settings
@@ -174,7 +175,7 @@ class LLMClient:
         if cache_key:
             # Chronos's own calls are cacheable too — an identical judging
             # prompt does not need a second provider round trip.
-            extra_headers["x-bf-cache-key"] = cache_key
+            extra_headers["x-bf-cache-key"] = header_safe(cache_key)
             extra_headers["x-bf-cache-ttl"] = "1h"
 
         kwargs: dict[str, Any] = {
@@ -261,6 +262,19 @@ _UNSUPPORTED_PARAM_REJECTIONS = (
     "not supported",
     "must be one of",
 )
+
+
+def header_safe(value: str) -> str:
+    """An HTTP header value built from page or claim text, made ASCII.
+
+    The judge's cache key carries the claim's subject, and HTTP headers are
+    ASCII. A subject with a non-breaking hyphen (U+2011, which a model wrote
+    into a briefing on 8 Nov) or an accent ("Zürich", "Nestlé") raised
+    UnicodeEncodeError inside the HTTP client, failed the model call, and sent
+    the claim to the rule judge without saying why. Percent-encoding keeps an
+    ASCII key byte-for-byte unchanged, so existing cache entries still match.
+    """
+    return quote(value, safe=" !#$&'()*+,-./:;<=>?@[]^_`{|}~")
 
 
 def _is_rate_limit(exc: Exception) -> bool:
