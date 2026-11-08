@@ -1,0 +1,526 @@
+{
+ "recorded_at": "2026-11-08T17:53:00+00:00",
+ "recorded_by": "scripts/record-proof.py",
+ "stack": {
+  "gateway": "http://localhost:8080",
+  "verifier": "http://localhost:8000",
+  "provider": "mockllm/chronos-demo",
+  "extract_model": "groq/openai/gpt-oss-120b",
+  "judge_model": "groq/openai/gpt-oss-20b",
+  "evidence": "live Tavily"
+ },
+ "summary": {
+  "pass": 20,
+  "fail": 0,
+  "measured": 1
+ },
+ "features": [
+  {
+   "id": "miss",
+   "title": "A fresh answer is never delayed",
+   "section": "#run",
+   "promise": "pending on a cache miss",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "request 1 · x-bifrost-cache-hit",
+     "value": "false"
+    },
+    {
+     "label": "request 1 · x-bifrost-cache-id",
+     "value": "3fcfdf00-ee8c-500f-8d28-9c9620d6010b"
+    },
+    {
+     "label": "request 1 · x-chronos-class",
+     "value": "version"
+    },
+    {
+     "label": "request 1 · x-chronos-mode",
+     "value": "annotate"
+    },
+    {
+     "label": "request 1 · x-chronos-ttl",
+     "value": "21600"
+    },
+    {
+     "label": "request 1 · x-chronos-verdict",
+     "value": "pending"
+    }
+   ],
+   "note": "A fresh answer is verified in the background, so it is never delayed: its verdict says pending.",
+   "seconds": 0.0
+  },
+  {
+   "id": "hit",
+   "title": "The same question again is a cache hit",
+   "section": "#run",
+   "promise": "x-bifrost-cache-hit: true",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "request 2 · x-bifrost-cache-hit",
+     "value": "true"
+    },
+    {
+     "label": "request 2 · x-bifrost-cache-id",
+     "value": "3fcfdf00-ee8c-500f-8d28-9c9620d6010b"
+    }
+   ],
+   "note": "The same question again is answered from Bifrost's semantic cache.",
+   "seconds": 0.0
+  },
+  {
+   "id": "caught",
+   "title": "The cached answer is checked, and caught",
+   "section": "#run",
+   "promise": "x-chronos-verdict: outdated on the hit",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "request 2 · x-chronos-verdict",
+     "value": "outdated"
+    },
+    {
+     "label": "request 2 · x-chronos-score",
+     "value": "34"
+    },
+    {
+     "label": "request 2 · x-chronos-stale",
+     "value": "1"
+    },
+    {
+     "label": "request 2 · x-chronos-latency-ms",
+     "value": "1967"
+    }
+   ],
+   "note": "The cache hit is checked inline against live Tavily evidence, and the verdict rides back on the response.",
+   "seconds": 0.0
+  },
+  {
+   "id": "evicted",
+   "title": "The stale entry is deleted",
+   "section": "#cache",
+   "promise": "the next request is a miss again",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "request 3 · x-bifrost-cache-hit",
+     "value": "false"
+    },
+    {
+     "label": "cache event",
+     "value": "{\"kind\": \"evicted\", \"cache_id\": \"3fcfdf00-ee8c-500f-8d28-9c9620d6010b\", \"score\": 33.9}"
+    }
+   ],
+   "note": "The stale entry is deleted through Bifrost's own DELETE /api/cache/clear/{id}, so the next caller gets a fresh answer.",
+   "seconds": 0.0
+  },
+  {
+   "id": "ttl",
+   "title": "Volatility sets the cache lifetime",
+   "section": "#cache",
+   "promise": "version → 6 h, not a flat TTL",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "x-chronos-class",
+     "value": "version"
+    },
+    {
+     "label": "x-chronos-ttl",
+     "value": "21600"
+    }
+   ],
+   "note": "A version question is cached for six hours, not a flat default. A stock price would get fifteen minutes.",
+   "seconds": 0.0
+  },
+  {
+   "id": "breakdown",
+   "title": "Every score shows its working",
+   "section": "#inspect",
+   "promise": "every term of the formula, every source",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "report",
+     "value": "3420627c507f4f15"
+    },
+    {
+     "label": "claim",
+     "value": "The latest stable release of Python is 3.11, which came out in October 2022."
+    },
+    {
+     "label": "stated → current",
+     "value": "3.11 → 3.14.x"
+    },
+    {
+     "label": "breakdown",
+     "value": "{\"agreement\": 0.0, \"recency\": 0.4, \"quality\": 1.0, \"confidence\": 0.95, \"volatility\": 0.7, \"decay\": 0.3871, \"score\": 33.9}"
+    },
+    {
+     "label": "sources",
+     "value": "[{\"host\": \"en.wikipedia.org\", \"call\": \"insufficient\", \"tier\": \"other\"}, {\"host\": \"krishnamohanproductions.com\", \"call\": \"contradicts\", \"tier\": \"other\"}, {\"host\": \"www.python.org\", \"call\": \"insufficient\", \"tier\": \"official\"}, {\"host\": \"tech-insider.org\", \"call\": \"contradicts\", \"tier\": \"other\"}]"
+    }
+   ],
+   "note": "Every score shows its working: each term of the formula, and the sources behind it.",
+   "seconds": 0.0
+  },
+  {
+   "id": "timeless",
+   "title": "A timeless fact costs nothing",
+   "section": "#inspect",
+   "promise": "0 Tavily credits",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "verdict",
+     "value": "current"
+    },
+    {
+     "label": "tavily_credits",
+     "value": "0"
+    },
+    {
+     "label": "claims skipped",
+     "value": "0"
+    }
+   ],
+   "note": "A fact that never changes is skipped before any search: it costs nothing.",
+   "seconds": 1.1
+  },
+  {
+   "id": "claim-cache",
+   "title": "A repeated claim is not searched again",
+   "section": "#cache",
+   "promise": "from_claim_cache, 0 credits",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "first check · credits",
+     "value": "0"
+    },
+    {
+     "label": "second check · from_claim_cache",
+     "value": "true"
+    },
+    {
+     "label": "second check · credits",
+     "value": "0"
+    },
+    {
+     "label": "extractor",
+     "value": "groq/openai/gpt-oss-120b"
+    }
+   ],
+   "note": "A claim already verified is re-scored from the claim cache, not searched again.",
+   "seconds": 3.3
+  },
+  {
+   "id": "cors",
+   "title": "The verdict reaches a browser",
+   "section": "#playground",
+   "promise": "x-chronos-* on Access-Control-Expose-Headers",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "access-control-expose-headers",
+     "value": "x-bifrost-request-id, x-bifrost-trace-id, x-request-id, x-bifrost-provider, x-bifrost-original-model, x-bifrost-resolved-model, x-bifrost-fallback-index, x-bifrost-request-type, x-bifrost-upstream-latency-ms, x-bifrost-routing-info-provider, x-bifrost-routing-info-model, x-bifrost-routing-info-key, x-bifrost-routing-info-alias-model-id, x-bifrost-routing-info-alias-model-name, x-bifrost-routing-info-alias-model-family, x-bifrost-routing-info-is-fallback, x-bifrost-routing-info-primary-provider, x-bifrost-routing-info-primary-model, x-bifrost-routing-info-server-side-fallback-model, x-bifrost-routing-info-requested-provider, x-bifrost-routing-info-requested-model, x-bifrost-cache-hit, x-bifrost-cache-id, x-bifrost-cache-hit-type, x-bifrost-cache-hit-latency-ms, x-bifrost-cache-requested-provider, x-bifrost-cache-requested-model, x-bifrost-cache-similarity, x-bifrost-cache-threshold, x-bifrost-cache-provider-used, x-bifrost-cache-model-used, x-bifrost-cache-input-tokens, x-bifrost-latency-ms, x-bifrost-pricing-request-type, x-bifrost-converted-request-type, x-bifrost-dropped-compat-params, x-bifrost-dropped-unsupported-tools, x-bifrost-passthrough-path, x-bifrost-error-type, x-bifrost-retry-after-ms, mcp-session-id, x-chronos-verdict, x-chronos-score, x-chronos-claims, x-chronos-stale, x-chronos-ttl, x-chronos-report, x-chronos-class, x-chronos-mode, x-chronos-latency-ms"
+    }
+   ],
+   "note": "The verdict is readable from a browser, which is how this console reads it.",
+   "seconds": 0.0
+  },
+  {
+   "id": "internal",
+   "title": "Chronos never checks its own calls",
+   "section": "#path",
+   "promise": "no x-chronos-* on a marked request",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "x-chronos-* headers on a marked request",
+     "value": "none"
+    }
+   ],
+   "note": "Chronos's own model calls go through the gateway too, and are skipped, so it never verifies its own verification.",
+   "seconds": 0.0
+  },
+  {
+   "id": "policy",
+   "title": "Per-key policy, changed at runtime",
+   "section": "#traffic",
+   "promise": "PUT then GET round trips",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "PUT then GET /v1/policies/vk-proof",
+     "value": "{\"mode\": \"guard\", \"guard_threshold\": 65, \"evict_stale\": true}"
+    }
+   ],
+   "note": "Each virtual key can have its own mode and threshold, changed at runtime.",
+   "seconds": 0.1
+  },
+  {
+   "id": "guard-mode",
+   "title": "Guard mode rewrites or blocks",
+   "section": "#run",
+   "promise": "an outdated answer is corrected or refused",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "verdict",
+     "value": "outdated"
+    },
+    {
+     "label": "score",
+     "value": "33.9"
+    },
+    {
+     "label": "corrected_answer",
+     "value": "The latest stable release of Python is 3.15.1【https://www.python.org/downloads/source】."
+    },
+    {
+     "label": "blocked",
+     "value": "false"
+    }
+   ],
+   "note": "In guard mode an outdated answer is rewritten with the evidence, or blocked with a 409. Measured here at the verifier; the gateway half (substitute or 409) is held by plugin/guard_test.go, because the demo gateway runs in annotate mode.",
+   "seconds": 45.9
+  },
+  {
+   "id": "sweeper",
+   "title": "The sweeper re-checks before expiry",
+   "section": "#cache",
+   "promise": "POST /v1/sweep runs a pass",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "POST /v1/sweep",
+     "value": "{\"ok\": true, \"reverified\": 0, \"evicted\": 0, \"skipped\": 0, \"pruned_reports\": 0}"
+    }
+   ],
+   "note": "The sweeper re-checks verdicts that are about to expire and applies retention, every ten minutes.",
+   "seconds": 0.0
+  },
+  {
+   "id": "injection",
+   "title": "A page cannot instruct the judge",
+   "section": "#inspect",
+   "promise": "set aside, never counted",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "judge",
+     "value": "groq/openai/gpt-oss-20b"
+    },
+    {
+     "label": "with the guard · flags",
+     "value": "[\"instruction override\", \"dictated verdict\"]"
+    },
+    {
+     "label": "with the guard · source call",
+     "value": "insufficient"
+    },
+    {
+     "label": "with the guard · verdict",
+     "value": "unverifiable"
+    },
+    {
+     "label": "without the guard · source call",
+     "value": "insufficient"
+    },
+    {
+     "label": "without the guard · verdict",
+     "value": "unverifiable"
+    }
+   ],
+   "note": "A page that tries to instruct the judge has the instruction removed and is set aside as evidence. Run against the real judge model with a fixed attack page. Without the guard this model resisted the attack on its own on this run; the guard means the result no longer depends on that.",
+   "seconds": 0.0
+  },
+  {
+   "id": "ambiguous",
+   "title": "A vague subject never shares a verdict",
+   "section": "#inspect",
+   "promise": "'the company' is never cached",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "'the company' · searches for two checks",
+     "value": "2"
+    },
+    {
+     "label": "'the company' · reason",
+     "value": "subject names no particular thing ('the company')"
+    },
+    {
+     "label": "'Alphabet' · searches for two checks",
+     "value": "1"
+    },
+    {
+     "label": "'Alphabet' · second from claim cache",
+     "value": "true"
+    }
+   ],
+   "note": "A subject that names nothing in particular is never cached, so one company's verdict is never served for another's. Real Tavily, real judge.",
+   "seconds": 0.0
+  },
+  {
+   "id": "retention",
+   "title": "Old reports are deleted, counts are kept",
+   "section": "#traffic",
+   "promise": "deleted past the window, totals unchanged",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "pruned",
+     "value": "{\"reports\": 2, \"events\": 0}"
+    },
+    {
+     "label": "answers_checked before → after",
+     "value": "3 → 3"
+    },
+    {
+     "label": "stale_hits_prevented before → after",
+     "value": "3 → 3"
+    },
+    {
+     "label": "reports left",
+     "value": "1"
+    }
+   ],
+   "note": "Against a throwaway database with the real store: reports past the window are deleted, their counts are kept.",
+   "seconds": 0.0
+  },
+  {
+   "id": "retention-live",
+   "title": "Retention on the running stack",
+   "section": "#traffic",
+   "promise": "answers = stored + pruned",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "retention_days",
+     "value": "30"
+    },
+    {
+     "label": "answers_checked",
+     "value": "4814"
+    },
+    {
+     "label": "reports_stored + reports_pruned",
+     "value": "4814 + 0"
+    }
+   ],
+   "note": "Old reports are deleted after the window, and the lifetime counters never go backwards.",
+   "seconds": 0.0
+  },
+  {
+   "id": "observability",
+   "title": "Everything is counted",
+   "section": "#traffic",
+   "promise": "/v1/stats and /metrics",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "/metrics",
+     "value": "[\"chronos_claims_total\", \"chronos_cache_evictions_total\", \"chronos_tavily_credits_total\", \"chronos_injection_flagged_sources_total\", \"chronos_claim_cache_bypassed_total\"]"
+    },
+    {
+     "label": "model_pacing",
+     "value": "{\"tokens_per_minute\": 8000, \"waits\": 2}"
+    },
+    {
+     "label": "guards",
+     "value": "{\"injection_flagged_sources\": 0, \"claim_cache_bypassed\": 0}"
+    },
+    {
+     "label": "claim_cache",
+     "value": "{\"backend\": \"redis\", \"hits\": 6, \"misses\": 0}"
+    }
+   ],
+   "note": "Every counter is in /v1/stats and in Prometheus format, including the pacing that keeps a free tier inside its limit.",
+   "seconds": 0.1
+  },
+  {
+   "id": "briefing",
+   "title": "A meeting brief, every fact checked",
+   "section": "#brief",
+   "promise": "verified, unconfirmed, open questions",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "verified",
+     "value": "2"
+    },
+    {
+     "label": "unconfirmed",
+     "value": "4"
+    },
+    {
+     "label": "open questions",
+     "value": "4"
+    },
+    {
+     "label": "first verified line",
+     "value": "Bifrost, an open‑source AI gateway written in Go by Maxim AI, was founded in 2023 and raised a $3.00 M seed round from Elevation Capital on 2024‑06‑18."
+    },
+    {
+     "label": "tavily_credits",
+     "value": "18"
+    }
+   ],
+   "note": "A subject and a meeting time become a one-page brief, every fact Chronos-scored, with what it could not confirm said out loud.",
+   "seconds": 73.9
+  },
+  {
+   "id": "bench",
+   "title": "Measured against 120 labelled claims",
+   "section": "#bench",
+   "promise": "precision and recall, not promises",
+   "status": "measured",
+   "evidence": [
+    {
+     "label": "source",
+     "value": "bench/results-model.json"
+    },
+    {
+     "label": "claims",
+     "value": "18 (all leadership, the hardest class)"
+    },
+    {
+     "label": "outdated · precision / recall / F1",
+     "value": "0.8 / 0.6667 / 0.7273"
+    },
+    {
+     "label": "timeless skipped without credits",
+     "value": "6 of 6"
+    },
+    {
+     "label": "p50 verification",
+     "value": "15.8 s, paced on a free tier"
+    }
+   ],
+   "note": "Quality is measured against hand-labelled claims, not asserted. A measurement, not a pass or fail; the full table is in the Benchmark section.",
+   "seconds": 0.0
+  },
+  {
+   "id": "degrade",
+   "title": "The gateway survives Chronos failing",
+   "section": "#path",
+   "promise": "verifier stopped, gateway still answers",
+   "status": "pass",
+   "evidence": [
+    {
+     "label": "gateway status with the verifier stopped",
+     "value": "200"
+    },
+    {
+     "label": "x-chronos-verdict",
+     "value": "pending"
+    }
+   ],
+   "note": "Stop the verifier entirely and the gateway keeps answering. No failure of Chronos fails a request.",
+   "seconds": 6.3
+  }
+ ]
+}

@@ -219,6 +219,14 @@ else
       bad "demo site: ships the measured benchmark results" "results.json missing or not a results file"
     fi
 
+    # The "every feature" section replays this. Without it the section says
+    # "no proof file", which is honest and leaves a judge nothing to see.
+    if [ -f "$DEMO_OUT/proof.json" ] && python -c "import json,sys;d=json.load(open(sys.argv[1],encoding='utf-8'));sys.exit(0 if d.get('features') and d.get('recorded_at') else 1)" "$DEMO_OUT/proof.json" 2>/dev/null; then
+      ok "demo site: ships the recorded run of every feature"
+    else
+      bad "demo site: ships the recorded run of every feature" "proof.json missing; run scripts/record-proof.py"
+    fi
+
     # It gets hosted publicly. Nothing in it may look like a credential.
     if grep -rIqE '(sk-[A-Za-z0-9]{20,}|tvly-(dev-)?[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,})' "$DEMO_OUT" 2>/dev/null; then
       bad "demo site: carries no credentials"
