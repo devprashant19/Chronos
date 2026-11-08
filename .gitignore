@@ -54,3 +54,5 @@ console/node_modules/
 
 # film working folder (specs, media, renders)
 /video/
+/video-short/
+/.remotion/
