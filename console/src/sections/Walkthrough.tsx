@@ -78,6 +78,12 @@ export const STEPS: Step[] = [
     title: "What you would actually be told",
     look: "The same verdicts, written as a briefing: what is confirmed, what is not, and what nobody could check.",
   },
+  {
+    target: "proof",
+    owner: "c",
+    title: "Every feature, run for real",
+    look: "Each card is one feature run against the live stack, with the headers and counters that came back and the date of the run. In Live mode, press the button to re-run the browser-side ones yourself.",
+  },
 ];
 
 const OWNER_LABEL: Record<"b" | "t" | "c", string> = {

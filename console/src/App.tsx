@@ -12,6 +12,7 @@ import Cache from "./sections/Cache";
 import Playground from "./sections/Playground";
 import Benchmark from "./sections/Benchmark";
 import Briefing from "./sections/Briefing";
+import Proof from "./sections/Proof";
 
 const SECTIONS = [
   ["path", "Signal path"],
@@ -22,6 +23,7 @@ const SECTIONS = [
   ["playground", "Playground"],
   ["bench", "Benchmark"],
   ["brief", "Briefing"],
+  ["proof", "Every feature"],
 ] as const;
 
 /** The eight steps one request takes, and who owns each. */
@@ -125,6 +127,7 @@ export default function App() {
         <Playground mode={mode} />
         <Benchmark />
         <Briefing mode={mode} />
+        <Proof mode={mode} />
       </main>
 
       <footer
