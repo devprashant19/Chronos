@@ -217,8 +217,13 @@ function Rendered({ results }: { results: Results }) {
           )}
         </div>
 
+        {/* The whole row, not "span 2". In an auto-fit grid with room for one
+            column, spanning two forces an implicit second track, and the
+            section grows past a phone's viewport (measured: 510px wide at a
+            390px viewport). "1 / -1" spans the columns that exist and
+            creates none. */}
         {Object.keys(primary.per_class).length > 0 ? (
-          <div className="panel bench-card" style={{ padding: 18, gridColumn: "span 2" }}>
+          <div className="panel bench-card" style={{ padding: 18, gridColumn: "1 / -1" }}>
             <p className="eyebrow" style={{ marginBottom: 10 }}>
               Precision and recall by volatility class
             </p>
