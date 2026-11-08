@@ -10,11 +10,11 @@
 
 [![CI](https://github.com/devprashant19/Chronos/actions/workflows/ci.yml/badge.svg)](https://github.com/devprashant19/Chronos/actions/workflows/ci.yml)
 [![Docs](https://github.com/devprashant19/Chronos/actions/workflows/docs.yml/badge.svg)](https://github.com/devprashant19/Chronos/actions/workflows/docs.yml)
-[![Live demo](https://img.shields.io/badge/demo-live-6D3BF5)](https://chronos-sable-one.vercel.app/)
-[![Licence: Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-4F32E0)](LICENSE)
-![Go](https://img.shields.io/badge/Go-plugin-00ADD8?logo=go&logoColor=white)
-![Python](https://img.shields.io/badge/Python-FastAPI-3776AB?logo=python&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-React-3178C6?logo=typescript&logoColor=white)
+[![Live demo](docs/badges/demo.svg)](https://chronos-sable-one.vercel.app/)
+[![Licence: Apache-2.0](docs/badges/licence.svg)](LICENSE)
+[![Go plugin](docs/badges/go.svg)](plugin/)
+[![Python, FastAPI](docs/badges/python.svg)](verifier/)
+[![TypeScript, React](docs/badges/typescript.svg)](console/)
 
 [**Live demo**](https://chronos-sable-one.vercel.app/) ·
 [**See it work**](TESTING.md) ·
