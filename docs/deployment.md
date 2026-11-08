@@ -160,7 +160,9 @@ shaped like this one, so the file declared a build that never ran. The single-pr
 above is the route that was actually tested.
 
 That route builds with Vite's default base, so asset paths are absolute and it is served from
-a domain root — which is what Vercel gives you. `console/public/results.json` is committed
+a domain root — which is what Vercel gives you. The hosted demo at
+<https://chronos-sable-one.vercel.app/> is served exactly this way: absolute `/assets/` paths
+from the domain root, `results.json` beside them, the header reading *"Recorded demo replay"*. `console/public/results.json` is committed
 and identical to `bench/results.json`, so the benchmark panel shows the measured numbers
 without `build-demo-site.sh` being involved at all.
 
@@ -190,6 +192,14 @@ server-side anything.
 - **The console's URLs are compiled in.** `VITE_VERIFIER_URL` and `VITE_BIFROST_URL` are
   baked at build time, so changing them needs `docker compose build console`.
 - **Bifrost's web dashboard is stubbed out**, deliberately, to keep the image small.
+- **The hosted demo cannot switch to Live against your own stack.** An `https` page may not
+  fetch the plain-`http` verifier on `localhost`: it is mixed content, and Chromium also
+  refuses a public origin reaching a loopback address. The request fails before it leaves the
+  tab. So on an `https` origin with an `http` verifier URL the console does not probe at all
+  (`api.blockedByBrowser` in `console/src/api.ts`) — before 8 Nov it probed anyway and logged
+  a CORS error on every page load. Pressing Live there makes the panels report the verifier
+  unreachable, and Run it falls back to its labelled recording. For live data, run the stack
+  and open <http://localhost:5173>.
 
 Nothing here is authenticated inside the compose network. Read
 [security.md](security.md) before putting any of it on a network you do not own.

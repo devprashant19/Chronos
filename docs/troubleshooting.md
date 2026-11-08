@@ -45,7 +45,7 @@ These do not raise an error. Something that should be happening silently stops.
 
 | Symptom | Cause | What to do |
 | :--- | :--- | :--- |
-| `P4: the cached stale answer was caught` fails with `verdict=unverifiable` | A live Tavily search for the claim returned nothing that addressed it. Two of the 44 checks depend on live search | Re-run. On 7 Nov this failed once and passed on the next run, verdict `outdated`, score 39. The script prints "live search results vary; re-run if transient" |
+| `P4: the cached stale answer was caught` fails with `verdict=unverifiable` | A live Tavily search for the claim returned nothing that addressed it. Two of the 49 checks depend on live search | Re-run. On 7 Nov this failed once and passed on the next run, verdict `outdated`, score 39. The script prints "live search results vary; re-run if transient" |
 | A claim is `outdated` on one run and `check` on the next | The same cause: a different result set | Expected. Single-run benchmark figures move by several points |
 | The benchmark reports a false positive on a claim labelled `current` | StaleBench's `current` labels decay by construction. "Tim Cook is the CEO of Apple" is the known one, where the evidence pointed at a successor | `python bench/runner.py --audit` prints every disagreement with its label confidence and source. A decayed label and a real error look identical in a score |
 | An official source is in the evidence and was called `insufficient` | The judge sees an 800-character window of each page, and the sentence that settles the claim can fall outside it | Observed on `python.org/downloads/windows`, whose fallback page is mostly navigation. `CHRONOS_JUDGE_SNIPPET_CHARS` widens the window at the cost of tokens |

@@ -5,101 +5,108 @@
   "scale": 1,
   "dir": "docs/screenshots",
   "shots": [
-    {
-      "name": "console-hero",
-      "path": "/"
-    },
+    { "name": "console-hero", "path": "/", "steps": [{ "wait": 3200 }] },
     {
       "name": "console-walkthrough",
       "path": "/",
       "steps": [
-        {
-          "click": "text=Start the walkthrough"
-        },
-        {
-          "wait": 500
-        },
-        {
-          "click": "button:has-text('Next')"
-        },
-        {
-          "wait": 400
-        },
-        {
-          "click": "button:has-text('Next')"
-        },
-        {
-          "wait": 400
-        },
-        {
-          "click": "button:has-text('Next')"
-        },
-        {
-          "wait": 1400
-        }
+        { "click": "text=Start the walkthrough" }, { "wait": 600 },
+        { "click": ".tour button:has-text('Next')" }, { "wait": 500 },
+        { "click": ".tour button:has-text('Next')" }, { "wait": 500 },
+        { "click": ".tour button:has-text('Next')" }, { "wait": 1600 }
+      ]
+    },
+    {
+      "name": "console-signal-path",
+      "path": "/",
+      "steps": [
+        { "click": "header a[href='#path']" }, { "wait": 3200 },
+        { "click": "#path button:has-text('Pause')" }, { "wait": 300 },
+        { "click": "#path button:has-text('Tavily brings the evidence')" }, { "wait": 1200 }
       ]
     },
     {
       "name": "console-run-it",
       "path": "/",
-      "scrollTo": "#run",
       "steps": [
-        {
-          "click": "#run button.btn"
-        },
-        {
-          "wait": 600
-        },
-        {
-          "click": "#run button.btn"
-        },
-        {
-          "wait": 600
-        },
-        {
-          "click": "#run button.btn"
-        },
-        {
-          "wait": 1200
-        },
-        {
-          "click": "#run button.btn"
-        },
-        {
-          "wait": 1200
-        }
+        { "click": "header a[href='#run']" }, { "wait": 3200 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 2500 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 6000 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 1500 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 1800 }
       ]
     },
     {
-      "name": "console-traffic",
+      "name": "console-run-it-evicted",
       "path": "/",
-      "scrollTo": "#traffic"
+      "steps": [
+        { "click": "header a[href='#run']" }, { "wait": 3200 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 2500 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 6000 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 1500 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 1500 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 1600 }
+      ]
     },
+    { "name": "console-traffic", "path": "/", "steps": [{ "click": "header a[href='#traffic']" }, { "wait": 3200 }] },
     {
       "name": "console-inspector",
       "path": "/",
-      "scrollTo": "#inspect"
+      "steps": [
+        { "click": "header a[href='#inspect']" }, { "wait": 3200 },
+        { "click": "#inspect .claim.bad" }, { "wait": 900 }
+      ]
     },
     {
-      "name": "console-cache",
+      "name": "console-inspector-live",
       "path": "/",
-      "scrollTo": "#cache"
+      "steps": [
+        { "click": "header a[href='#inspect']" }, { "wait": 3200 },
+        { "click": "#inspect button:has-text('Check again')" }, { "wait": 1500 }, { "waitFor": "#inspect button:has-text('Check again')" }, { "wait": 1200 }, { "click": "#inspect .claim.bad" }, { "wait": 900 }
+      ]
     },
+    { "name": "console-cache", "path": "/", "steps": [{ "click": "header a[href='#cache']" }, { "wait": 3200 }] },
     {
-      "name": "console-bench",
+      "name": "console-playground",
       "path": "/",
-      "scrollTo": "#bench"
+      "steps": [
+        { "click": "header a[href='#playground']" }, { "wait": 3200 },
+        { "click": "text=Send the same question twice" }, { "waitFor": "text=after eviction" }, { "wait": 1200 }
+      ]
+    },
+    { "name": "console-bench", "path": "/", "steps": [{ "click": "header a[href='#bench']" }, { "wait": 3200 }] },
+    {
+      "name": "console-briefing",
+      "path": "/",
+      "steps": [
+        { "click": "header button:has-text('Demo')" }, { "wait": 600 },
+        { "click": "header a[href='#brief']" }, { "wait": 3200 },
+        { "click": "text=Build the brief" }, { "wait": 4500 }
+      ]
     },
     {
       "name": "console-dark",
       "path": "/",
-      "theme": "dark",
       "steps": [
-        {
-          "click": "button[aria-label='Toggle colour scheme']"
-        }
-      ],
-      "scrollTo": "#path"
+        { "click": "button[aria-label='Toggle colour scheme']" }, { "wait": 400 },
+        { "click": "header a[href='#path']" }, { "wait": 3200 }
+      ]
+    },
+    { "name": "console-phone", "path": "/", "width": 390, "height": 844, "scale": 2, "steps": [{ "wait": 3200 }] },
+    {
+      "name": "console-phone-run-it",
+      "path": "/",
+      "width": 390,
+      "height": 844,
+      "scale": 2,
+      "steps": [
+        { "click": "header button:has-text('Demo')" }, { "wait": 500 },
+        { "click": "header a[href='#run']" }, { "wait": 3200 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 500 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 500 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 1200 },
+        { "click": "#run .run-controls button.btn:not(.ghost)" }, { "wait": 1500 }
+      ]
     }
   ]
 }

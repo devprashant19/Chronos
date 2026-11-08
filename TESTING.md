@@ -16,9 +16,9 @@ Level 1 needs nothing installed and no credentials.
 > from how fast the answer's facts actually move, and deletes the cache entry behind any
 > answer it finds stale. It runs on free open-weights models and a free Tavily key, and the
 > whole stack runs with no credentials at all against a built-in mock provider.
-> The console builds to a static folder that runs with no backend
-> (`./scripts/build-demo-site.sh`), replaying a recorded log and labelled as such.
-> `./scripts/verify-all.sh` runs 44 checks end to end; on a 18-claim benchmark subset the
+> The console builds to a static folder that runs with no backend, replaying a recorded log
+> and labelled as such; it is hosted at https://chronos-sable-one.vercel.app/.
+> `./scripts/verify-all.sh` runs 49 checks end to end; on a 18-claim benchmark subset the
 > model path scores precision 0.80 and recall 0.667 against a rule-only baseline of 0.40 and
 > 0.20. Built during the event with Claude Code; see the README's disclosure.
 
@@ -30,7 +30,7 @@ Level 1 needs nothing installed and no credentials.
 | :--- | :--- | :--- | :--- |
 | **1. Open the demo site** | a browser, nothing installed | 3 min | The real console, and a five-step demo of the whole cycle you drive yourself |
 | **2. Run the stack** | Docker | ~8 min first build, 1 min after | Live data, and the miss → hit → evicted → miss cycle by hand |
-| **3. Run the checks** | Docker | ~12 min | 44 assertions, end to end |
+| **3. Run the checks** | Docker | ~12 min | 49 assertions, end to end |
 | **4. Run the benchmark** | Docker + a free Tavily key + a free Groq key | ~6 min | The quality numbers, reproduced |
 
 Levels 1 to 3 need **no API keys**. Only level 4 does, and both are free with no card.
@@ -39,16 +39,19 @@ Levels 1 to 3 need **no API keys**. Only level 4 does, and both are free with no
 
 ## Level 1 — two minutes, nothing installed
 
+Open **<https://chronos-sable-one.vercel.app/>**.
+
 The console is a static bundle, and it works with **no backend at all**: when the verifier is
-unreachable it replays a recorded log and says so on the page. That is the demo site.
+unreachable it replays a recorded log and says so on the page. The header should read
+**"Recorded demo replay"** — that is the fallback working, not a failure. Nothing on that page
+is presented as live.
+
+To serve the same folder yourself instead:
 
 ```bash
 ./scripts/build-demo-site.sh          # needs Node; writes console/dist-demo
 npx http-server console/dist-demo -p 8099
 ```
-
-Open <http://localhost:8099>. The header should read **"Recorded demo replay"** — that is the
-fallback working, not a failure. Nothing on that page is presented as live.
 
 Scroll to **Run it**. Press **Start**, then **Next** four times. That is the whole product
 in five steps: ask a question, ask it again and hit the cache, watch the claims get checked,
@@ -56,7 +59,7 @@ read the verdict off the response headers, watch the stale entry be deleted. Wit
 running it sends real requests and shows real headers; without it, the same five steps replay
 a recorded exchange and say so.
 
-Press **Start the walkthrough**. Eight steps, about two minutes, in the order the product
+Press **Start the walkthrough**. Nine steps, about two minutes, in the order the product
 actually happens: the problem, where Chronos sits, answers being checked, the claims and the
 score, the TTL policy and the eviction ledger, the headers on the response, the measured
 numbers, the briefing. It scrolls the real page and rings the panel it is talking about —
@@ -128,7 +131,7 @@ three requests behave the same way.
 ./scripts/verify-all.sh --unit     # the test suites only, no stack
 ```
 
-44 checks. Each one prints what it asserted, so a pass means something specific rather than
+49 checks. Each one prints what it asserted, so a pass means something specific rather than
 "no errors": that the gateway loaded `chronos.so`, that a second identical request is a cache
 hit, that Chronos set a six-hour TTL for a `version` claim, that a stale cached answer is
 caught and evicted and the next request misses, that the nine headers are exposed to a
@@ -163,7 +166,7 @@ subset is entirely `leadership`, the hardest class, and it is not a cross-class 
 
 ## Known limits, before you find them
 
-- **Two of the 44 checks depend on a live web search and are genuinely flaky.** On 7 Nov one
+- **Two of the 49 checks depend on a live web search and are genuinely flaky.** On 7 Nov one
   run had them fail with `verdict=unverifiable`; the next run passed with `outdated`, score
   39. The script says so itself: *"live search results vary; re-run if transient"*.
 - **The benchmark numbers move between runs** for the same reason.
@@ -173,7 +176,7 @@ subset is entirely `leadership`, the hardest class, and it is not a cross-class 
   through the gateway end to end.
 - **Streaming answers are not content-verified.** They get headers with verdict `pending`.
 - **Never run on macOS or Linux.** Windows with Docker Desktop throughout.
-- **Nothing renders the console in a real browser engine.** Its 109 tests run under jsdom,
+- **Nothing renders the console in a real browser engine.** Its 115 tests run under jsdom,
   so a CSS mistake passes all of them. The screenshots are the only evidence of that.
 
 The full list is in [README.md](README.md#not-verified-and-should-be).

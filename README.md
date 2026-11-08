@@ -21,7 +21,8 @@ actually move, and **deletes the cache entry behind any answer it finds has gone
 It is not a fact checker. It has no opinion about anything without a date, it will not rewrite
 an answer, and it is not a proxy in front of a gateway — it is a plugin compiled into one.
 
-**Start here:** [see it work](TESTING.md) · [what is verified](#what-is-verified-and-what-is-not) ·
+**Start here:** [try the live demo](https://chronos-sable-one.vercel.app/) ·
+[see it work](TESTING.md) · [what is verified](#what-is-verified-and-what-is-not) ·
 [how it works](ARCHITECTURE.md) · [all the docs](docs/README.md)
 
 ---
@@ -49,26 +50,36 @@ an answer, and it is not a proxy in front of a gateway — it is a plugin compil
 
 ## What it looks like
 
+**Try it now: [chronos-sable-one.vercel.app](https://chronos-sable-one.vercel.app/)** — the
+real console, hosted as static files. With no backend behind it, it replays a recorded log and
+says so in the header (*"Recorded demo replay"*). Press **Start the walkthrough** for a nine-step
+tour, or scroll to **Run it** and drive the whole cycle yourself with one button.
+
+Everything below was captured from the console running **live** against the local stack —
+real gateway, real verifier, real Tavily searches — except the briefing, which is the recorded
+demo and is labelled so on screen.
+
 | | |
 |---|---|
-| ![The inspector: a cached answer with four highlighted claim spans, one scored 36 and marked outdated, beside its score breakdown and two contradicting sources](docs/screenshots/console-inspector.png) | ![The cache section: seven volatility classes with their chosen TTLs as bars against a flat 24-hour default, beside a ledger of fifteen evictions with cache ids and scores](docs/screenshots/console-cache.png) |
-| **The inspector.** The claims found inside one cached answer, each scored, with every term of the formula and the pages that disagreed, quoted. This is the product. | **The cache ledger.** What Chronos chose for each volatility class against a flat default, and the real evictions underneath, with the cache ids it deleted. |
+| ![The opening: a dark stage with a rotating violet globe, the headline "Your cache remembers. Chronos checks.", two buttons, and three live counters reading 4,748 answers checked, 33 stale cache hits stopped and 79% of Tavily calls saved](docs/screenshots/console-hero.png) | ![The five-step cycle finished in live mode: the cached Python answer struck through, the note "DELETE /api/cache/clear/610663b3…", and a score dial at 35 with the real headers x-chronos-verdict outdated and x-bifrost-cache-hit true](docs/screenshots/console-run-it-evicted.png) |
+| **The opening.** The counters are read from the running verifier, not typed. | **Run it, step five, live.** A real cache hit, verdict `outdated` at 35, and the entry deleted through the gateway's own cache API. This is the product in one screen. |
+| ![The inspector after a live check: three claims highlighted in an answer, the Python version claim scored 39 with every term of the formula, and sources quoted, including python.org marked as contradicting it](docs/screenshots/console-inspector-live.png) | ![The playground: two raw responses side by side, the first a cache hit with x-chronos-verdict outdated and score 35, the second a cache miss after eviction with verdict pending](docs/screenshots/console-playground.png) |
+| **Inside one answer, live.** Each claim is scored with every term visible, and the pages that disagreed are quoted with their dates. | **Raw traffic.** The same question twice, headers printed exactly as the browser received them: caught on the hit, evicted, then a miss. |
+| ![The cache section: seven volatility classes with their TTLs as bars against a flat 24-hour default, from 15 minutes for market to 7 days for timeless, beside a timeline and ledger of evictions with cache ids](docs/screenshots/console-cache.png) | ![The benchmark section read from bench/results.json: precision 0.40, recall 0.20, a 100% timeless skip rate, latency p50 841 ms, and Tavily credits per thousand answers falling from 3000 cold to 1833 warm](docs/screenshots/console-bench.png) |
+| **One flat TTL fits no fact.** What Chronos chose for each class, and every stale hit it stopped. | **Measured, not promised.** The rule engine's own weak numbers, read from the results file, not typed. |
+| ![The signal path with step six held: Tavily brings the evidence, its box ringed in magenta, and the other seven steps listed with their owners](docs/screenshots/console-signal-path.png) | ![Briefing mode in the recorded demo: three columns of verified lines, unconfirmed lines with their reasons, and open questions to ask in the meeting](docs/screenshots/console-briefing.png) |
+| **Who does what.** Eight steps of one request, coloured by owner. | **Briefing mode.** The same engine checking its own brief; what it could not confirm becomes a question. |
 
-Both are captures of the running console, regenerated by a script whose shot list is in the
-repository at `docs/screenshots/shots.json`. More of them, and the design they are built to:
-[docs/ui.md](docs/ui.md).
+More, including phone layouts and dark mode, with the design they are built to:
+[docs/ui.md](docs/ui.md). Every image is regenerated by the readme-suite's `shots.mjs` from the
+shot list kept at `docs/screenshots/shots.json`.
 
-You can open the console itself without installing anything. It works with **no backend**:
-when the verifier is unreachable it replays a recorded log and labels itself *"Recorded demo
-replay"* on the page. It opens on a full screen of argument and offers a **guided
-walkthrough** — nine steps that scroll the real page and ring the panel being discussed.
+The hosted demo is the same folder this builds, so it can go anywhere that serves static files:
 
 ```bash
 ./scripts/build-demo-site.sh          # needs Node; writes console/dist-demo
 npx http-server console/dist-demo -p 8099
 ```
-
-That folder is plain static files with relative paths, so it can be hosted anywhere.
 
 ### The cycle, as it actually ran
 
@@ -194,7 +205,7 @@ Real output, trimmed to the end:
   PASS degrade path: the gateway still answers with the verifier down
 
 == summary ==
-  44 passed, 0 failed, 0 skipped
+  49 passed, 0 failed, 0 skipped
 ```
 
 Each check prints what it asserted, so a pass means something specific rather than the absence
@@ -516,7 +527,7 @@ Reproduce: [TESTING.md § level 4](TESTING.md#level-4--reproduce-the-numbers).
 
 ## What is verified, and what is not
 
-`./scripts/verify-all.sh` — **44 checks, 44 passing** on this machine, and the same script CI
+`./scripts/verify-all.sh` — **49 checks, 49 passing** on this machine, and the same script CI
 runs. It asserts specifics, not the absence of errors:
 
 | What was checked | Evidence |
@@ -530,14 +541,14 @@ runs. It asserts specifics, not the absence of errors:
 | **The gateway survives Chronos failing** | the verifier is stopped mid-run and the gateway must keep answering |
 | Plugin logic | `go test -race ./...`: 50 test functions, 120 cases counting subtests |
 | Verifier logic | `pytest tests/`: 134 tests |
-| Console logic and rendering | 2 checks running `npm test` in `console/`: 109 tests, including a fidelity check against `design/chronos-console.html` |
+| Console logic and rendering | 2 checks running `npm test` in `console/`: 115 tests, including a fidelity check against `design/chronos-console.html` |
 | Repository hygiene | no `.env` tracked, no credential-shaped string in any tracked file |
 
 Quality, separately, is [measured above](#measured-results) rather than asserted.
 
 ### Not verified, and should be
 
-1. **Two of the 44 checks depend on a live web search and are genuinely flaky.** On 7 Nov,
+1. **Two of the 49 checks depend on a live web search and are genuinely flaky.** On 7 Nov,
    one run had `P4: the cached stale answer was caught` fail with `verdict=unverifiable`
    because the search returned nothing that addressed the claim; the next run passed with
    `outdated`, score 39. Recorded evidence for those two checks would fix it, at the cost of
@@ -546,10 +557,16 @@ Quality, separately, is [measured above](#measured-results) rather than asserted
    figure. A full `--limit 0` run would, and costs roughly 400 Tavily credits.
 3. **`guard` mode's regenerate and 409 paths have never run through the gateway.** They are
    unit-tested in `plugin/` only. An end-to-end check in `verify-all.sh` would settle it.
-4. **Nothing renders the console in a real browser engine.** Its 109 tests run under jsdom,
+4. **Nothing renders the console in a real browser engine.** Its 115 tests run under jsdom,
    which reports what the components produce rather than what a browser paints, so a CSS
    mistake — a panel that overflows, a colour with no contrast — passes all of them. The
-   screenshots are the only evidence of that, and a person looks at them.
+   screenshots are the only evidence of that, and a person looks at them. That is not a
+   formality: looking at them on 8 Nov found five faults every test had passed — the
+   briefing's open questions wrapping one word to a line, the playground titling a cache miss
+   "cache hit", a recorded inspector report unlabelled under a LIVE header, a hovered link
+   vanishing on the dark header, and the page 120px too wide on a phone. All are fixed; the
+   three a component test can see now have one. A browser-level test suite would catch the
+   other two.
 5. **No load testing of any kind.** The highest concurrency exercised is 2 claims and 3
    Tavily calls. What breaks first is probably the verifier's own event loop under SSE
    subscribers, and no test would catch it today.

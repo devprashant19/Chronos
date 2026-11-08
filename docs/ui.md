@@ -15,22 +15,34 @@ text, which is the readable way to diff the copy.
 
 ## What it looks like
 
+Captured from the console running **live** against the local stack on 8 Nov 2026, apart from
+the briefing and the phone cycle, which are the recorded demo and say so in the header. The
+same console is hosted with no backend at <https://chronos-sable-one.vercel.app/>.
+
 | | |
 |---|---|
-| ![The console hero: a headline reading "Your cache remembers. Chronos checks.", three live counters, and a chart of how fast a cached fact goes stale by volatility class](screenshots/console-hero.png) | ![The inspector: a cached answer with four highlighted claim spans, one scored 36 and marked outdated, beside its score breakdown and two contradicting sources](screenshots/console-inspector.png) |
-| **The hero.** Live counters from `/v1/stats`, and the decay curves that explain why one TTL cannot fit every fact. | **The inspector.** The signature mechanism, visible: claims lit up inside the answer, the score with every term of the formula, and the pages that disagreed, quoted. |
-| ![The cache section: seven volatility classes with their TTLs as bars against a flat 24-hour default, beside a ledger of fifteen evictions with their cache ids and scores](screenshots/console-cache.png) | ![The signal path in dark mode: five boxes from Client through Chronos, the semantic cache and the provider to Tavily, with an eight-step walkthrough advancing on the right](screenshots/console-dark.png) |
-| **The cache.** What Chronos chose against a flat default, and a ledger of real evictions with their cache ids. | **The signal path, in dark mode.** Eight steps through one request, colour-coded by who owns each — Bifrost, Tavily, Chronos. |
-| ![The traffic feed: a live SSE stream of verified answers with verdicts and scores](screenshots/console-traffic.png) | ![The benchmark section showing a recorded request pair — a cache hit with x-chronos-verdict outdated, then a miss after eviction — above the StaleBench results read from bench/results.json](screenshots/console-bench.png) |
-| **Traffic.** Every verification as it finishes, over SSE. | **Playground and benchmark.** A real recorded exchange with its headers, then the numbers read straight from `bench/results.json`. |
-| ![The Run it section mid-cycle: five numbered steps with the first four ticked, a cached answer with its claims highlighted, and a score dial reading 38 beside the response headers](screenshots/console-run-it.png) | |
-| **Run it, mid-cycle.** Five steps a judge drives with one button. This is the real gateway: the headers beside it came off an actual response. | |
-| ![The guided walkthrough on step 4 of 8, a bar across the foot of the page reading "This is the product", with the inspector section ringed above it](screenshots/console-walkthrough.png) | |
-| **The walkthrough, step 4.** Eight steps that scroll the real page and ring the section being talked about. | |
+| ![The opening: a dark stage with a rotating violet globe, the headline "Your cache remembers. Chronos checks.", two buttons and three live counters](screenshots/console-hero.png) | ![The guided walkthrough on step 4 of 9, a draggable card on the right reading "Every answer gets checked", with the traffic section ringed](screenshots/console-walkthrough.png) |
+| **The opening stage.** Live counters from `/v1/stats` over a rotating globe, and the two ways in. | **The walkthrough, step 4 of 9.** A card on the right that can be dragged out of the way; it scrolls the real page and rings the section being talked about. |
+| ![The signal path with step six held: the Tavily box ringed in magenta, and eight steps listed with their owners](screenshots/console-signal-path.png) | ![The same signal path in dark mode with step three, the semantic cache, highlighted](screenshots/console-dark.png) |
+| **The signal path.** Eight steps through one request, coloured by who owns each — Bifrost, Tavily, Chronos. Pause holds a step. | **Dark mode.** The same instrument with the dark tokens from the design reference. |
+| ![Run it at step four in live mode: a score dial at 35, verdict outdated, and the real response headers including x-bifrost-cache-hit true](screenshots/console-run-it.png) | ![Run it finished: the cached answer struck through and the note DELETE /api/cache/clear with the cache id](screenshots/console-run-it-evicted.png) |
+| **Run it, step four, live.** The verdict read off a real reply to a real cache hit. | **Run it, step five.** The stale entry deleted through the gateway's cache API. |
+| ![The traffic feed: rows of answers with source cache or provider, verdicts and scores, beside counters and verification latency](screenshots/console-traffic.png) | ![The inspector opening on its recorded example, labelled "Recorded example · Check again runs it live", with the Python claim's score breakdown and two official sources contradicting it](screenshots/console-inspector.png) |
+| **Traffic.** Every verification as it finishes, over SSE. Blue rows came from the cache. | **The inspector, before a check.** It opens on a recorded example and, in Live mode, says so. |
+| ![The inspector after a live check: three claims, verdict outdated 30, and sources quoted from the live web](screenshots/console-inspector-live.png) | ![The playground: a cache hit caught as outdated, then a cache miss after eviction, each with its raw headers](screenshots/console-playground.png) |
+| **The inspector, after Check again.** The same answer verified live; the sources are today's pages. | **The playground.** Headers exactly as the browser received them. Each panel's label is read from those headers. |
+| ![The cache section: seven volatility classes with TTL bars against a flat 24-hour default, an eviction timeline and a ledger of cache ids](screenshots/console-cache.png) | ![The benchmark cards read from bench/results.json](screenshots/console-bench.png) |
+| **The cache.** What Chronos chose against a flat default, and every stale hit it stopped. | **The benchmark.** Read from `bench/results.json`; the rule engine's weak numbers included. |
+| ![Briefing mode in the recorded demo: verified lines, unconfirmed lines with reasons, and open questions](screenshots/console-briefing.png) | ![The opening stage on a 390-pixel phone: the headline, stacked buttons and counters over the globe](screenshots/console-phone.png) |
+| **Briefing mode.** Contradictions become questions to ask in the room. | **A phone, 390 px.** The page never scrolls sideways at 360, 390, 430, 520, 640 or 768 px, measured. |
+| ![Run it on a phone in the recorded demo: the score dial at 39, verdict outdated, and the headers in a scrolling panel](screenshots/console-phone-run-it.png) | |
+| **Run it on a phone.** The five steps stack into one column. | |
 
 Every one of these is regenerated from the running console by
 `node <readme-suite>/scripts/shots.mjs --file docs/screenshots/shots.json`, with the shot
-list kept in the repo at `docs/screenshots/shots.json`. They are captures, not mock-ups.
+list kept in the repo at `docs/screenshots/shots.json`. Every shot uses only the steps that
+script understands — clicks and waits — so the command above is the whole recipe. They are
+captures, not mock-ups. The live ones vary run to run, because the counters and the web do.
 
 ## The opening stage and the walkthrough
 
@@ -247,7 +259,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**109 tests**, in eight files, run by `npm test` in `console/` and by
+**115 tests**, in nine files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |
