@@ -146,7 +146,15 @@ export default function Inspector({ mode }: { mode: "live" | "demo" }) {
 
             <div className="meta">
               <span className="eyebrow">
-                {report?.cache_hit ? "Cached answer · served from Bifrost" : "Answer under inspection"}
+                {/* The panel opens on the recorded example in either mode. In
+                    Live mode, under a header that says LIVE, that needs saying,
+                    or a recording reads as a live result until someone presses
+                    the button. */}
+                {report === DEMO_REPORT && mode === "live"
+                  ? "Recorded example · Check again runs it live"
+                  : report?.cache_hit
+                    ? "Cached answer · served from Bifrost"
+                    : "Answer under inspection"}
               </span>
               {report ? (
                 <span className={`pill ${CLASS_OF_VERDICT[report.verdict] ?? "mute"}`}>

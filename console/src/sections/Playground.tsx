@@ -89,11 +89,15 @@ export default function Playground({ mode }: { mode: "live" | "demo" }) {
       // Prime the cache, then ask again: the second call is the cache hit that
       // Chronos checks and evicts, and the third shows the miss that follows.
       await chatThroughGateway(PROMPT, cacheKey);
+      // The semantic cache stores the answer after the response is sent, so a
+      // request issued the instant the first returns can still miss. Measured:
+      // back to back, the "hit" came back x-bifrost-cache-hit: false.
+      await new Promise((r) => setTimeout(r, 1200));
 
       const hit = await chatThroughGateway(PROMPT, cacheKey);
       setExchanges([
         {
-          label: "Request 1 · cache hit",
+          label: `Request 1 · ${cacheOutcome(hit.headers)}`,
           status: hit.status,
           ms: Math.round(hit.ms),
           headers: hit.headers,
@@ -108,7 +112,7 @@ export default function Playground({ mode }: { mode: "live" | "demo" }) {
       setExchanges((prev) => [
         ...prev,
         {
-          label: "Request 2 · after eviction",
+          label: `Request 2 · ${cacheOutcome(after.headers)} · after eviction`,
           status: after.status,
           ms: Math.round(after.ms),
           headers: after.headers,
@@ -132,7 +136,7 @@ export default function Playground({ mode }: { mode: "live" | "demo" }) {
         <p>
           This is the proof that Chronos lives in the gateway rather than in this page. The first
           call is served from Bifrost&rsquo;s cache and caught. Chronos evicts it. The second call
-          misses the cache, goes to the provider, and comes back current. The headers below are
+          misses the cache and goes to the provider for a fresh answer. The headers below are
           printed exactly as the browser received them.
         </p>
       </div>
@@ -142,9 +146,10 @@ export default function Playground({ mode }: { mode: "live" | "demo" }) {
           <button className="btn" onClick={run} disabled={busy}>
             {busy ? "Running…" : "Send the same question twice"}
           </button>
-          <span className="eyebrow">
-            POST {mode === "demo" ? "bifrost" : BIFROST_URL}/v1/chat/completions · uses{" "}
-            <span className="mono">x-bf-cache-key</span> so the cache engages
+          {/* The URL is one unbreakable word: at 360px it pushed the page 3px wide. */}
+          <span className="eyebrow" style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+            POST {mode === "demo" ? "bifrost" : BIFROST_URL}/v1/chat/completions · the plugin
+            derives the cache key from the prompt
           </span>
           {error ? (
             <span className="pill bad" title={error}>
@@ -230,4 +235,13 @@ function answerOf(body: unknown): string {
   } catch {
     return "(no content)";
   }
+}
+
+/**
+ * What the cache actually did, read off the response rather than assumed.
+ * The labels used to be fixed strings, and on a live run the panel titled
+ * "cache hit" printed x-bifrost-cache-hit: false underneath itself.
+ */
+export function cacheOutcome(headers: Record<string, string>): string {
+  return headers["x-bifrost-cache-hit"] === "true" ? "cache hit" : "cache miss";
 }

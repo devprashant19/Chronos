@@ -560,7 +560,9 @@ nav.sections a:hover::after{width:100%}
 header.top.on-dark{background:rgba(8,6,15,.72); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom-color:rgba(167,139,250,.14); color:#EEEBF8}
 header.top.on-dark .brand{color:#EEEBF8}
 header.top.on-dark nav.sections a{color:#ADA5C9}
-header.top.on-dark nav.sections a:hover{color:#EEEBF8}
+/* The base hover paints var(--grid), a light lavender in the light theme, behind
+   text this rule turns near-white: on the dark header a hovered link vanished. */
+header.top.on-dark nav.sections a:hover{color:#EEEBF8; background:rgba(238,235,248,.08)}
 header.top.on-dark .replay{color:#ADA5C9}
 header.top.on-dark .eyebrow{color:#ADA5C9}
 header.top.on-dark .btn{background:#8B5CF6; border-color:transparent; color:#fff}
@@ -582,7 +584,9 @@ header.top.on-dark .btn[aria-pressed="true"]{background:#8B5CF6; color:#fff; bor
   .cine-in .counter + .counter{border-left:0; border-top:1px solid var(--rule)}
   .cine-in .counter{padding:14px 0 0}
   .cine-in h1{font-size:clamp(28px,9vw,40px)}
-  .cine-in .lede{font-size:14.5px; max-width:40ch}
+  /* calc(100vw - 32px) keeps the 16px gutter: 40ch alone measured wider than a
+     390px screen and the second line ran to within 2px of the edge. */
+  .cine-in .lede{font-size:14.5px; max-width:min(40ch, calc(100vw - 32px))}
 }
 @media (prefers-reduced-motion:reduce){
   .hero.cinematic::before{animation:none}

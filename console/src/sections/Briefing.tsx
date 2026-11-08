@@ -137,11 +137,18 @@ export default function Briefing({ mode }: { mode: "live" | "demo" }) {
             {brief.open_questions.length === 0 ? (
               <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)" }}>No contradictions found.</p>
             ) : (
-              <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 8 }}>
+              // The design's .brief-cols li is a two-column grid: a 34px mark,
+              // then the text. A bare string lands in the 34px column and wraps
+              // one word to a line, which is how this column rendered until
+              // the screenshots were looked at. The mark is the reference's "?".
+              <ul>
                 {brief.open_questions.map((q) =>
                   show() ? (
                     <li key={q} style={{ fontSize: 13.5, color: "var(--ink-2)" }}>
-                      {q}
+                      <span className="sc" aria-hidden="true" style={{ color: "var(--ink-3)" }}>
+                        ?
+                      </span>
+                      <span>{q}</span>
                     </li>
                   ) : null,
                 )}
