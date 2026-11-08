@@ -116,8 +116,27 @@ Three stacked layers, all `pointer-events: none`, over an always-dark frame:
 | Layer | What it is |
 | :--- | :--- |
 | `::before` | The starfield. Eight dot sizes at eight densities so it does not read as a grid, breathing on a 7s cycle |
-| `.orb` | The sphere: a filled disc, a conic rim light on its upper-left edge, and a bloom that spills past it on a 14s breath |
+| `.globe` | A **rotating globe**: `console/src/sections/Globe.tsx` |
 | `::after` | A vignette that sinks the edges, so it reads as a scene rather than a flat fill |
+
+The globe is SVG and CSS transforms, not WebGL — the console already ships 222 kB of
+JavaScript and a decorative background does not justify a 3D library on top of it.
+
+The rotation is one idea. A meridian seen from outside a sphere projects to an ellipse whose
+vertical axis is the sphere's radius and whose horizontal axis is `R·cos(angle)`. As the
+globe turns, that horizontal axis sweeps `R → 0 → −R → 0 → R`: the meridian flattens to a
+vertical line when it is edge-on and opens out again on the far side. So each meridian is an
+ellipse animated on `scaleX` from 1 to −1, each started at its own offset. That is the whole
+illusion, at one GPU-composited transform per meridian.
+
+Parallels do not move: their horizontal axis is `√(R² − y²)` and their vertical axis is that
+times the tilt, so they bunch toward the poles on their own.
+
+`Globe.test.tsx` holds the parts that would break quietly: that it stays hidden from
+assistive technology, that its parallels stay inside the rim, that they are flattened rather
+than circular, and that **every meridian has a different animation offset** — collapse those
+to one and the sphere pulses instead of turning, which looks like a bug and is one deleted
+line away.
 
 All of it holds still under `prefers-reduced-motion`.
 
@@ -228,7 +247,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**104 tests**, in seven files, run by `npm test` in `console/` and by
+**109 tests**, in eight files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |
@@ -236,6 +255,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 | `console/src/api.test.ts` | The data layer's quiet failures: a malformed SSE frame must not take the feed down, a 422 must carry the verifier's reason, and `chatThroughGateway` must keep the gateway's own headers and drop everything else |
 | `console/src/useChronos.test.ts` | Mode selection, the SSE lifecycle, the counters, and that a manual mode choice survives a probe that answers late |
 | `console/src/App.test.tsx` | That every section the nav points at renders, that no nav link points nowhere, that each claim is a selectable button with its subject and score in its label, that every term of the formula is shown, that a timeless claim is grey rather than green, and that the theme toggle works |
+| `console/src/sections/Globe.test.tsx` | The rotating globe: that it is hidden from assistive technology, that its parallels stay inside the sphere and are flattened, and that its meridians are staggered rather than sharing one offset |
 | `console/src/sections/RunIt.test.tsx` | The driveable demo: that every stage is listed and marked as it advances, that demo mode sends no request at all, that the last step reaches a verdict and an eviction, and — the one that matters — that a failed live request falls back to the recorded exchange and says so rather than leaving a button that does nothing |
 | `console/src/sections/Hero.test.tsx` | The stage: what it says, that the counters count up and land on the real figures without overshooting, that motion is skipped under `prefers-reduced-motion`, and that the decay scope draws and reads off one curve per volatility class |
 | `console/src/sections/Walkthrough.test.tsx` | The opening stage and the tour: that every step points at a section that exists, that exactly one is ringed at a time, that nothing stays lit when it closes, that the last step finishes rather than running off the end, and that the arrow keys and Escape work |

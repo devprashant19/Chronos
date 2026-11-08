@@ -22,6 +22,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import Globe from "./Globe";
+
 export interface HeroCounters {
   answers: number;
   stalePrevented: number;
@@ -220,9 +222,9 @@ export default function Hero({
 
   return (
     <section className="hero stage cinematic">
-      {/* The sphere: its own element, so the rim light and the bloom can be
-          separate layers stacked on it. */}
-      <div className="orb" aria-hidden="true" />
+      {/* The globe: an SVG of ellipses, its meridians animated on scaleX so
+          the sphere turns. See Globe.tsx. */}
+      <Globe />
 
       <div className="wrap cine-in">
         <Reveal step={0} as="p" className="eyebrow">

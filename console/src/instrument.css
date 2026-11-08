@@ -466,7 +466,7 @@ nav.sections a:hover::after{width:100%}
 
    Three stacked layers, all pointer-events:none:
      ::before  the starfield
-     .orb      the sphere, its rim light and its bloom
+     .globe    the sphere: see Globe.tsx
      ::after   a vignette that sinks the edges
    =========================================================================== */
 .hero.cinematic{
@@ -506,31 +506,7 @@ nav.sections a:hover::after{width:100%}
 
 /* The sphere: a filled disc, a rim light on its upper edge, and a bloom that
    spills past it. */
-.orb{
-  position:absolute; z-index:0; pointer-events:none;
-  left:50%; top:46%; translate:-50% -50%;
-  width:min(116vh,104vw); aspect-ratio:1; border-radius:50%;
-  background:radial-gradient(circle at 50% 40%,
-    rgba(146,101,250,.38) 0%, rgba(109,59,245,.22) 40%, rgba(72,34,170,.10) 64%, transparent 74%);
-  box-shadow:
-    0 0 0 1px rgba(196,166,255,.30) inset,
-    0 0 0 14px rgba(139,92,246,.05) inset,
-    0 0 180px 30px rgba(139,92,246,.22);
-  animation:breathe 14s ease-in-out infinite;
-}
-.orb::before{
-  content:""; position:absolute; inset:0; border-radius:50%;
-  background:conic-gradient(from 196deg, transparent 0deg, rgba(214,189,255,.95) 58deg, rgba(167,139,250,.55) 120deg, rgba(139,92,246,.18) 185deg, transparent 240deg);
-  -webkit-mask:radial-gradient(circle, transparent 0 calc(50% - 2.5px), #000 calc(50% - 2.5px) 50%, transparent 50%);
-  mask:radial-gradient(circle, transparent 0 calc(50% - 2.5px), #000 calc(50% - 2.5px) 50%, transparent 50%);
-  opacity:1; filter:drop-shadow(0 0 10px rgba(183,139,255,.55));
-}
-.orb::after{
-  content:""; position:absolute; inset:-14%; border-radius:50%;
-  background:radial-gradient(circle, rgba(139,92,246,.22) 0%, transparent 62%);
-  filter:blur(34px);
-}
-@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+
 
 /* Sinks the edges so the frame reads as a scene rather than a flat fill. */
 .hero.cinematic::after{
@@ -594,7 +570,6 @@ header.top.on-dark .btn[aria-pressed="true"]{background:#8B5CF6; color:#fff; bor
 /* --- responsive ---------------------------------------------------------- */
 @media (max-width:900px){
   .hero.cinematic{min-height:auto; padding-bottom:10px}
-  .orb{width:min(112vh,150vw); top:40%}
   .cine-in{padding-top:clamp(36px,9vw,64px)}
   .cine-in h1{font-size:clamp(30px,8vw,46px); max-width:16ch}
   .cine-in .lede{max-width:48ch}
@@ -610,7 +585,7 @@ header.top.on-dark .btn[aria-pressed="true"]{background:#8B5CF6; color:#fff; bor
   .cine-in .lede{font-size:14.5px; max-width:40ch}
 }
 @media (prefers-reduced-motion:reduce){
-  .hero.cinematic::before,.orb{animation:none}
+  .hero.cinematic::before{animation:none}
 }
 
 /* On a phone the section nav wrapped to three rows and took 170px of screen
@@ -630,3 +605,47 @@ header.top.on-dark .btn[aria-pressed="true"]{background:#8B5CF6; color:#fff; bor
 @media (max-width:460px){
   header.top .replay{display:none}   /* the Live/Demo buttons already say it */
 }
+
+/* --- The rotating globe --------------------------------------------------
+   Replaces the static .orb wash. See console/src/sections/Globe.tsx for why a
+   meridian is an ellipse animated on scaleX. */
+.globe{
+  position:absolute; z-index:0; pointer-events:none;
+  left:50%; top:46%; translate:-50% -50%;
+  width:min(112vh,100vw); aspect-ratio:1;
+}
+.globe svg{display:block; width:100%; height:100%; overflow:visible}
+
+/* The bloom that spills past the sphere. */
+.globe::after{
+  content:""; position:absolute; inset:-12%; border-radius:50%;
+  background:radial-gradient(circle, rgba(139,92,246,.20) 0%, transparent 62%);
+  filter:blur(38px); z-index:-1;
+}
+
+.globe-par{
+  fill:none; stroke:rgba(183,139,255,.30); stroke-width:.5;
+  vector-effect:non-scaling-stroke;
+}
+.globe-mer{
+  fill:none; stroke:rgba(183,139,255,.34); stroke-width:.5;
+  vector-effect:non-scaling-stroke;
+  transform-box:fill-box; transform-origin:center;
+  animation:globe-spin 42s linear infinite;
+}
+/* R·cos(angle) over a full turn: open, edge-on, open the other way, back. */
+@keyframes globe-spin{
+  0%{transform:scaleX(1)}
+  25%{transform:scaleX(0)}
+  50%{transform:scaleX(-1)}
+  75%{transform:scaleX(0)}
+  100%{transform:scaleX(1)}
+}
+
+.globe-edge{
+  fill:none; stroke:rgba(196,166,255,.34); stroke-width:1;
+  vector-effect:non-scaling-stroke;
+}
+
+@media (max-width:900px){ .globe{width:min(96vh,132vw); top:40%} }
+@media (prefers-reduced-motion:reduce){ .globe-mer{animation:none} }
