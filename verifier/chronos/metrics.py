@@ -70,6 +70,8 @@ class Metrics:
             self.claim_cache = _NoopMetric()
             self.budget_remaining = _NoopMetric()
             self.degraded = _NoopMetric()
+            self.injection = _NoopMetric()
+            self.cache_bypass = _NoopMetric()
             return
 
         self.registry = CollectorRegistry()
@@ -126,6 +128,17 @@ class Metrics:
             "chronos_degraded",
             "1 when the verifier is running in a degraded mode.",
             ["reason"],
+            registry=self.registry,
+        )
+        self.injection = Counter(
+            "chronos_injection_flagged_sources_total",
+            "Evidence sources set aside because their text tried to instruct the judge, by pattern.",
+            ["pattern"],
+            registry=self.registry,
+        )
+        self.cache_bypass = Counter(
+            "chronos_claim_cache_bypassed_total",
+            "Claims verified without the claim cache because their subject could name more than one thing.",
             registry=self.registry,
         )
 

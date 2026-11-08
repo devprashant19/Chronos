@@ -87,6 +87,10 @@ class Evidence(BaseModel):
     tier: Literal["official", "news", "other"] = "other"
     call: JudgeCall = "insufficient"
     quote: str = ""
+    #: Names of the injection patterns found in this source's text, from
+    #: chronos/injection.py. Non-empty means the page tried to instruct the
+    #: judge, so its call was forced to `insufficient`: it is not evidence.
+    injection_flags: list[str] = Field(default_factory=list)
 
 
 class ScoreBreakdown(BaseModel):
@@ -143,6 +147,10 @@ class ClaimVerdict(BaseModel):
     #: True when this verdict came from the claim cache rather than a fresh
     #: Tavily round trip. The benchmark reports the hit rate.
     from_claim_cache: bool = False
+    #: Why the claim cache was not used for this claim, or None when it was.
+    #: Set when the subject could name more than one thing ("the CEO"), so a
+    #: verdict for one company is never served for another's claim.
+    claim_cache_bypassed: str | None = None
     checked_at: datetime = Field(default_factory=utcnow)
     tavily_credits: int = 0
 

@@ -85,6 +85,9 @@ class App:
         await self.store.init()
         await self.claim_cache.connect()
         await self.policies.load()
+        # Retention runs once at startup as well, so a stack that runs with
+        # the sweeper disabled still honours the window on every restart.
+        await self.sweeper.prune()
         self.sweeper.start()
 
         logger.info(
@@ -331,6 +334,7 @@ async def stats() -> dict[str, Any]:
         "evictor": APP.evictor.stats(),
         "model_pacing": APP.llm.pacer.stats(),
         "sweeper": APP.sweeper.stats(),
+        "guards": APP.verifier.guard_stats(),
         "stream_subscribers": BUS.subscriber_count,
         "mode": {
             "offline_demo": settings.offline_demo,

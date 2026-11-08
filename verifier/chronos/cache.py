@@ -60,6 +60,60 @@ def claim_key(subject: str, predicate: str) -> str:
     return f"{KEY_PREFIX}{digest}"
 
 
+#: Words that refer to something without naming it. A subject made only of
+#: these, optionally after a determiner, could be any company's CEO or any
+#: product's price.
+_PRONOUNS = frozenset(
+    {"it", "they", "he", "she", "this", "that", "these", "those", "its", "their", "them", "we", "you"}
+)
+_DETERMINERS = frozenset(
+    {"the", "a", "an", "this", "that", "our", "your", "their", "its", "his", "her", "my", "current", "new"}
+)
+_GENERIC_NOUNS = frozenset(
+    {
+        # roles
+        "ceo", "cto", "cfo", "coo", "chief", "executive", "officer", "president", "chair", "chairman",
+        "chairwoman", "chairperson", "founder", "leader", "head", "director", "manager", "boss",
+        "prime", "minister", "chancellor", "governor", "mayor", "king", "queen", "monarch",
+        # things
+        "company", "firm", "business", "organisation", "organization", "group", "team", "startup",
+        "product", "model", "app", "application", "service", "platform", "tool", "software", "library",
+        "framework", "language", "project", "device", "phone", "brand", "store", "site", "website",
+        "government", "country", "nation", "state", "city", "region", "market", "stock", "share",
+        "shares", "index", "currency", "coin", "token", "fund",
+        # properties people use as if they were subjects
+        "price", "cost", "fee", "rate", "plan", "tier", "version", "release", "update", "law",
+        "rule", "regulation", "policy", "deadline", "event",
+        # qualifiers that do not narrow anything
+        "latest", "newest", "current", "new", "old", "previous", "top", "main", "official",
+        "standard", "basic", "free", "pro", "premium",
+    }
+)
+
+
+def ambiguous_subject(subject: str) -> str | None:
+    """Why a subject cannot safely key the claim cache, or None if it can.
+
+    The cache keys on subject plus predicate, which is right for "Apple" and
+    wrong for "the CEO": one company's verified leader would be served for
+    another company's claim. Such a claim is still verified, just never read
+    from or written to the cache.
+
+    Deliberately narrow. Only a subject made *entirely* of pronouns, or of
+    determiners and generic nouns, is ambiguous. "The Bank of England" and
+    "the CEO of Apple" each carry a word that names something, and pass.
+    """
+    words = normalise(subject).split()
+    if not words:
+        return "empty subject"
+    if all(w in _PRONOUNS for w in words):
+        return f"subject is a pronoun ({subject.strip()!r})"
+    content = [w for w in words if w not in _DETERMINERS]
+    if not content or all(w in _GENERIC_NOUNS for w in content):
+        return f"subject names no particular thing ({subject.strip()!r})"
+    return None
+
+
 class ClaimCache:
     """Verdict cache with a Redis backend and an in-memory fallback."""
 

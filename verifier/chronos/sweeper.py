@@ -57,6 +57,8 @@ class Sweeper:
         self.runs = 0
         self.reverified = 0
         self.evicted = 0
+        self.pruned_reports = 0
+        self.pruned_events = 0
 
     # -- lifecycle ------------------------------------------------------
 
@@ -107,6 +109,10 @@ class Sweeper:
         self.runs += 1
         self.last_run = time.time()
 
+        # Retention first, and before the budget check: pruning costs no
+        # credits, so a day with no credits left is no reason to keep data.
+        pruned = await self.prune()
+
         budget = self.verifier.tavily.budget
         reserve = int(budget.daily_limit * SWEEP_BUDGET_SHARE)
         if budget.daily_limit and budget.remaining <= reserve:
@@ -115,7 +121,7 @@ class Sweeper:
                 budget.remaining,
                 reserve,
             )
-            return {"reverified": 0, "evicted": 0, "skipped": 1}
+            return {"reverified": 0, "evicted": 0, "skipped": 1, "pruned_reports": pruned}
 
         # Claims whose re-check falls due within one sweep interval.
         due = await self.claim_cache.near_expiry(
@@ -123,7 +129,7 @@ class Sweeper:
             limit=self.settings.sweep_batch,
         )
         if not due:
-            return {"reverified": 0, "evicted": 0, "skipped": 0}
+            return {"reverified": 0, "evicted": 0, "skipped": 0, "pruned_reports": pruned}
 
         logger.info("sweeping %d claims near expiry", len(due))
 
@@ -169,7 +175,21 @@ class Sweeper:
             },
         )
         logger.info("sweep done: re-verified %d, evicted %d", reverified, evicted)
-        return {"reverified": reverified, "evicted": evicted, "skipped": 0}
+        return {"reverified": reverified, "evicted": evicted, "skipped": 0, "pruned_reports": pruned}
+
+    async def prune(self) -> int:
+        """Apply the report retention window. Returns reports deleted."""
+        result = await self.store.prune(self.settings.report_retention_days)
+        self.pruned_reports += result["reports"]
+        self.pruned_events += result["events"]
+        if result["reports"] or result["events"]:
+            logger.info(
+                "retention: pruned %d reports and %d cache events older than %d days",
+                result["reports"],
+                result["events"],
+                self.settings.report_retention_days,
+            )
+        return result["reports"]
 
     async def _evict_answers_for(self, claim: Claim, score: float) -> int:
         """Evict every cached answer known to assert a now-stale claim.
@@ -219,6 +239,9 @@ class Sweeper:
             "evicted": self.evicted,
             "interval_s": self.settings.sweep_interval_s,
             "enabled": self.settings.sweeper_enabled,
+            "retention_days": self.settings.report_retention_days,
+            "pruned_reports": self.pruned_reports,
+            "pruned_events": self.pruned_events,
         }
 
 

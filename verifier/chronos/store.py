@@ -73,7 +73,36 @@ CREATE TABLE IF NOT EXISTS cache_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cache_events_created ON cache_events(created_at DESC);
+
+-- What retention deleted, so lifetime counters survive pruning. One row.
+CREATE TABLE IF NOT EXISTS pruned_totals (
+    id             INTEGER PRIMARY KEY CHECK (id = 1),
+    answers        INTEGER NOT NULL DEFAULT 0,
+    claims         INTEGER NOT NULL DEFAULT 0,
+    skipped        INTEGER NOT NULL DEFAULT 0,
+    stale_claims   INTEGER NOT NULL DEFAULT 0,
+    credits        INTEGER NOT NULL DEFAULT 0,
+    outdated       INTEGER NOT NULL DEFAULT 0,
+    evictions      INTEGER NOT NULL DEFAULT 0,
+    stale_hits     INTEGER NOT NULL DEFAULT 0,
+    events         INTEGER NOT NULL DEFAULT 0,
+    last_pruned_at REAL
+);
 """
+
+#: The aggregate both the counters and pruning compute, over any WHERE clause.
+_AGGREGATE = """SELECT
+     COUNT(*)                                      AS answers,
+     COALESCE(SUM(claim_count), 0)                 AS claims,
+     COALESCE(SUM(skipped), 0)                     AS skipped,
+     COALESCE(SUM(stale_count), 0)                 AS stale_claims,
+     COALESCE(SUM(tavily_credits), 0)              AS credits,
+     COALESCE(SUM(CASE WHEN verdict='outdated' THEN 1 ELSE 0 END), 0) AS outdated,
+     COALESCE(SUM(CASE WHEN evicted=1 THEN 1 ELSE 0 END), 0)          AS evictions,
+     COALESCE(SUM(CASE WHEN evicted=1 AND cache_hit=1 THEN 1 ELSE 0 END), 0) AS stale_hits
+   FROM reports"""
+
+_TOTAL_COLUMNS = ("answers", "claims", "skipped", "stale_claims", "credits", "outdated", "evictions", "stale_hits")
 
 
 class ReportStore:
@@ -232,18 +261,14 @@ class ReportStore:
 
     def _counters_sync(self) -> dict[str, Any]:
         with self._connect() as conn:
-            row = conn.execute(
-                """SELECT
-                     COUNT(*)                                      AS answers,
-                     COALESCE(SUM(claim_count), 0)                 AS claims,
-                     COALESCE(SUM(skipped), 0)                     AS skipped,
-                     COALESCE(SUM(stale_count), 0)                 AS stale_claims,
-                     COALESCE(SUM(tavily_credits), 0)              AS credits,
-                     COALESCE(SUM(CASE WHEN verdict='outdated' THEN 1 ELSE 0 END), 0) AS outdated,
-                     COALESCE(SUM(CASE WHEN evicted=1 THEN 1 ELSE 0 END), 0)          AS evictions,
-                     COALESCE(SUM(CASE WHEN evicted=1 AND cache_hit=1 THEN 1 ELSE 0 END), 0) AS stale_hits
-                   FROM reports"""
-            ).fetchone()
+            live = conn.execute(_AGGREGATE).fetchone()
+            pruned = conn.execute("SELECT * FROM pruned_totals WHERE id = 1").fetchone()
+            # Lifetime counters are what is stored plus what retention has
+            # already deleted, so pruning never makes a counter go backwards.
+            row = {
+                col: int(live[col]) + (int(pruned[col]) if pruned is not None else 0)
+                for col in _TOTAL_COLUMNS
+            }
 
             latencies = [
                 r["latency_ms"]
@@ -269,7 +294,49 @@ class ReportStore:
             "tavily_credits_used": row["credits"],
             "verify_p50_ms": pct(latencies, 0.50),
             "verify_p95_ms": pct(latencies, 0.95),
+            "reports_stored": int(live["answers"]),
+            "reports_pruned": int(pruned["answers"]) if pruned is not None else 0,
         }
+
+    # -- retention ------------------------------------------------------
+
+    def _prune_sync(self, older_than: float) -> dict[str, int]:
+        with self._connect() as conn:
+            gone = conn.execute(_AGGREGATE + " WHERE created_at < ?", (older_than,)).fetchone()
+            events = conn.execute(
+                "SELECT COUNT(*) AS n FROM cache_events WHERE created_at < ?", (older_than,)
+            ).fetchone()["n"]
+            if not gone["answers"] and not events:
+                return {"reports": 0, "events": 0}
+
+            # Fold the counts in before deleting, in the same transaction, so
+            # a crash between the two cannot lose or double-count anything.
+            conn.execute("INSERT OR IGNORE INTO pruned_totals (id) VALUES (1)")
+            assignments = ", ".join(f"{col} = {col} + ?" for col in _TOTAL_COLUMNS)
+            conn.execute(
+                f"UPDATE pruned_totals SET {assignments}, events = events + ?, last_pruned_at = ? WHERE id = 1",
+                (*(int(gone[col]) for col in _TOTAL_COLUMNS), int(events), time.time()),
+            )
+            conn.execute("DELETE FROM reports WHERE created_at < ?", (older_than,))
+            conn.execute("DELETE FROM cache_events WHERE created_at < ?", (older_than,))
+        return {"reports": int(gone["answers"]), "events": int(events)}
+
+    async def prune(self, retention_days: int) -> dict[str, int]:
+        """Delete reports and cache events older than `retention_days`.
+
+        Zero means keep everything. The lifetime counters in /v1/stats are
+        unaffected: what is deleted is folded into `pruned_totals` first.
+        Reports hold third-party page text — titles, URLs, quotes — so keeping
+        them forever is a decision, not a default. See docs/security.md.
+        """
+        if retention_days <= 0:
+            return {"reports": 0, "events": 0}
+        cutoff = time.time() - retention_days * 86400
+        try:
+            return await asyncio.to_thread(self._prune_sync, cutoff)
+        except Exception as exc:
+            logger.warning("could not prune reports: %s", exc)
+            return {"reports": 0, "events": 0}
 
     async def counters(self) -> dict[str, Any]:
         try:

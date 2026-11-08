@@ -79,6 +79,9 @@ CLAIM_CLASSES = tuple(RECHECK_INTERVAL.keys())
 #: saver of Tavily credits, so it is measured explicitly in the benchmark.
 SKIPPABLE_CLASSES = frozenset({"timeless"})
 
+#: See Settings.report_retention_days.
+MIN_RETENTION_DAYS = 2
+
 #: Domains treated as authoritative for a subject, when we can tell. Used to
 #: steer Tavily's include_domains and to grade source quality.
 OFFICIAL_DOMAIN_HINTS: dict[str, tuple[str, ...]] = {
@@ -274,6 +277,28 @@ class Settings:
     sweep_interval_s: int = field(default_factory=lambda: _env_int("CHRONOS_SWEEP_INTERVAL_S", 600))
     sweep_batch: int = field(default_factory=lambda: _env_int("CHRONOS_SWEEP_BATCH", 50))
     sweeper_enabled: bool = field(default_factory=lambda: _env_bool("CHRONOS_SWEEPER_ENABLED", True))
+
+    # --- retention ---
+    #: Reports and cache events older than this are deleted by the sweeper and
+    #: at startup. 0 keeps everything. Reports carry third-party page text, so
+    #: "forever" should be chosen, not inherited.
+    report_retention_days_raw: int = field(
+        default_factory=lambda: _env_int("CHRONOS_REPORT_RETENTION_DAYS", 30)
+    )
+
+    @property
+    def report_retention_days(self) -> int:
+        """The effective window: 0 (keep all), or at least MIN_RETENTION_DAYS.
+
+        The floor exists because the sweeper finds the cached answers to evict
+        through their reports. The longest an answer stays cached is 24 hours,
+        so a report pruned sooner than that could leave a stale answer the
+        sweeper can no longer find.
+        """
+        days = self.report_retention_days_raw
+        if days <= 0:
+            return 0
+        return max(MIN_RETENTION_DAYS, days)
 
     # --- offline / demo ---
     #: When true, no network calls are made at all: claim extraction uses the
