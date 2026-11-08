@@ -51,6 +51,8 @@ export interface EvidenceItem {
   tier: "official" | "news" | "other";
   call: "supports" | "contradicts" | "insufficient";
   quote: string;
+  /** Injection patterns found in this page. Non-empty: set aside, not evidence. Absent in older reports. */
+  injection_flags?: string[];
 }
 
 export interface ClaimVerdict {
@@ -70,6 +72,8 @@ export interface ClaimVerdict {
   breakdown: ScoreBreakdown | null;
   evidence: EvidenceItem[];
   from_claim_cache: boolean;
+  /** Why the claim cache was skipped (an ambiguous subject), or null. Absent in older reports. */
+  claim_cache_bypassed?: string | null;
   tavily_credits: number;
 }
 

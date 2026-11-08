@@ -253,7 +253,7 @@ export default function Inspector({ mode }: { mode: "live" | "demo" }) {
   );
 }
 
-function ScoreDrawer({ claim }: { claim: ClaimVerdict | null }) {
+export function ScoreDrawer({ claim }: { claim: ClaimVerdict | null }) {
   if (!claim) {
     return (
       <div className="panel drawer">
@@ -284,6 +284,11 @@ function ScoreDrawer({ claim }: { claim: ClaimVerdict | null }) {
           {claim.from_claim_cache ? (
             <span className="pill mute" style={{ marginTop: 6 }}>
               from claim cache · 0 credits
+            </span>
+          ) : null}
+          {claim.claim_cache_bypassed ? (
+            <span className="pill warn" style={{ marginTop: 6 }} title={claim.claim_cache_bypassed}>
+              claim cache bypassed · ambiguous subject
             </span>
           ) : null}
         </div>
@@ -340,6 +345,17 @@ function ScoreDrawer({ claim }: { claim: ClaimVerdict | null }) {
                 <span className="pill mute" style={{ marginLeft: 6 }}>
                   {e.tier}
                 </span>
+                {e.injection_flags && e.injection_flags.length > 0 ? (
+                  <>
+                    <span className="pill bad" style={{ marginLeft: 6 }}>
+                      set aside
+                    </span>
+                    <span className="s" style={{ display: "block" }}>
+                      This page tried to instruct the judge ({e.injection_flags.join(", ")}), so it is
+                      not counted as evidence.
+                    </span>
+                  </>
+                ) : null}
                 {e.quote ? <span className="s" style={{ display: "block" }}>“{e.quote}”</span> : null}
               </span>
             </div>
