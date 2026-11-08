@@ -77,16 +77,40 @@ What limits the damage today:
   entry — annoying, not dangerous. A false `current` lets one stale answer survive, which is
   the status quo without Chronos.
 
-What is **not** done: the page text is not sandboxed, delimiter-escaped or run past any
-injection classifier, and there is no test that tries to injection-attack the judge. That is
-the first thing I would add.
+What is done about it, since 8 Nov (`verifier/chronos/injection.py`):
+
+- **Every page is scanned before any judge sees it**, model or rules, for text addressed to a
+  model rather than a reader: instruction overrides, role reassignment, an announced new
+  prompt, chat-template markup, a verdict dictated in the judge's own JSON, and imperatives
+  that dictate a verdict. Each sentence that matches is replaced with a fixed marker, so the
+  instruction never reaches the prompt.
+- **A page that tried is disqualified.** After judging, its call is forced to `insufficient`
+  and its quote cleared, so even a judge that obeyed it changes nothing. An attacker can only
+  remove their *own* page from consideration.
+- **Each source's text is fenced** between `<<<SOURCE n TEXT>>>` markers, the system prompt
+  says that text is untrusted data, and anything shaped like the markers is stripped from
+  pages, so a page cannot close its own block and start a fake one.
+- **It is visible.** The report names the patterns in `evidence[].injection_flags`, the
+  console's score drawer marks the source "set aside" and says why, and `/v1/stats` and
+  `/metrics` count it.
+- **It is tested** in `verifier/tests/test_guards.py`, against a fake judge that obeys every
+  instruction it reads, which is the worst case. The patterns are also held to a list of
+  ordinary evidence they must *not* flag: a fact-check page, a contact page, a law page, API
+  docs.
+
+What is still **not** done: this is a list of patterns, not a classifier, and a paraphrased
+instruction gets past it. Nothing has been run against a real model with real attack pages.
+The other limits above are what stand behind it.
 
 ## Other things worth knowing
 
-- **Reports keep third-party page content** — titles, URLs and quotes — in SQLite
-  indefinitely. There is no retention policy and no pruning.
-- **The claim cache keys on subject plus predicate**, so an ambiguous subject such as
-  "the CEO" can collide across entities and serve one company's verdict for another's.
+- **Reports keep third-party page content** — titles, URLs and quotes — in SQLite for
+  `CHRONOS_REPORT_RETENTION_DAYS`, 30 by default, and are then deleted at startup and on every
+  sweep. `0` keeps them forever, which should be a decision rather than a default.
+- **The claim cache keys on subject plus predicate**, so two entities sharing a subject could
+  share a verdict. A subject that names nothing in particular — "the CEO", "it", "the latest
+  version" — now bypasses the cache entirely (`cache.ambiguous_subject`). A subject that is
+  specific but shared, such as two companies with the same name, still collides.
 - **Dependencies are pinned but not scanned.** No Dependabot, no `pip-audit`, no `govulncheck`
   in CI.
 - **The plugin runs in the gateway's process.** A panic in Chronos is a panic in Bifrost.
@@ -101,9 +125,9 @@ the first thing I would add.
 3. Narrow `allow_origins` to the console's real origin.
 4. Turn on `enforce_auth_on_inference` and give each caller its own virtual key.
 5. Set a real `CHRONOS_TAVILY_DAILY_CREDITS` for the account, not the default 400.
-6. Decide a retention window for reports and prune.
-7. Put something in front of the judge prompt for injection, and write the test that proves
-   it works.
+6. Set `CHRONOS_REPORT_RETENTION_DAYS` to the window you can justify keeping third-party page text for.
+7. Treat the injection guard as a first line, not the last: test it against your own judge
+   model with real attack pages before relying on it.
 
 Reporting a problem: this is a single-author hackathon project with no security contact and
 no promised response time, which is why this repository has no security policy file. Open an issue.

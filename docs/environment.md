@@ -1,6 +1,6 @@
 # Environment
 
-Chronos's own code reads **44** environment variables across four languages: Go in the
+Chronos's own code reads **45** environment variables across four languages: Go in the
 plugin, Python in the verifier, Vite in the console, Python again in the benchmark runner.
 Four more are read by Bifrost itself from `deploy/bifrost.config.json`. Every one of them has
 a working default, and **the whole stack starts with none of them set** — that is what makes
@@ -133,6 +133,7 @@ overspends after a restart, at this scale.
 | `CHRONOS_VK` | `sk-bf-chronos-verifier-dev` | Both. **Must start with `sk-bf-`** or Bifrost mints its own and ignores yours | <!-- check-docs: ignore -->
 | `CHRONOS_REDIS_URL` | `redis://redis:6379/1` | The verifier's claim cache. db0 is the semantic cache's vector store |
 | `CHRONOS_DB_PATH` | `./chronos.sqlite` | The verifier's report store |
+| `CHRONOS_REPORT_RETENTION_DAYS` | `30` | Reports and cache events older than this are deleted, at startup and on every sweep. `0` keeps everything; any other value is at least `2`, because the sweeper finds cached answers through their reports and an answer can stay cached for 24 hours. Lifetime counters in `/v1/stats` survive pruning |
 | `CHRONOS_LOG_LEVEL` | `INFO` | The verifier |
 | `CHRONOS_DEBUG` | `0` | The plugin. `1` also writes its log lines to stderr |
 | `BIFROST_LOG_LEVEL` | `info` | Bifrost |

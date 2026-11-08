@@ -259,7 +259,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**115 tests**, in nine files, run by `npm test` in `console/` and by
+**118 tests**, in ten files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |

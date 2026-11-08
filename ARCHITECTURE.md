@@ -283,7 +283,7 @@ stopping the verifier mid-run and requiring the gateway to keep answering.
 | :--- | :--- | :--- |
 | Redis db0 | Bifrost's semantic cache and its vectors | Yes, in the `bifrost-data` volume |
 | Redis db1 | Chronos's claim cache. TTL is the class's re-check interval | Yes |
-| SQLite | Reports, policies, cache events | Yes, in the `verifier-data` volume |
+| SQLite | Reports, policies, cache events | Yes, in the `verifier-data` volume, for `CHRONOS_REPORT_RETENTION_DAYS`. Pruned rows are folded into `pruned_totals` first, so lifetime counters survive |
 | In-process, `plugin/state.go` | A verdict between `PostLLMHook` and the headers hook. 60 s, bounded at 4096 | No, and must not |
 | In-process | The Tavily credit budget for the day | **No** — a known limitation |
 
@@ -325,6 +325,8 @@ Chronos has no failure mode that fails a request.
 | Extraction returns nonsense | Retried once with the error attached, then `unverifiable` |
 | Eviction returns an error | Logged; the answer is unaffected |
 | Verification queue full | A background report is dropped rather than spawning goroutines without bound |
+| A page tries to instruct the judge | The instruction is removed before the prompt, and the page is disqualified as evidence after judging: its call becomes `insufficient` |
+| A claim's subject names nothing ("the CEO") | The claim is verified without the claim cache, so no other entity's verdict can be served for it |
 
 What is protected, and the considerably longer list of what is not, is in
 [docs/security.md](docs/security.md). The short version: keys never reach a log or a report,

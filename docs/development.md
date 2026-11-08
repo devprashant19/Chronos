@@ -47,6 +47,7 @@ Inside the verifier, the pipeline reads top to bottom:
 | `verifier/chronos/verify.py` | The orchestrator: cache, search, extract, judge, score |
 | `verifier/chronos/tavily_client.py` | The only place that talks to Tavily, and the credit budget |
 | `verifier/chronos/pagetext.py` | Cleaning a page and choosing the window the judge sees |
+| `verifier/chronos/injection.py` | Scanning page text for instructions aimed at the judge, and removing them |
 | `verifier/chronos/judge_rules.py` | The rule-based judge, used when no model is available |
 | `verifier/chronos/score.py` | The formula, the verdict bands, and the TTL |
 | `verifier/chronos/llm.py` | Every model call, routed back through Bifrost |
@@ -62,10 +63,10 @@ Inside the verifier, the pipeline reads top to bottom:
 | :--- | :--- | :--- | :--- |
 | Go | `go test ./...` in `plugin/` | Go 1.27.3 | 50 test functions, 120 cases counting subtests: config precedence, classification, header assembly, the result store's bounds and TTL, eviction, payload shaping, the loop guard |
 | Go race | `go test -race ./...` in `plugin/` | the same | The result store is read from one hook and written from another |
-| Python | `pytest tests/` in `verifier/` | `requirements-dev.txt` | 134 tests: scoring, extraction, the rule judge, the claim cache and API, the pacer, page text |
-| Console | `npm test` in `console/` | Node 22 | 115 tests: the data layer, the state hook, what each section renders, the animated hero, the walkthrough, fidelity against the design reference, and the layout and labelling faults found by looking at screenshots |
+| Python | `pytest tests/` in `verifier/` | `requirements-dev.txt` | 181 tests: scoring, extraction, the rule judge, the claim cache and API, the pacer, page text, and the injection, ambiguous-subject and retention guards |
+| Console | `npm test` in `console/` | Node 22 | 118 tests: the data layer, the state hook, what each section renders, the animated hero, the walkthrough, fidelity against the design reference, and the layout and labelling faults found by looking at screenshots |
 | Console types | `npm run typecheck` in `console/` | Node 22 | The app, then the tests under their own config |
-| End to end | `./scripts/verify-all.sh` | Docker | 49 checks: the suites above, then the stack |
+| End to end | `./scripts/verify-all.sh` | Docker | 51 checks: the suites above, then the stack |
 | Benchmark | `python bench/runner.py` | a running verifier | Quality against StaleBench. Not a pass/fail suite |
 
 `./scripts/verify-all.sh --unit` runs the test suites without bringing the stack up, and
@@ -113,7 +114,7 @@ nobody can argue with, which defeats the point.
 
 ## Before opening a pull request
 
-1. `./scripts/verify-all.sh` — all 49, from a clean stack.
+1. `./scripts/verify-all.sh` — all 51, from a clean stack.
 2. `go vet ./...` in `plugin/`, and `ruff check` in `verifier/`.
 3. `npm run typecheck` and `npm test` in `console/` if you touched it.
 4. Read [../AGENTS.md](../AGENTS.md). It lists the rules the code cannot enforce — the ones

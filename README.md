@@ -174,7 +174,7 @@ Everyday commands:
 | `./scripts/check-model.sh --all` | which models your key can actually reach today |
 | `python bench/runner.py --limit 18 --audit` | the quality benchmark |
 
-All 44 environment variables: [docs/environment.md](docs/environment.md).
+All 45 environment variables: [docs/environment.md](docs/environment.md).
 
 ---
 
@@ -205,7 +205,7 @@ Real output, trimmed to the end:
   PASS degrade path: the gateway still answers with the verifier down
 
 == summary ==
-  49 passed, 0 failed, 0 skipped
+  51 passed, 0 failed, 0 skipped
 ```
 
 Each check prints what it asserted, so a pass means something specific rather than the absence
@@ -527,7 +527,7 @@ Reproduce: [TESTING.md § level 4](TESTING.md#level-4--reproduce-the-numbers).
 
 ## What is verified, and what is not
 
-`./scripts/verify-all.sh` — **49 checks, 49 passing** on this machine, and the same script CI
+`./scripts/verify-all.sh` — **51 checks, 51 passing** on this machine, and the same script CI
 runs. It asserts specifics, not the absence of errors:
 
 | What was checked | Evidence |
@@ -540,15 +540,16 @@ runs. It asserts specifics, not the absence of errors:
 | The model path's wire formats | 2 checks: a model-produced claim list is accepted, and `fallbacks` as strings |
 | **The gateway survives Chronos failing** | the verifier is stopped mid-run and the gateway must keep answering |
 | Plugin logic | `go test -race ./...`: 50 test functions, 120 cases counting subtests |
-| Verifier logic | `pytest tests/`: 134 tests |
-| Console logic and rendering | 2 checks running `npm test` in `console/`: 115 tests, including a fidelity check against `design/chronos-console.html` |
+| Verifier logic | `pytest tests/`: 181 tests |
+| Console logic and rendering | 2 checks running `npm test` in `console/`: 118 tests, including a fidelity check against `design/chronos-console.html` |
+| The injection and ambiguous-subject guards, and retention | 2 checks: both guards are reported in `/v1/stats`, and `answers_checked` equals stored plus pruned reports. The guards' behaviour is in `pytest`, against a judge that obeys every instruction it reads |
 | Repository hygiene | no `.env` tracked, no credential-shaped string in any tracked file |
 
 Quality, separately, is [measured above](#measured-results) rather than asserted.
 
 ### Not verified, and should be
 
-1. **Two of the 49 checks depend on a live web search and are genuinely flaky.** On 7 Nov,
+1. **Two of the 51 checks depend on a live web search and are genuinely flaky.** On 7 Nov,
    one run had `P4: the cached stale answer was caught` fail with `verdict=unverifiable`
    because the search returned nothing that addressed the claim; the next run passed with
    `outdated`, score 39. Recorded evidence for those two checks would fix it, at the cost of
@@ -557,7 +558,7 @@ Quality, separately, is [measured above](#measured-results) rather than asserted
    figure. A full `--limit 0` run would, and costs roughly 400 Tavily credits.
 3. **`guard` mode's regenerate and 409 paths have never run through the gateway.** They are
    unit-tested in `plugin/` only. An end-to-end check in `verify-all.sh` would settle it.
-4. **Nothing renders the console in a real browser engine.** Its 115 tests run under jsdom,
+4. **Nothing renders the console in a real browser engine.** Its 118 tests run under jsdom,
    which reports what the components produce rather than what a browser paints, so a CSS
    mistake — a panel that overflows, a colour with no contrast — passes all of them. The
    screenshots are the only evidence of that, and a person looks at them. That is not a
@@ -573,10 +574,14 @@ Quality, separately, is [measured above](#measured-results) rather than asserted
 6. **Never run on macOS or Linux.** The Go plugin path is linker-sensitive and the static-link
    assertion is Debian-specific. Only Windows with Docker Desktop has been exercised.
 7. **Never run on a paid model tier**, so `CHRONOS_MODEL_TPM=0` is untested in anger.
-8. **The judge reads attacker-influenceable web pages, and nothing tests that.** Page text
-   goes into a model prompt; the schema and the scoring limit the damage, but there is no
-   injection test. See [docs/security.md](docs/security.md#the-threat-that-is-specific-to-this-project).
-9. **Reports are never pruned.** Nothing has run long enough for the SQLite file to matter.
+8. **The injection guard has never met a real attack.** Since 8 Nov every page is scanned,
+   instruction-like sentences are removed and a page that tried is disqualified as evidence,
+   and `verifier/tests/test_guards.py` proves that against a fake judge that obeys every
+   instruction it reads. Nothing has run it against a real model with real attack pages, and a
+   paraphrased instruction gets past a list of patterns. See
+   [docs/security.md](docs/security.md#the-threat-that-is-specific-to-this-project).
+9. **Retention has only run against test data.** Reports older than 30 days are now pruned
+   with the lifetime counters preserved, but no stack has run long enough to prune a real one.
 
 ### Known limits
 
@@ -590,8 +595,9 @@ Quality, separately, is [measured above](#measured-results) rather than asserted
 - **The Tavily credit budget is per process and not persisted.** A restart resets the day's
   count — deliberate, because a budget that blocks a fresh deployment is worse than one that
   slightly overspends after a restart at this scale.
-- **The claim cache keys on subject plus predicate**, so an ambiguous subject ("the CEO") can
-  collide across entities.
+- **The claim cache keys on subject plus predicate**, so two entities that share a name can
+  share a verdict. A subject that names nothing at all ("the CEO", "it") now bypasses the
+  cache and is looked up every time; a specific but shared name still collides.
 - **Bifrost's own web UI is stubbed** in this image to keep the build small; the HTTP API is
   complete.
 

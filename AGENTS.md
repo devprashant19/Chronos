@@ -84,6 +84,20 @@ mark went missing for exactly this reason and nothing caught it.
 tracked `.env` or a tracked string shaped like `sk-`, `tvly-` or `gsk_`. Do not read a real
 `.env` to write documentation; use `.env.example`.
 
+**14. Page text is scanned before any judge sees it, and a flagged page is disqualified after.**
+`verifier/chronos/verify.py: _fresh_verdict()` runs every page through
+`injection.neutralise`, and once the judge has answered, forces any source with
+`injection_flags` to `insufficient`. Both halves matter: the first keeps the instruction out
+of the prompt, the second means a judge that obeyed it anyway changes nothing. Move the forcing
+before the judge call, or drop it, and every test still passes except the one in
+`tests/test_guards.py` written to catch exactly that. Before tightening a pattern, add the
+ordinary page it was flagging to `ORDINARY` in that file. A false positive disqualifies real
+evidence, and nothing else would notice.
+
+**15. Pruning folds before it deletes.** `verifier/chronos/store.py: _prune_sync()` adds the
+rows it is about to delete to `pruned_totals` in the same transaction, and the counters read
+both. Delete without folding and `answers_checked` goes backwards on the next sweep.
+
 ---
 
 ## Processes and ports
@@ -109,8 +123,9 @@ tracked `.env` or a tracked string shaped like `sk-`, `tvly-` or `gsk_`. Do not 
 | `verifier/chronos/pagetext.py` | Page cleaning and the judge's window | The window centres on the **predicate**, not the stated value. Centring on the value misses exactly the claims that are wrong, because the wrong value is not on the page |
 | `verifier/chronos/llm.py` | Every model call | Routed through Bifrost on purpose. See rules 1 and 2 |
 | `verifier/chronos/pacer.py` | Tokens per minute, per model | The free-tier limit is tokens, not requests |
+| `verifier/chronos/injection.py` | Scans evidence for text aimed at the judge | Patterns, not a classifier. See rule 14 |
 | `deploy/Dockerfile.bifrost` | The hard part | See rules 4 and 5. The binary must be at `/app/main`; the entrypoint execs that path and ignores `CMD` |
-| `deploy/mockllm/jsonmode.py` | Answers Chronos's own prompts with strict JSON | This is what makes the model path testable with no key |
+| `deploy/mockllm/jsonmode.py` | Answers Chronos's own prompts with strict JSON | This is what makes the model path testable with no key. It finds sources by the judge prompt's `[n] url:` lines, so change that header and the keyless path quietly judges nothing |
 
 ## Data model
 
@@ -145,14 +160,14 @@ All five are checks in `scripts/verify-all.sh`.
 ## Commands
 
 ```bash
-./scripts/verify-all.sh              # 49 checks, needs Docker
+./scripts/verify-all.sh              # 51 checks, needs Docker
 ./scripts/verify-all.sh --unit       # the test suites only, no stack
 ./scripts/verify-all.sh --no-build   # reuse images while iterating
 ./scripts/check-model.sh --all       # which models your key reaches today
 python bench/runner.py --limit 18 --audit
 ```
 
-Two of the 49 depend on a live Tavily search and are genuinely flaky; see
+Two of the 51 depend on a live Tavily search and are genuinely flaky; see
 [docs/troubleshooting.md](docs/troubleshooting.md#verification-and-benchmarking) before
 assuming you broke something.
 

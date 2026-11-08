@@ -133,7 +133,7 @@ A real response, trimmed to one claim and one piece of evidence:
 }
 ```
 
-Three fields are worth knowing about:
+Five fields are worth knowing about:
 
 - **`breakdown`** is the whole argument for the score. Every term in the formula, plus how
   many sources supported, contradicted, or said nothing either way. A claim with `breakdown:
@@ -143,6 +143,15 @@ Three fields are worth knowing about:
   exactly like a bad model, so it is reported rather than inferred.
 - **`degraded`** with a `reason` means the daily Tavily budget is spent. The request still
   succeeds; the verdict is `unverifiable`.
+- **`evidence[].injection_flags`** names the patterns found when a page's text tried to
+  instruct the judge — `instruction override`, `dictated verdict`, `judge json` and so on, from
+  `verifier/chronos/injection.py`. A non-empty list means the page was set aside: its call is
+  forced to `insufficient` and its quote cleared, whatever the judge said. Absent from reports
+  written before 8 Nov.
+- **`claims[].claim_cache_bypassed`** is the reason the claim cache was not used, or `null`.
+  It is set when the subject names nothing in particular — "the CEO", "it", "the latest
+  version" — so one company's verdict is never served for another's claim. Such a claim is
+  looked up every time.
 
 ### Reports
 
@@ -190,6 +199,20 @@ The `x-chronos-report` header is a link into this route.
   "thresholds": { "current": 80.0, "check": 50.0 }
 }
 ```
+
+Fields added since that response was captured, all additive:
+
+| Field | What it is |
+| :--- | :--- |
+| `reports_stored` | Reports currently in SQLite |
+| `reports_pruned` | Reports deleted by retention. `answers_checked` is always `reports_stored + reports_pruned`, because pruned rows are folded into a totals table before deletion |
+| `guards.injection_flagged_sources` | Sources set aside since the process started, because their text tried to instruct the judge |
+| `guards.claim_cache_bypassed` | Claims verified without the claim cache since the process started, because their subject was ambiguous |
+| `sweeper.retention_days` | The effective window: `0` for keep everything, otherwise at least `2` |
+| `sweeper.pruned_reports`, `sweeper.pruned_events` | Deleted by this process, at startup and on each sweep |
+
+The two guards also appear in `/metrics` as `chronos_injection_flagged_sources_total`, by
+pattern, and `chronos_claim_cache_bypassed_total`.
 
 `model_pacing.waits` climbing means the verifier is deliberately holding calls back to stay
 inside a token budget, not that it is stuck. `evictor.failed` climbing usually means the

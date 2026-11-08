@@ -96,6 +96,9 @@ obvious alternative is exactly what was tried first.
 | 5.6 | **Mode can be set per virtual key at runtime** (`PUT /v1/policies/{key}`) | Bifrost has already resolved the key, so the policy reuses that identity instead of inventing one |
 | 5.7 | **Every report names its extractor**, model or rules | Two wire-format bugs (9.5) dropped the verifier onto its rule engine without any error. Reporting the extractor made that visible |
 | 5.8 | **The briefing states what it could not confirm instead of leaving it out** | Leaving it out would present an incomplete brief as a complete one |
+| 5.9 | **A subject that names nothing in particular bypasses the claim cache** (`cache.ambiguous_subject`): a bare pronoun, or nothing but determiners and generic nouns ("the CEO", "the latest version"). The claim is still verified, every time, and the report says why in `claim_cache_bypassed` | Keyed on subject plus predicate, "the CEO" would serve one company's verified leader for another company's claim. The rule is deliberately narrow: "the CEO of Apple" and "the Bank of England" each carry a word that names something and still use the cache. None of the 95 subjects in StaleBench and the fixtures trips it |
+| 5.10 | **Reports and cache events are pruned after `CHRONOS_REPORT_RETENTION_DAYS`, 30 by default**, at startup and on every sweep. What is deleted is first folded into a one-row totals table, in the same transaction | Reports hold third-party page text, so keeping them forever should be chosen, not inherited. Folding the counts in first means the lifetime counters in `/v1/stats` never go backwards, which keeps stats additive. Only the latency percentiles narrow to the window |
+| 5.11 | **Retention has a floor of two days** | The sweeper finds the cached answers to evict through their reports, and an answer can stay cached for 24 hours. A shorter window could leave a stale answer the sweeper can no longer find |
 
 ## 6. Evidence
 
@@ -108,6 +111,8 @@ obvious alternative is exactly what was tried first.
 | 6.5 | **Timeless claims never reach Tavily**: they are skipped before the cache lookup | Measured skip rate: **100%**. A check in `verify-all.sh` asserts that credits are unchanged |
 | 6.6 | **Source quality comes from the URL**: official 1.0, major news 0.7, anything else 0.4 | A page cannot claim to be official |
 | 6.7 | **Recorded evidence fixtures stand in when there is no Tavily key** | They only assert that a claim is *out of date* and say where the current value lives. They never invent a replacement figure |
+| 6.8 | **Every page is scanned for injection before any judge sees it** (`verifier/chronos/injection.py`). Instruction-like sentences are replaced with a fixed marker, and a page that tried is **disqualified**: after judging, its call is forced to `insufficient` and its quote cleared | A page that tries to instruct the judge is not evidence, whatever else it says. Forcing the call *after* judging means even a judge that obeyed it changes nothing, and an attacker can only remove their own page. Patterns, not a classifier: each is held to ordinary pages it must not flag, such as a fact check ("rated the claim as true"), a contact page ("please call our office"), a law ("will override the previous rules") and API docs ("the system message") |
+| 6.9 | **Each source's text is fenced between `<<<SOURCE n TEXT>>>` markers, and anything shaped like them is stripped from pages.** The `[n] url:` header lines are unchanged | A page cannot close its own block and open a fake source. The headers stay as they were because `deploy/mockllm` parses them to answer the judge without a key |
 
 ## 7. Scoring and verdicts
 
@@ -172,7 +177,7 @@ The classes:
 | 11.1 | **Keys never reach a log, a report, the console or the repository.** `.env` is gitignored, and `verify-all.sh` fails if `.env` is tracked or a tracked string looks like a `sk-`, `tvly-` or `gsk_` key | It is a public repository |
 | 11.2 | **What is not protected is written down, not hidden.** The verifier is unauthenticated, with CORS `*`. Inference is unauthenticated, the SSRF guard is off for the providers, and the dev tokens sit in `.env.example` | It is a single-machine demo. [docs/security.md](docs/security.md) lists exactly what to change before it goes on a network |
 | 11.3 | **Eviction needs a token** | It is the one destructive action that crosses the process boundary |
-| 11.4 | **The judge is the injection surface, and the design limits the damage.** A fixed Pydantic schema, an 800-character window, at most four sources, a tier taken from the URL, and a score the judge does not set | The judged text comes from pages a search engine chose for a claim an attacker may have written. No injection test exists yet; it is the first thing to add |
+| 11.4 | **The judge is the injection surface, and the design limits it:** the scan and disqualification of 6.8, the fences of 6.9, a fixed Pydantic schema, an 800-character window, at most four sources, a URL-derived tier, and a score the judge does not set | The judged text comes from pages a search engine chose for a claim an attacker may have written. `tests/test_guards.py` drives the real orchestrator with a judge that obeys every instruction it reads. Nothing has been run against a real model with real attack pages yet |
 | 11.5 | **No security policy file** | It is a single-author hackathon project with no security contact. The docs say so rather than imply a process that does not exist |
 
 ## 12. The console
@@ -196,6 +201,7 @@ The classes:
 | 12.15 | **The scroll reveal uses `IntersectionObserver`, not a scroll handler** | A long page costs no per-frame layout reads |
 | 12.16 | **(from a failure)** **The console does not probe the verifier when the page is https and the verifier URL is http** (`api.blockedByBrowser`) | Mixed content and Chromium's private-network rule refuse the request anyway, and the hosted demo logged a CORS error on every load |
 | 12.17 | **(from a failure)** **Labels are read from the response, not assumed.** The playground's hit or miss comes from `x-bifrost-cache-hit`. The inspector labels a recorded report as recorded, even in Live mode | Screenshots showed a live miss titled "cache hit", and a recording sitting unlabelled under a LIVE header |
+| 12.18 | **The score drawer shows both guards.** A disqualified source is marked "set aside", with the patterns that fired; a claim kept out of the claim cache is marked "claim cache bypassed · ambiguous subject" | A guard that changes a verdict without showing it is a term nobody can see (7.1). Both fields are optional in the console's types, so older reports and the recorded demo still render |
 
 ## 13. Hosting the demo
 
@@ -221,11 +227,11 @@ The classes:
 
 | # | Decision | Why |
 | :-- | :--- | :--- |
-| 15.1 | **One script, `scripts/verify-all.sh`, proves the whole stack: 49 checks, the same ones CI runs.** It asserts specifics — `x-chronos-ttl: 21600`, credits unchanged, eviction recorded — rather than the absence of errors | Each rule in [AGENTS.md](AGENTS.md) breaks *quietly*, so the checks look for the specific symptom |
+| 15.1 | **One script, `scripts/verify-all.sh`, proves the whole stack: 51 checks, the same ones CI runs.** It asserts specifics — `x-chronos-ttl: 21600`, credits unchanged, eviction recorded — rather than the absence of errors | Each rule in [AGENTS.md](AGENTS.md) breaks *quietly*, so the checks look for the specific symptom |
 | 15.2 | **The plugin runs `go test -race`** | The race detector matters because one hook writes the verdict store and another reads it |
-| 15.3 | **The verifier has pytest: 134 tests, none needing a network** | Scoring, extraction, the rule judge, the claim cache and the pacer are pure logic |
-| 15.4 | **The console has Vitest under jsdom: 115 tests** | They cover the data layer, the state hook, what each section renders, and token fidelity to the design reference |
-| 15.5 | **Two of the 49 checks depend on live web search and are flaky.** They are documented as flaky, not stubbed | Recorded evidence would steady them, but would stop them testing the live path |
+| 15.3 | **The verifier has pytest: 181 tests, none needing a network** | Scoring, extraction, the rule judge, the claim cache and the pacer are pure logic |
+| 15.4 | **The console has Vitest under jsdom: 118 tests** | They cover the data layer, the state hook, what each section renders, and token fidelity to the design reference |
+| 15.5 | **Two of the 51 checks depend on live web search and are flaky.** They are documented as flaky, not stubbed | Recorded evidence would steady them, but would stop them testing the live path |
 | 15.6 | **(from a failure)** **Screenshots are regenerated live from a shot list, and a person looks at them** (`docs/screenshots/shots.json`) | jsdom reports what components produce, not what a browser paints. On 8 Nov, looking at screenshots found five faults that every test had passed. The three a component test can see now have one, and each was checked to fail without its fix |
 | 15.7 | **A documentation gate runs in CI** | Broken links and diagrams that no longer parse fail the build rather than the reader |
 
@@ -271,16 +277,20 @@ The classes:
 | `vercel.json` | Vercel's detection ignored it for this repository (13.3) |
 | Deploying the backend publicly | It would put unauthenticated routes online, spending free allowances (13.4) |
 | Persisting the Tavily budget | It would block a fresh deployment (10.4) |
+| Pruning reports without keeping their totals | Lifetime counters would go backwards, and stats are additive (5.10) |
+| Trusting a flagged page if the judge still found it useful | A judge that obeyed the injection would say exactly that (6.8) |
 
 ## 19. Open decisions
 
 These are not decided yet. They are written down so they are not decided by accident.
 
-1. **Injection hardening for the judge:** delimiting, a classifier, or both, and the test that
-   proves it works (11.4).
+1. **Whether to add a model-based injection classifier** behind the patterns of 6.8, and the
+   red-team pages to measure it against. The patterns stop the obvious attacks and nothing
+   paraphrased.
 2. **Whether `guard` mode's regenerate and 409 paths get an end-to-end check.** Today they are
    only unit-tested.
-3. **A retention window for reports.** Nothing prunes the SQLite store.
+3. **How to tell two entities with the same name apart in the claim cache.** 5.9 catches a
+   subject that names nothing; it cannot catch one that names two things.
 4. **A browser-level test suite**, for what jsdom cannot see (15.6).
 5. **Recorded evidence for the two flaky checks**, trading the live path for stability (15.5).
 6. **A full 120-claim run with a model**, for a cross-class figure (14.3).
