@@ -160,14 +160,15 @@ All five are checks in `scripts/verify-all.sh`.
 ## Commands
 
 ```bash
-./scripts/verify-all.sh              # 51 checks, needs Docker
+./scripts/verify-all.sh              # 52 checks, needs Docker
 ./scripts/verify-all.sh --unit       # the test suites only, no stack
 ./scripts/verify-all.sh --no-build   # reuse images while iterating
 ./scripts/check-model.sh --all       # which models your key reaches today
 python bench/runner.py --limit 18 --audit
+python scripts/record-proof.py       # run every feature live, write console/public/proof.json
 ```
 
-Two of the 51 depend on a live Tavily search and are genuinely flaky; see
+Two of the 52 depend on a live Tavily search and are genuinely flaky; see
 [docs/troubleshooting.md](docs/troubleshooting.md#verification-and-benchmarking) before
 assuming you broke something.
 

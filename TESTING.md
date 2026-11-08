@@ -18,7 +18,7 @@ Level 1 needs nothing installed and no credentials.
 > whole stack runs with no credentials at all against a built-in mock provider.
 > The console builds to a static folder that runs with no backend, replaying a recorded log
 > and labelled as such; it is hosted at https://chronos-sable-one.vercel.app/.
-> `./scripts/verify-all.sh` runs 51 checks end to end; on a 18-claim benchmark subset the
+> `./scripts/verify-all.sh` runs 52 checks end to end; on a 18-claim benchmark subset the
 > model path scores precision 0.80 and recall 0.667 against a rule-only baseline of 0.40 and
 > 0.20. Built during the event with Claude Code; see the README's disclosure.
 
@@ -30,7 +30,7 @@ Level 1 needs nothing installed and no credentials.
 | :--- | :--- | :--- | :--- |
 | **1. Open the demo site** | a browser, nothing installed | 3 min | The real console, and a five-step demo of the whole cycle you drive yourself |
 | **2. Run the stack** | Docker | ~8 min first build, 1 min after | Live data, and the miss → hit → evicted → miss cycle by hand |
-| **3. Run the checks** | Docker | ~12 min | 51 assertions, end to end |
+| **3. Run the checks** | Docker | ~12 min | 52 assertions, end to end |
 | **4. Run the benchmark** | Docker + a free Tavily key + a free Groq key | ~6 min | The quality numbers, reproduced |
 
 Levels 1 to 3 need **no API keys**. Only level 4 does, and both are free with no card.
@@ -59,10 +59,10 @@ read the verdict off the response headers, watch the stale entry be deleted. Wit
 running it sends real requests and shows real headers; without it, the same five steps replay
 a recorded exchange and say so.
 
-Press **Start the walkthrough**. Nine steps, about two minutes, in the order the product
-actually happens: the problem, where Chronos sits, answers being checked, the claims and the
-score, the TTL policy and the eviction ledger, the headers on the response, the measured
-numbers, the briefing. It scrolls the real page and rings the panel it is talking about —
+Press **Start the walkthrough**. Ten steps, about two minutes, in the order the product
+actually happens: the problem, where Chronos sits, the cycle driven by hand, answers being
+checked, the claims and the score, the TTL policy and the eviction ledger, the headers on the
+response, the measured numbers, the briefing, and every feature run for real. It scrolls the real page and rings the panel it is talking about —
 arrow keys to move, Escape to leave. Step 4 is the one that matters.
 
 The folder is plain static files with relative paths, so it can be dropped on any host, and
@@ -77,6 +77,10 @@ If you cannot run even that, the same three things are in the repository as imag
 [the inspector](docs/screenshots/console-inspector.png), the real response
 [headers](README.md#what-it-looks-like) from the second of three identical requests, and
 [the whole system on one page](docs/architecture.png).
+
+Then scroll to **Every feature**, the last section. Each card is one feature run against the
+live stack by `scripts/record-proof.py`, with the headers, report fields and counters that
+came back, and the date of the run. A feature that failed would be shown in red.
 
 ---
 
@@ -131,7 +135,7 @@ three requests behave the same way.
 ./scripts/verify-all.sh --unit     # the test suites only, no stack
 ```
 
-51 checks. Each one prints what it asserted, so a pass means something specific rather than
+52 checks. Each one prints what it asserted, so a pass means something specific rather than
 "no errors": that the gateway loaded `chronos.so`, that a second identical request is a cache
 hit, that Chronos set a six-hour TTL for a `version` claim, that a stale cached answer is
 caught and evicted and the next request misses, that the nine headers are exposed to a
@@ -166,17 +170,18 @@ subset is entirely `leadership`, the hardest class, and it is not a cross-class 
 
 ## Known limits, before you find them
 
-- **Two of the 51 checks depend on a live web search and are genuinely flaky.** On 7 Nov one
+- **Two of the 52 checks depend on a live web search and are genuinely flaky.** On 7 Nov one
   run had them fail with `verdict=unverifiable`; the next run passed with `outdated`, score
   39. The script says so itself: *"live search results vary; re-run if transient"*.
 - **The benchmark numbers move between runs** for the same reason.
 - **The 18-claim model-path subset is one class**, `leadership`. `--limit 0` runs all 120 and
   costs considerably more credits.
-- **`guard` mode is unit-tested only.** Its regenerate-and-block path has never been run
-  through the gateway end to end.
+- **`guard` mode has never run through a gateway configured for it.** Both halves are tested,
+  and the verifier's rewrite has run live, but the gateway's substitute-or-409 path has run only
+  in Go tests, because the demo gateway runs in `annotate`.
 - **Streaming answers are not content-verified.** They get headers with verdict `pending`.
 - **Never run on macOS or Linux.** Windows with Docker Desktop throughout.
-- **Nothing renders the console in a real browser engine.** Its 118 tests run under jsdom,
+- **Nothing renders the console in a real browser engine.** Its 125 tests run under jsdom,
   so a CSS mistake passes all of them. The screenshots are the only evidence of that.
 
 The full list is in [README.md](README.md#not-verified-and-should-be).

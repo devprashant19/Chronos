@@ -72,6 +72,7 @@ obvious alternative is exactly what was tried first.
 | 3.7 | **Classification uses rules only** (`plugin/classify.go`) | It sits in front of every request, so a few regex scans, no model call and no network |
 | 3.8 | **The background verification queue is capped.** When it is full, a report is dropped instead of spawning another goroutine | Memory has to stay bounded inside someone else's process |
 | 3.9 | **`Init` does not fail on a recoverable misconfiguration** | A gateway that refuses to boot over a misspelled setting is strictly worse than one that boots degraded and says so |
+| 3.10 | **(from a failure)** **Guard mode acts on any `outdated` answer, not only one scoring under the threshold.** `guardShouldAct` in the plugin, `fails_guard` in the verifier | A refuted claim is `outdated` whatever S says (7.4), so an answer can be `outdated` at 50.4 with a threshold of 50. Keyed on the score alone, guard mode served exactly that answer unchanged. Found by the first tests guard mode ever had, written on 8 Nov after a README line was found to claim tests that did not exist |
 
 ## 4. Building and loading the plugin
 
@@ -146,7 +147,7 @@ The classes:
 | pricing, version | 3 d | 6 h |
 | leadership, law | 14 d | 24 h |
 | events | 7 d | 12 h |
-| timeless | never | plugin default |
+| timeless | never | 7 d (`168h` in `plugin/config.go`) |
 
 ## 9. Models, and living on a free tier
 
@@ -184,7 +185,7 @@ The classes:
 
 | # | Decision | Why |
 | :-- | :--- | :--- |
-| 12.1 | **Vite, React and TypeScript, served by nginx.** One page of eight sections, each a *reader*: `useChronos.ts` owns mode, feed, counters and connection, and no section fetches anything except on a click | State has one owner, and the sections are easy to test |
+| 12.1 | **Vite, React and TypeScript, served by nginx.** One page of nine sections, each a *reader*: `useChronos.ts` owns mode, feed, counters and connection, and no section fetches anything except on a click | State has one owner, and the sections are easy to test |
 | 12.2 | **Demo mode is the default, and the page labels it as a recorded replay.** The console also falls back to it whenever the verifier cannot be reached | Judging and screenshots have to work without the stack or keys. A freshness tool that faked its own freshness would refute itself, so nothing in demo mode is presented as live |
 | 12.3 | **(from a failure)** **The mode lock is held in a ref** | A late health probe overruled a choice the user had already made |
 | 12.4 | **`instrument.css` is lifted from `design/chronos-console.html`, and `design.test.ts` holds every `:root` token to it** | The slash in the brand mark once went missing and nothing caught it. Change the reference and re-extract; never edit one side alone |
@@ -197,11 +198,12 @@ The classes:
 | 12.11 | **Every movement has a job.** Counters count up from real stats, the decay scope sweeps a week because that curve *is* the argument, and packets cross the signal path while a request is in flight. All of it is off under `prefers-reduced-motion` | Motion that only decorates is noise. With motion off, the page renders complete rather than hidden and waiting |
 | 12.12 | **(from a failure)** **The count-up reads `performance.now()`, not the timestamp `requestAnimationFrame` passes in** | The two need not share an origin. When they did not, the most prominent number on the page stopped short of its target. A flaky test caught it |
 | 12.13 | **"Run it" is a five-step cycle driven by one button, and it never dead-ends.** If a live request fails, a labelled recording stands in and the button still advances | It shows the product's whole point in order. A failure of ours must not stop the person in front of it, the same rule as 10.1 |
-| 12.14 | **The walkthrough has nine steps, and each scrolls to a real section and rings it.** It is a draggable card, clamped to the screen | A tour that shows something the product cannot do is a lie with a Next button. It began as a bar across the foot of the page, which covered what step one pointed at |
+| 12.14 | **The walkthrough has ten steps, and each scrolls to a real section and rings it.** It is a draggable card, clamped to the screen | A tour that shows something the product cannot do is a lie with a Next button. It began as a bar across the foot of the page, which covered what step one pointed at |
 | 12.15 | **The scroll reveal uses `IntersectionObserver`, not a scroll handler** | A long page costs no per-frame layout reads |
 | 12.16 | **(from a failure)** **The console does not probe the verifier when the page is https and the verifier URL is http** (`api.blockedByBrowser`) | Mixed content and Chromium's private-network rule refuse the request anyway, and the hosted demo logged a CORS error on every load |
 | 12.17 | **(from a failure)** **Labels are read from the response, not assumed.** The playground's hit or miss comes from `x-bifrost-cache-hit`. The inspector labels a recorded report as recorded, even in Live mode | Screenshots showed a live miss titled "cache hit", and a recording sitting unlabelled under a LIVE header |
 | 12.18 | **The score drawer shows both guards.** A disqualified source is marked "set aside", with the patterns that fired; a claim kept out of the claim cache is marked "claim cache bypassed · ambiguous subject" | A guard that changes a verdict without showing it is a term nobody can see (7.1). Both fields are optional in the console's types, so older reports and the recorded demo still render |
+| 12.19 | **An "Every feature" section replays a recorded run of every feature against the live stack.** `scripts/record-proof.py` writes `console/public/proof.json` with the real headers, report fields and counters, and whether each matched what the feature promises. In Live mode the checks a browser can make are re-run in place | A demo of features should show the features working, not describe them. Recording a real run keeps the hosted demo honest without a backend, and a failure is shown in red rather than left out. The checks that need to stop a container or run inside the verifier stay recorded and say so |
 
 ## 13. Hosting the demo
 
@@ -227,13 +229,14 @@ The classes:
 
 | # | Decision | Why |
 | :-- | :--- | :--- |
-| 15.1 | **One script, `scripts/verify-all.sh`, proves the whole stack: 51 checks, the same ones CI runs.** It asserts specifics — `x-chronos-ttl: 21600`, credits unchanged, eviction recorded — rather than the absence of errors | Each rule in [AGENTS.md](AGENTS.md) breaks *quietly*, so the checks look for the specific symptom |
+| 15.1 | **One script, `scripts/verify-all.sh`, proves the whole stack: 52 checks, the same ones CI runs.** It asserts specifics — `x-chronos-ttl: 21600`, credits unchanged, eviction recorded — rather than the absence of errors | Each rule in [AGENTS.md](AGENTS.md) breaks *quietly*, so the checks look for the specific symptom |
 | 15.2 | **The plugin runs `go test -race`** | The race detector matters because one hook writes the verdict store and another reads it |
-| 15.3 | **The verifier has pytest: 181 tests, none needing a network** | Scoring, extraction, the rule judge, the claim cache and the pacer are pure logic |
-| 15.4 | **The console has Vitest under jsdom: 118 tests** | They cover the data layer, the state hook, what each section renders, and token fidelity to the design reference |
-| 15.5 | **Two of the 51 checks depend on live web search and are flaky.** They are documented as flaky, not stubbed | Recorded evidence would steady them, but would stop them testing the live path |
+| 15.3 | **The verifier has pytest: 185 tests, none needing a network** | Scoring, extraction, the rule judge, the claim cache and the pacer are pure logic |
+| 15.4 | **The console has Vitest under jsdom: 125 tests** | They cover the data layer, the state hook, what each section renders, and token fidelity to the design reference |
+| 15.5 | **Two of the 52 checks depend on live web search and are flaky.** They are documented as flaky, not stubbed | Recorded evidence would steady them, but would stop them testing the live path |
 | 15.6 | **(from a failure)** **Screenshots are regenerated live from a shot list, and a person looks at them** (`docs/screenshots/shots.json`) | jsdom reports what components produce, not what a browser paints. On 8 Nov, looking at screenshots found five faults that every test had passed. The three a component test can see now have one, and each was checked to fail without its fix |
 | 15.7 | **A documentation gate runs in CI** | Broken links and diagrams that no longer parse fail the build rather than the reader |
+| 15.8 | **The guards are also measured against the real judge model**, inside the verifier container, by `scripts/proof/in_verifier.py`. A fixed attack page stands in for search, and the run is made twice, with the guard and without it | It shows what the guard changes instead of asserting it. On the first run the model resisted the attack even without the guard. That is recorded as it happened; what the guard adds is that the result no longer depends on the model resisting |
 
 ## 16. Documentation and presentation
 
@@ -279,6 +282,7 @@ The classes:
 | Persisting the Tavily budget | It would block a fresh deployment (10.4) |
 | Pruning reports without keeping their totals | Lifetime counters would go backwards, and stats are additive (5.10) |
 | Trusting a flagged page if the judge still found it useful | A judge that obeyed the injection would say exactly that (6.8) |
+| A feature page written by hand | It would describe the features instead of showing them working (12.19) |
 
 ## 19. Open decisions
 
@@ -287,8 +291,9 @@ These are not decided yet. They are written down so they are not decided by acci
 1. **Whether to add a model-based injection classifier** behind the patterns of 6.8, and the
    red-team pages to measure it against. The patterns stop the obvious attacks and nothing
    paraphrased.
-2. **Whether `guard` mode's regenerate and 409 paths get an end-to-end check.** Today they are
-   only unit-tested.
+2. **Whether to run a second gateway in `guard` for the end-to-end check.** Both halves are
+   tested and the verifier's rewrite has run live (3.10), but the gateway's substitute-or-409
+   path has only run in Go tests.
 3. **How to tell two entities with the same name apart in the claim cache.** 5.9 catches a
    subject that names nothing; it cannot catch one that names two things.
 4. **A browser-level test suite**, for what jsdom cannot see (15.6).

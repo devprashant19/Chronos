@@ -92,6 +92,14 @@
         { "click": "header a[href='#path']" }, { "wait": 3200 }
       ]
     },
+    {
+      "name": "console-proof",
+      "path": "/",
+      "steps": [
+        { "click": "header a[href='#proof']" }, { "wait": 3200 },
+        { "click": "#proof button:has-text('Re-run')" }, { "waitFor": "#proof button:has-text('Re-run')" }, { "wait": 1500 }
+      ]
+    },
     { "name": "console-phone", "path": "/", "width": 390, "height": 844, "scale": 2, "steps": [{ "wait": 3200 }] },
     {
       "name": "console-phone-run-it",

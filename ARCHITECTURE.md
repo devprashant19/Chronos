@@ -182,7 +182,7 @@ having. The three decisions inside it that came from measured bugs are in the
 
 ### 3.4 The console — `console/src/`
 
-A reader, not a participant. One page, seven sections, a live mode and a recorded demo mode.
+A reader, not a participant. One page, nine sections, a live mode and a recorded demo mode.
 [docs/ui.md](docs/ui.md).
 
 ---

@@ -14,7 +14,7 @@ The pages here answer "how exactly does X work". They group into three:
 | 3 | [deployment.md](deployment.md) | What are the five containers? Why does the image build Bifrost from source? Why must the gateway not be statically linked? Why is the binary called `/app/main`? What does not work — Kubernetes, TLS, more than one replica? |
 | 4 | [development.md](development.md) | What do I need installed? Which file owns what? What are the test suites and what does each need? How do I add a volatility class, a claim pattern, a scoring term, a route? What do I rebuild after changing what? |
 | 5 | [security.md](security.md) | What is protected, and what is deliberately not? Why is Bifrost's SSRF guard off? What happens when an attacker writes the page the judge reads? What has to change before this is on a shared network? |
-| 6 | [ui.md](ui.md) | What are the seven sections and what does each read? What is live mode against demo mode? What do the colours mean? Why are there two drawings of the mark? How is it checked, and what do those checks still not cover? |
+| 6 | [ui.md](ui.md) | What are the nine sections and what does each read? What is live mode against demo mode? What do the colours mean? Why are there two drawings of the mark? How is it checked, and what do those checks still not cover? |
 | 7 | [troubleshooting.md](troubleshooting.md) | Which failures are quiet? What does this exact error string mean? Why is everything `unverifiable`? Why did eviction return 403? How do I tell "the verifier is down" from "the verifier is rate limited"? |
 
 Alongside them: [architecture.html](architecture.html) and the

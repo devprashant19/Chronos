@@ -1,6 +1,6 @@
 # The console
 
-One page, an opening stage and eight sections, no routing. It is an instrument panel rather
+One page, an opening stage and nine sections, no routing. It is an instrument panel rather
 than a dashboard: everything on it is either a live reading or a recorded replay, and it says
 which.
 
@@ -35,8 +35,8 @@ same console is hosted with no backend at <https://chronos-sable-one.vercel.app/
 | **The cache.** What Chronos chose against a flat default, and every stale hit it stopped. | **The benchmark.** Read from `bench/results.json`; the rule engine's weak numbers included. |
 | ![Briefing mode in the recorded demo: verified lines, unconfirmed lines with reasons, and open questions](screenshots/console-briefing.png) | ![The opening stage on a 390-pixel phone: the headline, stacked buttons and counters over the globe](screenshots/console-phone.png) |
 | **Briefing mode.** Contradictions become questions to ask in the room. | **A phone, 390 px.** The page never scrolls sideways at 360, 390, 430, 520, 640 or 768 px, measured. |
-| ![Run it on a phone in the recorded demo: the score dial at 39, verdict outdated, and the headers in a scrolling panel](screenshots/console-phone-run-it.png) | |
-| **Run it on a phone.** The five steps stack into one column. | |
+| ![Run it on a phone in the recorded demo: the score dial at 39, verdict outdated, and the headers in a scrolling panel](screenshots/console-phone-run-it.png) | ![Every feature, working: cards for each feature marked working, with the real headers and counters recorded from the live stack](screenshots/console-proof.png) |
+| **Run it on a phone.** The five steps stack into one column. | **Every feature, working.** Twenty features run against the live stack, with what came back; six re-run live from the browser. |
 
 Every one of these is regenerated from the running console by
 `node <readme-suite>/scripts/shots.mjs --file docs/screenshots/shots.json`, with the shot
@@ -81,10 +81,10 @@ jsdom they do not — and when they disagree the count never reaches its target,
 most prominent number on the page quietly wrong. That was a real failure, caught by the test
 above being flaky rather than by looking at it.
 
-**The walkthrough** (`console/src/sections/Walkthrough.tsx`) is nine steps in the order the
-product happens: the problem, where Chronos sits, answers being checked, the claims and the
-score, the TTL policy and the eviction ledger, the headers on the response, the measured
-numbers, the briefing. Each step scrolls to a **real section and rings it** — there is
+**The walkthrough** (`console/src/sections/Walkthrough.tsx`) is ten steps in the order the
+product happens: the problem, where Chronos sits, the cycle driven by hand, answers being
+checked, the claims and the score, the TTL policy and the eviction ledger, the headers on the
+response, the measured numbers, the briefing, and every feature run for real. Each step scrolls to a **real section and rings it** — there is
 nothing in the tour that is not already on the page, which is deliberate: a tour that shows
 something the product cannot do is a lie with a Next button. It is driveable with the arrow
 keys and closes on Escape, and it respects `prefers-reduced-motion`.
@@ -193,6 +193,7 @@ hidden and waiting.
 | `#playground` | Playground | `POST /v1/chat/completions` through the gateway | `console/src/sections/Playground.tsx` |
 | `#bench` | Benchmark | `public/results.json`, copied from `bench/results.json` | `console/src/sections/Benchmark.tsx` |
 | `#brief` | Briefing | `POST /v1/brief` | `console/src/sections/Briefing.tsx` |
+| `#proof` | Every feature | `public/proof.json`, written by `scripts/record-proof.py`; in Live mode, six checks re-run from the browser | `console/src/sections/Proof.tsx`, `console/src/proof.ts` |
 
 `console/src/useChronos.ts` owns the mode, the feed, the counters and the connection. Every
 section is a reader; none of them fetches on its own except on a click.
@@ -259,7 +260,7 @@ filled in `--bad` — which survives 16 px. The source is `design/icon.svg`;
 
 ## How it is checked
 
-**118 tests**, in ten files, run by `npm test` in `console/` and by
+**125 tests**, in eleven files, run by `npm test` in `console/` and by
 `scripts/verify-all.sh`.
 
 | File | Covers |
