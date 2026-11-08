@@ -66,6 +66,13 @@ export function useChronos() {
   // --- probe the verifier once, and prefer live if it answers -------------
   useEffect(() => {
     let cancelled = false;
+    // Known in advance on the public demo site: an https page cannot reach a
+    // plain-http verifier, so asking would only log a browser error on every
+    // load. Settle on demo without the round trip.
+    if (api.blockedByBrowser()) {
+      setProbe({ reachable: false, offline: true, tavily: false });
+      return;
+    }
     (async () => {
       try {
         const health = await api.health();

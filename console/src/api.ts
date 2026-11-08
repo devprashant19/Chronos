@@ -185,6 +185,18 @@ async function json<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  /**
+   * Whether the browser would refuse to talk to the verifier at all.
+   *
+   * A page served over https may not fetch a plain-http URL (mixed content),
+   * and Chromium also refuses a request from a public origin to a loopback
+   * address. The public demo site is exactly that case: https, with the
+   * verifier defaulting to http://localhost:8000. The request fails before it
+   * leaves the tab and logs a CORS error on every load, so the answer is known
+   * without asking. The protocol is a parameter only so a test can pass one.
+   */
+  blockedByBrowser: (protocol: string = window.location.protocol): boolean =>
+    protocol === "https:" && VERIFIER_URL.startsWith("http://"),
   health: () => json<{ status: string; offline_demo: boolean; tavily_configured: boolean }>("/health"),
   stats: () => json<Stats>("/v1/stats"),
   verify: (body: Record<string, unknown>) =>

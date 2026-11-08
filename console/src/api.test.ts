@@ -32,6 +32,22 @@ describe("base URLs", () => {
   });
 });
 
+describe("blockedByBrowser", () => {
+  it("knows an https page cannot reach a plain-http verifier", () => {
+    // Mixed content, and for localhost a private-network request: the browser
+    // refuses before anything leaves the tab. On the public demo site this
+    // was a CORS error in the console on every load, for a probe that could
+    // never have succeeded.
+    expect(api.blockedByBrowser("https:")).toBe(true);
+    expect(api.blockedByBrowser("http:")).toBe(false);
+  });
+
+  it("reads the page's own protocol by default", () => {
+    // jsdom serves these tests over http, which is the local stack's case.
+    expect(api.blockedByBrowser()).toBe(false);
+  });
+});
+
 describe("api", () => {
   it("sends JSON and parses the report", async () => {
     const fetchMock = vi.fn().mockResolvedValue(ok({ report_id: "abc", verdict: "outdated", score: 39 }));

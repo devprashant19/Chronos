@@ -61,6 +61,29 @@ describe("choosing a mode", () => {
     expect(result.current.probe?.reachable).toBe(false);
   });
 
+  it("does not even ask when the browser would refuse the request", async () => {
+    // The public demo site is https and the verifier defaults to plain http
+    // on localhost. A browser blocks that before it leaves the tab, so the
+    // probe logged a CORS error on every load of the site and could never
+    // have succeeded. The answer is known, so it is not asked.
+    const blocked = vi.spyOn(api, "blockedByBrowser").mockReturnValue(true);
+    try {
+      const health = vi
+        .spyOn(api, "health")
+        .mockResolvedValue({ status: "ok", offline_demo: false, tavily_configured: true });
+      vi.spyOn(api, "stats").mockRejectedValue(new Error("unreachable"));
+      vi.spyOn(api, "cacheEvents").mockRejectedValue(new Error("unreachable"));
+      const { result } = renderHook(() => useChronos());
+
+      await waitFor(() => expect(result.current.probe).not.toBeNull());
+      expect(health).not.toHaveBeenCalled();
+      expect(result.current.mode).toBe("demo");
+      expect(result.current.probe).toEqual({ reachable: false, offline: true, tavily: false });
+    } finally {
+      blocked.mockRestore();
+    }
+  });
+
   it("does not override a choice the operator already made", async () => {
     // The probe is async. Picking demo while it is in flight must stick, or
     // the console flips out from under whoever clicked it.
