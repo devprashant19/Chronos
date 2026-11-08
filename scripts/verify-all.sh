@@ -500,6 +500,27 @@ assert pacing is not None, "model_pacing missing from /v1/stats"
 assert "tokens_per_minute" in pacing, pacing
 PY
 
+check "the injection and ambiguous-subject guards are reported in stats" python - <<'PY'
+import json, urllib.request
+
+d = json.load(urllib.request.urlopen("http://localhost:8000/v1/stats", timeout=20))
+guards = d.get("guards")
+assert guards is not None, "guards missing from /v1/stats: the running image predates them"
+for key in ("injection_flagged_sources", "claim_cache_bypassed"):
+    assert isinstance(guards.get(key), int), (key, guards)
+PY
+
+check "report retention is applied and does not shrink the lifetime counters" python - <<'PY'
+import json, urllib.request
+
+d = json.load(urllib.request.urlopen("http://localhost:8000/v1/stats", timeout=20))
+sweeper = d.get("sweeper") or {}
+days = sweeper.get("retention_days")
+assert days == 0 or (isinstance(days, int) and days >= 2), f"retention_days={days!r}"
+# Lifetime answers are what is stored plus what retention deleted.
+assert d["answers_checked"] == d["reports_stored"] + d["reports_pruned"], d
+PY
+
 # --- the degrade path: Chronos must never break the gateway ---------------
 printf '  testing the degrade path (verifier stopped)\n'
 (cd deploy && docker compose stop verifier >/dev/null 2>&1)
