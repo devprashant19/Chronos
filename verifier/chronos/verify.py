@@ -250,7 +250,14 @@ class Verifier:
         METRICS.budget_remaining.set(self.tavily.budget.remaining)
 
         # Guard mode may want a corrected answer rather than just a verdict.
-        if req.regenerate and score < req.threshold and stale_count:
+        #
+        # An outdated answer fails the guard whatever it scored. A contradicted
+        # claim is `outdated` even when the score arithmetic lands at 50 or
+        # above (see score.is_contradicted), and keying the guard on the score
+        # alone served exactly that answer unchanged: tests/test_guard_mode.py
+        # found it with a refuted claim scoring 50.4 against a threshold of 50.
+        fails_guard = score < req.threshold or verdict == "outdated"
+        if req.regenerate and fails_guard and stale_count:
             corrected = await self._regenerate(req, verdicts)
             if corrected:
                 response.corrected_answer = corrected

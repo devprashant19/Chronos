@@ -440,7 +440,7 @@ func PostLLMHook(ctx *schemas.BifrostContext, resp *schemas.BifrostResponse, bif
 	}
 
 	// Guard mode may substitute a corrected answer, or block.
-	if st.cfg.Mode == ModeGuard && res.Score < float64(st.cfg.GuardThreshold) && res.Verdict != verdictUnverifiable {
+	if guardShouldAct(st.cfg, res) {
 		if vres.CorrectedAnswer != "" && ReplaceAnswerInResponse(resp, vres.CorrectedAnswer) {
 			ctx.Log(schemas.LogLevelInfo, fmt.Sprintf(
 				"chronos: guard replaced an answer scoring %.0f with a regenerated one (report %s)", res.Score, res.ReportID))
@@ -660,6 +660,20 @@ func (st *pluginState) evict(ctx *schemas.BifrostContext, cacheID, cacheKey stri
 		cacheID, cacheKey, res.Score, res.Stale, res.ReportID)
 	ctx.Log(schemas.LogLevelInfo, "chronos: "+msg)
 	logf("info", "%s", msg)
+}
+
+// guardShouldAct reports whether guard mode must replace or block an answer.
+//
+// An outdated verdict fails the guard whatever the score says. The verifier
+// calls a contradicted claim outdated even when the arithmetic lands at or
+// above the threshold, and keying on the score alone served exactly that
+// answer unchanged. Unverifiable never fails it: not knowing is not a reason
+// to block, the same asymmetry as eviction.
+func guardShouldAct(cfg Config, res result) bool {
+	if cfg.Mode != ModeGuard || res.Verdict == verdictUnverifiable {
+		return false
+	}
+	return res.Verdict == verdictOutdated || res.Score < float64(cfg.GuardThreshold)
 }
 
 // blockedError builds the error guard mode returns instead of a stale answer.
