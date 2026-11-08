@@ -20,7 +20,7 @@ Level 1 needs nothing installed and no credentials.
 > and labelled as such; it is hosted at https://chronos-sable-one.vercel.app/.
 > `./scripts/verify-all.sh` runs 52 checks end to end; on a 18-claim benchmark subset the
 > model path scores precision 0.80 and recall 0.667 against a rule-only baseline of 0.40 and
-> 0.20. Built during the event with Claude Code; see the README's disclosure.
+> 0.20. Built during the event with AI coding assistance; see the README's disclosure.
 
 ---
 

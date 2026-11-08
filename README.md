@@ -688,8 +688,8 @@ detail: [docs/development.md](docs/development.md#layout).
 
 ## AI tools used
 
-Required disclosure. This project was built with **Claude Code** (Anthropic) doing the
-implementation, debugging and measurement, directed by the author. The Bifrost hook
+Required disclosure. This project was built with AI coding assistance for the implementation,
+debugging and measurement, directed by the author. The Bifrost hook
 signatures, config schema and semantic-cache contract were read from the official docs and the
 `maximhq/bifrost` source rather than recalled; the benchmark numbers were measured by
 `bench/runner.py`, not estimated.
