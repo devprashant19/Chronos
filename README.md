@@ -658,6 +658,7 @@ detail: [docs/development.md](docs/development.md#layout).
 |---|---|
 | Evaluate it without doing my setup | [TESTING.md](TESTING.md) |
 | Understand how it works | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| See every decision and why it was made | [DESIGN.md](DESIGN.md) |
 | Review the plugin for upstream | [plugin/README.md](plugin/README.md) |
 | Change it | [docs/development.md](docs/development.md), then [AGENTS.md](AGENTS.md) |
 | Look something up | [docs/README.md](docs/README.md) |

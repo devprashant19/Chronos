@@ -28,6 +28,7 @@ Alongside them: [architecture.html](architecture.html) and the
 | :--- | :--- |
 | You are deciding whether this works | [../TESTING.md](../TESTING.md) |
 | You want to know how it works | [../ARCHITECTURE.md](../ARCHITECTURE.md) |
+| You want every decision, and why | [../DESIGN.md](../DESIGN.md) |
 | You are reviewing the plugin for upstream | [../plugin/README.md](../plugin/README.md) |
 | You are a coding agent about to change something | [../AGENTS.md](../AGENTS.md) |
 | You want the argument, the measurements and the limits | [../README.md](../README.md) |
