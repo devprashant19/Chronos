@@ -11,12 +11,14 @@
 [![CI](https://github.com/devprashant19/Chronos/actions/workflows/ci.yml/badge.svg)](https://github.com/devprashant19/Chronos/actions/workflows/ci.yml)
 [![Docs](https://github.com/devprashant19/Chronos/actions/workflows/docs.yml/badge.svg)](https://github.com/devprashant19/Chronos/actions/workflows/docs.yml)
 [![Live demo](docs/badges/demo.svg)](https://chronos-sable-one.vercel.app/)
+[![Demo video, 4 minutes](docs/badges/video.svg)](https://youtu.be/0R9daBrdAY4)
 [![Licence: Apache-2.0](docs/badges/licence.svg)](LICENSE)
 [![Go plugin](docs/badges/go.svg)](plugin/)
 [![Python, FastAPI](docs/badges/python.svg)](verifier/)
 [![TypeScript, React](docs/badges/typescript.svg)](console/)
 
 [**Live demo**](https://chronos-sable-one.vercel.app/) ·
+[**Watch the demo**](https://youtu.be/0R9daBrdAY4) ·
 [**See it work**](TESTING.md) ·
 [**How it works**](ARCHITECTURE.md) ·
 [**Every decision**](DESIGN.md) ·
@@ -695,7 +697,8 @@ detail: [docs/development.md](docs/development.md#layout).
 | Change it | [docs/development.md](docs/development.md), then [AGENTS.md](AGENTS.md) |
 | Look something up | [docs/README.md](docs/README.md) |
 | Contribute | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| See the pitch | [docs/Chronos-deck.pptx](docs/Chronos-deck.pptx), ten slides, every number sourced from this repository |
+| Watch it | [the four-minute demo film](https://youtu.be/0R9daBrdAY4) |
+| See the pitch | [docs/Chronos-deck.pptx](docs/Chronos-deck.pptx), thirteen slides, every number sourced from this repository |
 
 ## AI tools used
 
