@@ -23,6 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import Globe from "./Globe";
+import { FILM_URL, REPO_URL } from "../links";
 
 export interface HeroCounters {
   answers: number;
@@ -252,6 +253,16 @@ export default function Hero({
           <button className="btn ghost" onClick={onScrollOn}>
             Explore on your own
           </button>
+        </Reveal>
+
+        <Reveal step={5} as="p" className="hero-links">
+          <a href={FILM_URL} target="_blank" rel="noreferrer">
+            Watch the 4-minute film
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href={REPO_URL} target="_blank" rel="noreferrer">
+            Source on GitHub
+          </a>
         </Reveal>
 
         <Reveal step={6} className="counters">

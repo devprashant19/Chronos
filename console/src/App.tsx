@@ -13,6 +13,7 @@ import Inspector from "./sections/Inspector";
 import Cache from "./sections/Cache";
 import Playground from "./sections/Playground";
 import Benchmark from "./sections/Benchmark";
+import { FILM_URL, REPO_URL } from "./links";
 import Briefing from "./sections/Briefing";
 import Proof from "./sections/Proof";
 
@@ -185,7 +186,8 @@ function Page() {
             <>
               <strong>Demo mode.</strong> Traffic on this page is a recorded replay, labelled as
               such. The benchmark section reads measured results from{" "}
-              <span className="mono">bench/results.json</span>. Switch to Live to drive a running
+              <span className="mono">bench/results.json</span> and{" "}
+              <span className="mono">bench/results-model.json</span>. Switch to Live to drive a running
               verifier.
             </>
           ) : (
@@ -194,6 +196,14 @@ function Page() {
               <span className="mono">{BIFROST_URL}</span>.
             </>
           )}
+        </p>
+        <p className="foot-links">
+          <a href={FILM_URL} target="_blank" rel="noreferrer">
+            The 4-minute film
+          </a>
+          <a href={REPO_URL} target="_blank" rel="noreferrer">
+            Source on GitHub
+          </a>
         </p>
       </footer>
 

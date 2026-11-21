@@ -51,6 +51,12 @@ if [ -f "$REPO/bench/results.json" ]; then
 else
   echo "warning: bench/results.json is missing; the benchmark panel will say so" >&2
 fi
+# The model run, shown beside the rule engine. Optional: without it the panel
+# shows the rule-engine run alone and says the model file was not found.
+if [ -f "$REPO/bench/results-model.json" ]; then
+  cp "$REPO/bench/results-model.json" public/results-model.json
+  echo "copied bench/results-model.json"
+fi
 
 npx vite build --base=./ --outDir "$OUT" --emptyOutDir
 

@@ -9,6 +9,11 @@
  * The caveats are rendered as prominently as the numbers, from the results
  * file's own `configuration` block, since a precision figure measured with
  * rule-based judging means something different from one measured with a model.
+ *
+ * Two runs are compared first: the rule engine (results.json) and a model judge
+ * (results-model.json). Shown alone, the rule-engine run's F1 of 0.27 was the
+ * first number a reader met in this section, while the model run lived only on
+ * one proof card. Each run states its own sample, because the samples differ.
  */
 
 import { useEffect, useState } from "react";
@@ -67,6 +72,8 @@ interface Results {
 export default function Benchmark() {
   const [results, setResults] = useState<Results | null>(null);
   const [missing, setMissing] = useState(false);
+  // undefined while loading, null when the file is absent.
+  const [model, setModel] = useState<Results | null | undefined>(undefined);
 
   useEffect(() => {
     // Served as a static asset next to the console build. Resolved against
@@ -77,6 +84,10 @@ export default function Benchmark() {
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((data: Results) => setResults(data))
       .catch(() => setMissing(true));
+    fetch(`${import.meta.env.BASE_URL}results-model.json`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((data: Results) => setModel(data))
+      .catch(() => setModel(null));
   }, []);
 
   return (
@@ -88,7 +99,8 @@ export default function Benchmark() {
         </div>
         <p>
           The repo ships a benchmark: 40 claims known to be stale, 40 believed current, 40 timeless.
-          Everything below is read from <span className="mono">bench/results.json</span>, written by{" "}
+          Everything below is read from <span className="mono">bench/results.json</span> and{" "}
+          <span className="mono">bench/results-model.json</span>, written by{" "}
           <span className="mono">bench/runner.py</span>. Nothing here is a target.
         </p>
       </div>
@@ -110,7 +122,10 @@ export default function Benchmark() {
           <p style={{ margin: 0, color: "var(--ink-3)" }}>Loading measured results…</p>
         </div>
       ) : (
-        <Rendered results={results} />
+        <>
+          <Compare rule={results} model={model} />
+          <Rendered results={results} />
+        </>
       )}
     </section>
   );
@@ -123,6 +138,9 @@ function Rendered({ results }: { results: Results }) {
 
   return (
     <>
+      <p className="eyebrow" style={{ margin: "0 0 10px" }}>
+        In detail · the rule-engine run, {primary.n} claims
+      </p>
       <div className="panel" style={{ padding: "14px 16px", marginBottom: 16 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <span className="pill mute">dataset {results.dataset_version}</span>
@@ -275,6 +293,73 @@ function Rendered({ results }: { results: Results }) {
         </div>
       </div>
     </>
+  );
+}
+
+function ms(v: number): string {
+  return v >= 10000 ? `${(v / 1000).toFixed(1)} s` : `${Math.round(v)} ms`;
+}
+
+function Run({ id, title, how, results, latencyNote }: { id: string; title: string; how: string; results: Results; latencyNote: string }) {
+  const run = Object.values(results.modes)[0];
+  const det = run.outdated_detection;
+  return (
+    <div data-testid={id} style={{ minWidth: 0 }}>
+      <p style={{ margin: "0 0 2px", fontWeight: 600 }}>{title}</p>
+      <p style={{ margin: "0 0 10px", fontSize: 12.5, color: "var(--ink-2)" }}>
+        {how} · {run.n} claims · stale class: {Object.keys(run.per_class).join(", ") || "none"} ·{" "}
+        {results.run.started_at.slice(0, 10)}
+      </p>
+      <div className="bars">
+        <Bar label="precision" value={det.precision} />
+        <Bar label="recall" value={det.recall} />
+        <Bar label="F1" value={det.f1} />
+      </div>
+      <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "var(--ink-2)" }}>
+        {det.tp} caught · {det.fp} false {det.fp === 1 ? "alarm" : "alarms"} · {det.fn} missed · p50 <span className="mono">{ms(run.latency_ms.p50)}</span>{" "}
+        {latencyNote}
+      </p>
+    </div>
+  );
+}
+
+function Compare({ rule, model }: { rule: Results; model: Results | null | undefined }) {
+  return (
+    <div className="panel" data-testid="bench-compare" style={{ padding: 18, marginBottom: 20 }}>
+      <p className="eyebrow" style={{ marginBottom: 12 }}>
+        Detecting &ldquo;outdated&rdquo; · rule engine against a model judge
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 24 }}>
+        <Run
+          id="bench-run-rule"
+          title="Rule engine only"
+          how="no model, live Tavily"
+          results={rule}
+          latencyNote="at the verifier"
+        />
+        {model ? (
+          <Run
+            id="bench-run-model"
+            title="With a model"
+            how="gpt-oss-120b extracts, gpt-oss-20b judges, live Tavily"
+            results={model}
+            latencyNote="paced to a free tier's tokens per minute"
+          />
+        ) : model === null ? (
+          <p style={{ margin: 0, fontSize: 13, color: "var(--ink-2)" }}>
+            <span className="mono">results-model.json</span> was not found next to this build, so
+            only the rule-engine run is shown.
+          </p>
+        ) : (
+          <p style={{ margin: 0, color: "var(--ink-3)" }}>Loading the model run…</p>
+        )}
+      </div>
+      <p style={{ margin: "14px 0 0", fontSize: 12.5, color: "var(--ink-2)" }}>
+        Different samples, read from <span className="mono">bench/results.json</span> and{" "}
+        <span className="mono">bench/results-model.json</span>. Both runs check leadership claims,
+        the hardest class, against hand labels, so neither is a whole-dataset figure.
+      </p>
+    </div>
   );
 }
 

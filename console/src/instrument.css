@@ -289,6 +289,10 @@ main section{scroll-margin-top:72px}
 @media (max-width:900px){.hero.stage{min-height:auto;padding-block:36px 0}.hero.stage .hero-grid{align-items:start}}
 
 .hero-cta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hero-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 0;font:500 12.5px/1.4 var(--mono);color:var(--ink-3)}
+.hero-links a,.foot-links a{color:var(--brand-2);text-decoration:none;border-bottom:1px solid currentColor}
+.hero-links a:hover,.foot-links a:hover{color:var(--ink)}
+.foot-links{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 0;font:500 12.5px/1.4 var(--mono)}
 .hero-cta .hint{font:500 11.5px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
 
 /* The cue is the only thing telling a first-time viewer there is more below. */
@@ -535,6 +539,7 @@ nav.sections a:hover::after{width:100%}
 }
 .cine-in .lede{max-width:56ch; font-size:clamp(14.5px,1.25vw,17px); color:var(--ink-2)}
 .cine-in .hero-cta{justify-content:center; gap:12px}
+.cine-in .hero-links{justify-content:center}
 .cine-in .counters{grid-template-columns:repeat(3,minmax(0,1fr)); border-top:1px solid var(--rule); max-width:700px; width:100%; margin-top:clamp(6px,.8vw,14px)}
 .cine-in .counter{padding:20px 14px 0; text-align:left}
 .cine-in .counter + .counter{border-left:1px solid var(--rule)}

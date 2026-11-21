@@ -13,7 +13,7 @@ export const SECTIONS = [
   ["inspect", "Inspector", "One answer with its time-sensitive claims lit up. Select a claim to see every term of its score and the pages behind it."],
   ["cache", "Cache", "The cache lifetime Chronos chose for each kind of fact, against one flat default, and every stale entry it deleted."],
   ["playground", "Playground", "The same question sent twice through the gateway, with the raw headers your browser received."],
-  ["bench", "Benchmark", "Precision, recall and cost, measured against 120 hand-labelled claims and read from the results file."],
+  ["bench", "Benchmark", "Precision, recall and cost, measured against hand-labelled claims: the rule engine and a model judge side by side, read from the results files."],
   ["brief", "Briefing", "A meeting brief built on the same checks: what is confirmed, what is not, and what to ask."],
   ["proof", "Every feature", "Each feature run against the live stack, with the headers and counters that came back."],
 ] as const;

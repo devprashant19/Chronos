@@ -161,6 +161,11 @@ export const DEMO_REPORT: VerifyReport = {
   evicted: true,
 };
 
+// The replay's rates follow the measured runs so the page never contradicts its
+// own benchmark: claim-cache hit rate 39% (bench/results.json, credits saved on
+// a repeat pass), verifier p50 841 ms and p95 4318 ms (the rule-engine run),
+// 3 Tavily credits per claim-cache miss (search plus extract), and the models
+// the measured runs used. Counts of answers are still a traffic mix, not data.
 export const DEMO_STATS: Stats = {
   answers_checked: 1284,
   claims_checked: 1631,
@@ -168,14 +173,14 @@ export const DEMO_STATS: Stats = {
   outdated_answers: 143,
   cache_evictions: 97,
   stale_hits_prevented: 97,
-  tavily_credits_used: 4120,
-  verify_p50_ms: 2980,
-  verify_p95_ms: 5410,
-  claim_cache: { backend: "redis", hits: 1142, misses: 489, hit_rate: 0.7 },
-  tavily: { limit: 4000, used: 4120, remaining: 0, configured: true, live: true },
+  tavily_credits_used: 2985,
+  verify_p50_ms: 841,
+  verify_p95_ms: 4318,
+  claim_cache: { backend: "redis", hits: 636, misses: 995, hit_rate: 0.39 },
+  tavily: { limit: 4000, used: 2985, remaining: 1015, configured: true, live: true },
   evictor: { cleared: 97, failed: 0 },
   sweeper: { runs: 38, reverified: 412, evicted: 23, interval_s: 600, enabled: true },
-  mode: { offline_demo: false, extract_model: "openai/gpt-4o-mini", judge_model: "openai/gpt-4o-mini" },
+  mode: { offline_demo: false, extract_model: "groq/openai/gpt-oss-120b", judge_model: "groq/openai/gpt-oss-20b" },
   thresholds: { current: 80, check: 50 },
   uptime_s: 23040,
 };
