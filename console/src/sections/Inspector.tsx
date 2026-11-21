@@ -12,25 +12,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api, type ClaimVerdict, type VerifyReport } from "../api";
-import { DEMO_ANSWER, DEMO_REPORT } from "../demo";
+import { DEMO_ANSWER, DEMO_REPORT, LEADERSHIP_ANSWER, PRICING_ANSWER, TIMELESS_ANSWER, demoReportFor } from "../demo";
 import { useAnnounce } from "../announce";
 
 const PRESETS: Array<{ label: string; text: string }> = [
   { label: "Stale version", text: DEMO_ANSWER },
   {
     label: "Stale leadership",
-    text:
-      "Jack Dorsey is the CEO of Twitter. He co-founded the company and returned as chief executive in 2015. Twitter remains a publicly traded company on the New York Stock Exchange.",
+    text: LEADERSHIP_ANSWER,
   },
   {
     label: "Stale pricing",
-    text:
-      "OpenAI's GPT-4o is priced at $5.00 per million input tokens and $15.00 per million output tokens. There is no free tier for the API.",
+    text: PRICING_ANSWER,
   },
   {
     label: "All timeless",
-    text:
-      "The capital of France is Paris. Water boils at 100 degrees Celsius at standard atmospheric pressure. A stack is a last-in, first-out data structure.",
+    text: TIMELESS_ANSWER,
   },
 ];
 
@@ -70,16 +67,34 @@ export default function Inspector({ mode }: { mode: "live" | "demo" }) {
 
     try {
       if (mode === "demo") {
+        // Each example replays its own recording; text nobody recorded gets
+        // no report rather than another answer's highlights.
+        const recorded = demoReportFor(text);
         // Pace the recorded report so the scan reads as work being done.
         await new Promise((r) => setTimeout(r, 700));
-        setLog((l) => [...l, { tone: "t", line: "› tavily: search + extract (recorded)" }]);
-        await new Promise((r) => setTimeout(r, 700));
-        setReport(DEMO_REPORT);
-        setSelected(0);
+        if (!recorded) {
+          setReport(null);
+          setLog((l) => [
+            ...l,
+            { tone: "x", line: "› demo: only the four examples are recorded. Checking your own text needs Live, on your machine." },
+          ]);
+          return;
+        }
         setLog((l) => [
           ...l,
-          { tone: "g", line: "› chronos: 4 claims, 2 outdated" },
-          { tone: "x", line: "› chronos: cache entry evicted (stale_hit_prevented)" },
+          recorded.tavily_credits
+            ? { tone: "t", line: `› tavily: search + extract, ${recorded.tavily_credits} credits (recorded)` }
+            : { tone: "t", line: "› tavily: not called, every claim is timeless" },
+        ]);
+        await new Promise((r) => setTimeout(r, 700));
+        setReport(recorded);
+        // Open the drawer on the claim worth reading: the first one checked.
+        const first = recorded.claims.findIndex((c) => c.class !== "timeless");
+        setSelected(first < 0 ? 0 : first);
+        setLog((l) => [
+          ...l,
+          { tone: recorded.stale_count ? "x" : "g", line: `› chronos: ${recorded.claim_count} claims, ${recorded.stale_count} outdated, verdict ${recorded.verdict}` },
+          ...(recorded.evicted ? [{ tone: "x", line: "› chronos: cache entry evicted (stale_hit_prevented)" }] : []),
         ]);
       } else {
         const result = await api.verify({ answer: text, mode: "annotate", prompt: "console inspector" });

@@ -210,6 +210,7 @@ The classes:
 | 12.23 | **The benchmark section opens with the rule engine and the model judge side by side**, each run stating its own sample, model and p50 | Alone, the rule-engine run's F1 of 0.27 was the first number a reader met there, while the model run's 0.73 lived on one proof card. The model run is 18 leadership claims, so the card says it is not a whole-dataset figure |
 | 12.24 | **(from a failure)** **The demo replay's rates follow the measured runs**: claim-cache hit rate 39%, p50 841 ms, p95 4318 ms, 3 credits per claim-cache miss, the models actually used | The replay showed 70% under "Tavily calls saved" in the hero while the benchmark section, one scroll down, measured 39%. A page about stale facts cannot contradict itself. Answer counts are still a traffic mix and are labelled as a replay |
 | 12.25 | **The hero and footer link to the film and the source** | The hosted demo is often opened first, and it had no way to reach the repository or the film |
+| 12.26 | **(from a failure)** **Each Inspector example replays its own recorded report, with spans computed from its text**; text nobody recorded gets no report and says Live is needed | Found by driving the hosted page in a browser: every example replayed the Python report, so on the leadership, pricing and timeless examples the wrong words lit up, the drawer explained the Python claim, and "All timeless" reported 10 credits on a page that says timeless facts cost nothing. The same test found the Python example's own offsets one character early, so its second highlight began on a space |
 
 ## 13. Hosting the demo
 
@@ -238,7 +239,7 @@ The classes:
 | 15.1 | **One script, `scripts/verify-all.sh`, proves the whole stack: 52 checks, the same ones CI runs.** It asserts specifics — `x-chronos-ttl: 21600`, credits unchanged, eviction recorded — rather than the absence of errors | Each rule in [AGENTS.md](AGENTS.md) breaks *quietly*, so the checks look for the specific symptom |
 | 15.2 | **The plugin runs `go test -race`** | The race detector matters because one hook writes the verdict store and another reads it |
 | 15.3 | **The verifier has pytest: 185 tests, none needing a network** | Scoring, extraction, the rule judge, the claim cache and the pacer are pure logic |
-| 15.4 | **The console has Vitest under jsdom: 134 tests** | They cover the data layer, the state hook, what each section renders, and token fidelity to the design reference |
+| 15.4 | **The console has Vitest under jsdom: 141 tests** | They cover the data layer, the state hook, what each section renders, and token fidelity to the design reference |
 | 15.5 | **Two of the 52 checks depend on live web search and are flaky.** They are documented as flaky, not stubbed | Recorded evidence would steady them, but would stop them testing the live path |
 | 15.6 | **(from a failure)** **Screenshots are regenerated live from a shot list, and a person looks at them** (`docs/screenshots/shots.json`) | jsdom reports what components produce, not what a browser paints. On 8 Nov, looking at screenshots found five faults that every test had passed. The three a component test can see now have one, and each was checked to fail without its fix |
 | 15.7 | **A documentation gate runs in CI** | Broken links and diagrams that no longer parse fail the build rather than the reader |

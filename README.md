@@ -564,7 +564,7 @@ runs. It asserts specifics, not the absence of errors:
 | **The gateway survives Chronos failing** | the verifier is stopped mid-run and the gateway must keep answering |
 | Plugin logic | `go test -race ./...`: 55 test functions, 90 results counting subtests in `go test -v` |
 | Verifier logic | `pytest tests/`: 185 tests |
-| Console logic and rendering | 2 checks running `npm test` in `console/`: 134 tests, including a fidelity check against `design/chronos-console.html` |
+| Console logic and rendering | 2 checks running `npm test` in `console/`: 141 tests, including a fidelity check against `design/chronos-console.html` |
 | The injection and ambiguous-subject guards, and retention | 2 checks: both guards are reported in `/v1/stats`, and `answers_checked` equals stored plus pruned reports. The guards' behaviour is in `pytest`, against a judge that obeys every instruction it reads |
 | Repository hygiene | no `.env` tracked, no credential-shaped string in any tracked file |
 
@@ -588,7 +588,7 @@ Quality, separately, is [measured above](#measured-results) rather than asserted
    The verifier half has also run live, rewriting a stale Python answer with its evidence; the
    console's "Every feature" section shows the result. The gateway half has run only in Go
    tests, because the demo gateway runs in `annotate`.
-4. **Nothing renders the console in a real browser engine.** Its 134 tests run under jsdom,
+4. **Nothing renders the console in a real browser engine.** Its 141 tests run under jsdom,
    which reports what the components produce rather than what a browser paints, so a CSS
    mistake — a panel that overflows, a colour with no contrast — passes all of them. The
    screenshots are the only evidence of that, and a person looks at them. That is not a
