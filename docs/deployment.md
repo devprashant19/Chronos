@@ -162,9 +162,9 @@ above is the route that was actually tested.
 That route builds with Vite's default base, so asset paths are absolute and it is served from
 a domain root — which is what Vercel gives you. The hosted demo at
 <https://chronos-sable-one.vercel.app/> is served exactly this way: absolute `/assets/` paths
-from the domain root, `results.json` beside them, the header reading *"Recorded demo replay"*. `console/public/results.json` is committed
-and identical to `bench/results.json`, so the benchmark panel shows the measured numbers
-without `build-demo-site.sh` being involved at all.
+from the domain root, `results.json` beside them, the header reading *"Recorded demo replay"*. `console/public/results.json` and
+`console/public/results-model.json` are committed and identical to their copies in `bench/`, so
+the benchmark panel shows both measured runs without `build-demo-site.sh` being involved at all.
 
 | Host | What to do |
 | :--- | :--- |
